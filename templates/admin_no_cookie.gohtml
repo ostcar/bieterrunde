@@ -1,0 +1,11 @@
+{{template "main.gohtml"}}
+
+{{define "content"}}
+<div>
+    Admin password eingeben
+    <form action="/admin" method="post">   
+        <input type="text" id="admin_password" name="admin_password">
+        <input type="submit" value="Submit">
+    </form>
+</div>
+{{end}}

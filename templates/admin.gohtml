@@ -1,0 +1,38 @@
+{{template "main.gohtml"}}
+
+{{define "content"}}
+<table id="table" class="display">
+    <thead>
+        <tr>
+            <th>Number</th>
+            <th>Name</th>
+            <th>Adresse</th>
+            <th>IBAN</th>
+        </tr>
+    </thead>
+    <tbody>
+        {{range .Users}}
+        <tr>
+            <td><a href="/?user_id={{.UserID}}">{{.UserID}}</a></td>
+            <td>{{or .Name "<nicht gesetzt>"}}</td>
+            <td>{{or .Adresse "<nicht gesetzt>"}}</td>
+            <td>{{or .IBAN "<nicht gesetzt>"}}</td>
+        </tr>
+        {{end}}
+    </tbody>
+</table>
+{{end}}
+
+{{define "header"}}
+<link rel="stylesheet" href="//cdn.datatables.net/1.11.0/css/jquery.dataTables.min.css" />
+{{end}}
+
+{{define "bottom"}}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="//cdn.datatables.net/1.11.0/js/jquery.dataTables.min.js"></script>
+<script>
+$(document).ready( function () {
+    $('#table').DataTable();
+} );
+</script>
+{{end}}

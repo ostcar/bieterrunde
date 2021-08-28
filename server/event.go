@@ -13,7 +13,7 @@ import (
 type Event interface {
 	validate(db *Database) error
 	execute(db *Database) error
-	String() string
+	EventName() string
 }
 
 type updateEvent struct {
@@ -47,6 +47,10 @@ func newUpdateEvent(userID, name, adresse, IBAN string) (updateEvent, error) {
 }
 
 func (e updateEvent) String() string {
+	return fmt.Sprintf("Updating user %q to name %q, adress %q and iban %q", e.UserID, e.Name, e.Adresse, e.IBAN)
+}
+
+func (e updateEvent) EventName() string {
 	return "update"
 }
 
@@ -70,15 +74,21 @@ func (e updateEvent) execute(db *Database) error {
 
 type createEvent struct {
 	UserID string `json:"user_id"`
+	Name   string `json:"name"`
 }
 
-func newCreateEvent() createEvent {
+func newCreateEvent(name string) createEvent {
 	return createEvent{
 		UserID: strconv.Itoa(rand.Intn(100_000_000)),
+		Name:   name,
 	}
 }
 
 func (e createEvent) String() string {
+	return fmt.Sprintf("Creating user %q with name %q", e.UserID, e.Name)
+}
+
+func (e createEvent) EventName() string {
 	return "create"
 }
 
@@ -87,11 +97,15 @@ func (e createEvent) validate(db *Database) error {
 	if exist {
 		return errValidate
 	}
+
+	if e.Name == "" {
+		return fmt.Errorf("Name is leer")
+	}
 	return nil
 }
 
 func (e createEvent) execute(db *Database) error {
-	db.users[e.UserID] = UserData{}
+	db.users[e.UserID] = UserData{Name: e.Name}
 	return nil
 }
 

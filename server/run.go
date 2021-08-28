@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+
+	"github.com/gorilla/mux"
 )
 
 // Run starts the server until the context is canceled.
@@ -19,14 +21,10 @@ func Run(ctx context.Context, configFile, dbFile string) error {
 		return fmt.Errorf("open database file: %w", err)
 	}
 
-	mux := http.NewServeMux()
-	HandleCreate(mux, db)
-	HandleUpdate(mux, db)
-	HandleLoginAdmin(mux, config)
-	HandleAdmin(mux, db, config)
-	HandleIndex(mux, db)
+	router := mux.NewRouter()
+	registerHandlers(router, config, db)
 
-	srv := &http.Server{Addr: config.ListenAddr, Handler: mux}
+	srv := &http.Server{Addr: config.ListenAddr, Handler: router}
 
 	// Shutdown logic in separate goroutine.
 	wait := make(chan error)

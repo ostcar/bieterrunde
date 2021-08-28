@@ -122,7 +122,7 @@ func (db *Database) writeEvent(e Event) (err error) {
 		Time    string `json:"time"`
 		Payload Event  `json:"payload"`
 	}{
-		e.String(),
+		e.EventName(),
 		time.Now().Format("2006-01-02 15:04:05"),
 		e,
 	}
@@ -155,10 +155,10 @@ func (db *Database) User(id string) (UserData, bool) {
 }
 
 // NewUser returns the user data for a userid.
-func (db *Database) NewUser() (string, error) {
+func (db *Database) NewUser(name string) (string, error) {
 	var e createEvent
 	for {
-		e = newCreateEvent()
+		e = newCreateEvent(name)
 		err := db.writeEvent(e)
 		if err != nil {
 			if errors.Is(err, errValidate) {

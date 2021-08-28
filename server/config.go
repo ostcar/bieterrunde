@@ -11,14 +11,8 @@ import (
 
 // Config does what it is named.
 type Config struct {
-	Admin      string `toml:"admin"`
+	AdminPW    string `toml:"admin_password"`
 	ListenAddr string `toml:"listen_addr"`
-}
-
-func (c *Config) setDefaults() {
-	if c.ListenAddr == "" {
-		c.ListenAddr = ":8000"
-	}
 }
 
 // LoadConfig loads the config from a toml file.
