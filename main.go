@@ -2,13 +2,13 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"math/rand"
-	"net/http"
 	"os"
 	"os/signal"
 	"time"
+
+	"github.com/ostcar/bieterrunde/server"
 )
 
 const listenAddr = ":8080"
@@ -23,7 +23,7 @@ func main() {
 	ctx, cancel := withShutdown(context.Background())
 	defer cancel()
 
-	if err := run(ctx); err != nil {
+	if err := server.Run(ctx, configFile, dbFile); err != nil {
 		log.Fatalf("Error: %v", err)
 	}
 }
@@ -41,45 +41,4 @@ func withShutdown(ctx context.Context) (context.Context, context.CancelFunc) {
 		os.Exit(1)
 	}()
 	return ctx, cancel
-}
-
-func run(ctx context.Context) error {
-	config, err := loadConfig(configFile)
-	if err != nil {
-		return fmt.Errorf("reading config: %w", err)
-	}
-
-	db, err := NewDB(dbFile)
-	if err != nil {
-		return fmt.Errorf("open database file: %w", err)
-	}
-
-	mux := http.NewServeMux()
-	handleCreate(mux, db)
-	handleUpdate(mux, db)
-	handleLoginAdmin(mux, config)
-	handleAdmin(mux, db, config)
-	handleIndex(mux, db)
-
-	srv := &http.Server{Addr: listenAddr, Handler: mux}
-
-	// Shutdown logic in separate goroutine.
-	wait := make(chan error)
-	go func() {
-		// Wait for the context to be closed.
-		<-ctx.Done()
-
-		if err := srv.Shutdown(context.Background()); err != nil {
-			wait <- fmt.Errorf("HTTP server shutdown: %w", err)
-			return
-		}
-		wait <- nil
-	}()
-
-	log.Printf("Listen on: %s", listenAddr)
-	if err := srv.ListenAndServe(); err != http.ErrServerClosed {
-		return fmt.Errorf("HTTP Server failed: %v", err)
-	}
-
-	return <-wait
 }

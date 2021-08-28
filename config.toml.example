@@ -1,1 +1,2 @@
 admin = "ADMIN PASSWORD"
+listen_addr = ":8000"

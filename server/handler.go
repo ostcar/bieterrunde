@@ -1,4 +1,4 @@
-package main
+package server
 
 import (
 	"errors"
@@ -12,7 +12,8 @@ const (
 	cookieAdminPW = "bieteradmin"
 )
 
-func handleIndex(mux *http.ServeMux, db *Database) {
+// HandleIndex registeres the index page.
+func HandleIndex(mux *http.ServeMux, db *Database) {
 	mux.HandleFunc(
 		"/",
 		func(w http.ResponseWriter, r *http.Request) {
@@ -54,7 +55,8 @@ func handleIndex(mux *http.ServeMux, db *Database) {
 	)
 }
 
-func handleCreate(mux *http.ServeMux, db *Database) {
+// HandleCreate registers the page to create new users.
+func HandleCreate(mux *http.ServeMux, db *Database) {
 	mux.HandleFunc(
 		"/create",
 		func(w http.ResponseWriter, r *http.Request) {
@@ -73,7 +75,8 @@ func handleCreate(mux *http.ServeMux, db *Database) {
 	)
 }
 
-func handleUpdate(mux *http.ServeMux, db *Database) {
+// HandleUpdate registeres the handler to update user data.
+func HandleUpdate(mux *http.ServeMux, db *Database) {
 	mux.HandleFunc(
 		"/update",
 		func(w http.ResponseWriter, r *http.Request) {
@@ -119,7 +122,8 @@ func handleUpdate(mux *http.ServeMux, db *Database) {
 	)
 }
 
-func handleLoginAdmin(mux *http.ServeMux, c config) {
+// HandleLoginAdmin registers the login page for admins.
+func HandleLoginAdmin(mux *http.ServeMux, c Config) {
 	if c.Admin == "" {
 		return
 	}
@@ -146,7 +150,8 @@ func handleLoginAdmin(mux *http.ServeMux, c config) {
 	)
 }
 
-func handleAdmin(mux *http.ServeMux, db *Database, c config) {
+// HandleAdmin registeres the admin page.
+func HandleAdmin(mux *http.ServeMux, db *Database, c Config) {
 	if c.Admin == "" {
 		return
 	}
