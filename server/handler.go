@@ -1,11 +1,13 @@
 package server
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"html/template"
 	"log"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -20,10 +22,91 @@ func registerHandlers(router *mux.Router, config Config, db *Database) {
 	router.Use(loggingMiddleware)
 
 	handleStatic(router)
+	handleElm(router)
+	handleElmGetUser(router, db)
+	handleElmCreateUser(router, db)
+
 	handleFrontpage(router, db)
+
 	handleCreate(router, db)
 	handleUpdate(router, db)
 	handleAdmin(router, db, config)
+
+}
+
+// ViewUser is the user returned to the client
+type ViewUser struct {
+	ID string `json:"id"`
+	UserData
+}
+
+func handleElm(router *mux.Router) {
+	router.Path("/elm").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		bs, err := os.ReadFile("client/index.html")
+		if err != nil {
+			log.Println(err)
+			http.Error(w, "Internal", 500)
+		}
+		w.Write(bs)
+	})
+}
+
+func handleElmGetUser(router *mux.Router, db *Database) {
+	router.Path("/user/{id}").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		userID := mux.Vars(r)["id"]
+		user, exist := db.User(userID)
+		if !exist {
+			http.Error(w, "Nutzer existiert nicht", 404)
+			return
+		}
+
+		vuser := ViewUser{
+			userID,
+			user,
+		}
+
+		if err := json.NewEncoder(w).Encode(vuser); err != nil {
+			log.Println(err)
+			http.Error(w, "Fehler", 500)
+			return
+		}
+	})
+}
+
+func handleElmCreateUser(router *mux.Router, db *Database) {
+	router.Path("/user").Methods("POST").HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			var userName struct {
+				Name string `json:"name"`
+			}
+
+			if err := json.NewDecoder(r.Body).Decode(&userName); err != nil {
+				log.Printf("Error: %v", err)
+				http.Error(w, "Internal", 500)
+				return
+			}
+
+			userID, err := db.NewUser(userName.Name)
+			if err != nil {
+				log.Printf("Error: %v", err)
+				http.Error(w, "Internal", 500)
+				return
+			}
+
+			vuser := ViewUser{
+				ID: userID,
+				UserData: UserData{
+					Name: userName.Name,
+				},
+			}
+
+			if err := json.NewEncoder(w).Encode(vuser); err != nil {
+				log.Println(err)
+				http.Error(w, "Fehler", 500)
+				return
+			}
+		},
+	)
 }
 
 func loggingMiddleware(next http.Handler) http.Handler {
@@ -132,7 +215,6 @@ func handleCreate(router *mux.Router, db *Database) {
 		},
 	)
 }
-
 func handleUpdate(router *mux.Router, db *Database) {
 	page := router.Path("/update").Subrouter()
 	getRequet := page.Methods("GET")
