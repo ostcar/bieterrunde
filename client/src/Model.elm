@@ -1,4 +1,6 @@
-module Model exposing (Bieter, LoginPageModel, Model(..), UserPageModel)
+module Model exposing (Bieter, LoginPageModel, Model(..), Msg(..), UserPageModel)
+
+import Http
 
 
 type alias Bieter =
@@ -24,3 +26,12 @@ type alias UserPageModel =
 type Model
     = LoginPage LoginPageModel
     | UserPage UserPageModel
+
+
+type Msg
+    = SaveNumber String
+    | SaveName String
+    | RequestLogin
+    | ReceivedLogin (Result Http.Error Bieter)
+    | RequestCreate
+    | ReceivedCreate (Result Http.Error Bieter)

@@ -5366,7 +5366,7 @@ var $author$project$Loginpage$buildErrorMessage = function (httpError) {
 			return message;
 	}
 };
-var $author$project$Loginpage$ReceivedCreate = function (a) {
+var $author$project$Model$ReceivedCreate = function (a) {
 	return {$: 'ReceivedCreate', a: a};
 };
 var $author$project$Model$Bieter = F4(
@@ -6203,11 +6203,11 @@ var $author$project$Loginpage$createBieter = function (name) {
 		{
 			body: $elm$http$Http$jsonBody(
 				$author$project$Loginpage$createBieterEncoder(name)),
-			expect: A2($elm$http$Http$expectJson, $author$project$Loginpage$ReceivedCreate, $author$project$Loginpage$bieterDecoder),
+			expect: A2($elm$http$Http$expectJson, $author$project$Model$ReceivedCreate, $author$project$Loginpage$bieterDecoder),
 			url: 'http://localhost:9600/user'
 		});
 };
-var $author$project$Loginpage$ReceivedLogin = function (a) {
+var $author$project$Model$ReceivedLogin = function (a) {
 	return {$: 'ReceivedLogin', a: a};
 };
 var $elm$http$Http$emptyBody = _Http_emptyBody;
@@ -6218,7 +6218,7 @@ var $elm$http$Http$get = function (r) {
 var $author$project$Loginpage$getBieter = function (number) {
 	return $elm$http$Http$get(
 		{
-			expect: A2($elm$http$Http$expectJson, $author$project$Loginpage$ReceivedLogin, $author$project$Loginpage$bieterDecoder),
+			expect: A2($elm$http$Http$expectJson, $author$project$Model$ReceivedLogin, $author$project$Loginpage$bieterDecoder),
 			url: 'http://localhost:9600/user/' + number
 		});
 };
@@ -6289,8 +6289,8 @@ var $author$project$Loginpage$updateLogin = F2(
 				}
 		}
 	});
-var $author$project$Bieterrunde$updateUserPage = F2(
-	function (msg, payload) {
+var $author$project$UserPage$updateUserPage = F2(
+	function (_v0, payload) {
 		return _Utils_Tuple2(
 			$author$project$Model$UserPage(payload),
 			$elm$core$Platform$Cmd$none);
@@ -6302,15 +6302,15 @@ var $author$project$Bieterrunde$update = F2(
 			return A2($author$project$Loginpage$updateLogin, msg, payload);
 		} else {
 			var payload = model.a;
-			return A2($author$project$Bieterrunde$updateUserPage, msg, payload);
+			return A2($author$project$UserPage$updateUserPage, msg, payload);
 		}
 	});
-var $author$project$Loginpage$RequestCreate = {$: 'RequestCreate'};
-var $author$project$Loginpage$RequestLogin = {$: 'RequestLogin'};
-var $author$project$Loginpage$SaveName = function (a) {
+var $author$project$Model$RequestCreate = {$: 'RequestCreate'};
+var $author$project$Model$RequestLogin = {$: 'RequestLogin'};
+var $author$project$Model$SaveName = function (a) {
 	return {$: 'SaveName', a: a};
 };
-var $author$project$Loginpage$SaveNumber = function (a) {
+var $author$project$Model$SaveNumber = function (a) {
 	return {$: 'SaveNumber', a: a};
 };
 var $elm$html$Html$button = _VirtualDom_node('button');
@@ -6417,7 +6417,7 @@ var $author$project$Loginpage$viewLogin = function (page) {
 				$elm$html$Html$form,
 				_List_fromArray(
 					[
-						$elm$html$Html$Events$onSubmit($author$project$Loginpage$RequestLogin)
+						$elm$html$Html$Events$onSubmit($author$project$Model$RequestLogin)
 					]),
 				_List_fromArray(
 					[
@@ -6434,7 +6434,7 @@ var $author$project$Loginpage$viewLogin = function (page) {
 										$elm$html$Html$Attributes$id('nummer'),
 										$elm$html$Html$Attributes$type_('text'),
 										$elm$html$Html$Attributes$value(page.formUserNr),
-										$elm$html$Html$Events$onInput($author$project$Loginpage$SaveNumber)
+										$elm$html$Html$Events$onInput($author$project$Model$SaveNumber)
 									]),
 								_List_Nil)
 							])),
@@ -6466,7 +6466,7 @@ var $author$project$Loginpage$viewLogin = function (page) {
 				$elm$html$Html$form,
 				_List_fromArray(
 					[
-						$elm$html$Html$Events$onSubmit($author$project$Loginpage$RequestCreate)
+						$elm$html$Html$Events$onSubmit($author$project$Model$RequestCreate)
 					]),
 				_List_fromArray(
 					[
@@ -6483,7 +6483,7 @@ var $author$project$Loginpage$viewLogin = function (page) {
 										$elm$html$Html$Attributes$id('name'),
 										$elm$html$Html$Attributes$type_('text'),
 										$elm$html$Html$Attributes$value(page.formUserName),
-										$elm$html$Html$Events$onInput($author$project$Loginpage$SaveName)
+										$elm$html$Html$Events$onInput($author$project$Model$SaveName)
 									]),
 								_List_Nil)
 							])),
@@ -6507,7 +6507,7 @@ var $author$project$Loginpage$viewLogin = function (page) {
 			]));
 };
 var $elm$html$Html$strong = _VirtualDom_node('strong');
-var $author$project$Bieterrunde$viewUser = function (model) {
+var $author$project$UserPage$viewUser = function (model) {
 	return A2(
 		$elm$html$Html$div,
 		_List_Nil,
@@ -6557,7 +6557,7 @@ var $author$project$Bieterrunde$view = function (model) {
 		return $author$project$Loginpage$viewLogin(page);
 	} else {
 		var page = model.a;
-		return $author$project$Bieterrunde$viewUser(page);
+		return $author$project$UserPage$viewUser(page);
 	}
 };
 var $author$project$Bieterrunde$main = $elm$browser$Browser$element(

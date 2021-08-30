@@ -1,4 +1,4 @@
-module Loginpage exposing (Msg(..), bieterDecoder, buildErrorMessage, createBieter, createBieterEncoder, getBieter, maybeError, updateLogin, viewLogin)
+module Loginpage exposing (updateLogin, viewLogin)
 
 import Html exposing (..)
 import Html.Attributes exposing (..)
@@ -7,15 +7,6 @@ import Http
 import Json.Decode exposing (Decoder, field, map4, string)
 import Json.Encode as Encode
 import Model exposing (..)
-
-
-type Msg
-    = SaveNumber String
-    | SaveName String
-    | RequestLogin
-    | ReceivedLogin (Result Http.Error Bieter)
-    | RequestCreate
-    | ReceivedCreate (Result Http.Error Bieter)
 
 
 getBieter : String -> Cmd Msg
