@@ -100,6 +100,11 @@ update msg model =
                     , Nav.pushUrl model.navKey (Url.toString url)
                     )
 
+                Browser.External "" ->
+                    ( model
+                    , Cmd.none 
+                    )
+
                 Browser.External url ->
                     ( model
                     , Nav.load url

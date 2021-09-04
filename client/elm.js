@@ -6218,6 +6218,53 @@ var $author$project$Main$subscriptions = function (model) {
 		return $elm$core$Platform$Sub$none;
 	}
 };
+var $elm$browser$Browser$Navigation$load = _Browser_load;
+var $elm$core$Debug$log = _Debug_log;
+var $elm$browser$Browser$Navigation$pushUrl = _Browser_pushUrl;
+var $elm$url$Url$addPort = F2(
+	function (maybePort, starter) {
+		if (maybePort.$ === 'Nothing') {
+			return starter;
+		} else {
+			var port_ = maybePort.a;
+			return starter + (':' + $elm$core$String$fromInt(port_));
+		}
+	});
+var $elm$url$Url$addPrefixed = F3(
+	function (prefix, maybeSegment, starter) {
+		if (maybeSegment.$ === 'Nothing') {
+			return starter;
+		} else {
+			var segment = maybeSegment.a;
+			return _Utils_ap(
+				starter,
+				_Utils_ap(prefix, segment));
+		}
+	});
+var $elm$url$Url$toString = function (url) {
+	var http = function () {
+		var _v0 = url.protocol;
+		if (_v0.$ === 'Http') {
+			return 'http://';
+		} else {
+			return 'https://';
+		}
+	}();
+	return A3(
+		$elm$url$Url$addPrefixed,
+		'#',
+		url.fragment,
+		A3(
+			$elm$url$Url$addPrefixed,
+			'?',
+			url.query,
+			_Utils_ap(
+				A2(
+					$elm$url$Url$addPort,
+					url.port_,
+					_Utils_ap(http, url.host)),
+				url.path)));
+};
 var $author$project$Page$Front$Edit = function (a) {
 	return {$: 'Edit', a: a};
 };
@@ -6888,21 +6935,68 @@ var $author$project$Page$Front$update = F2(
 var $author$project$Main$update = F2(
 	function (msg, model) {
 		var _v0 = _Utils_Tuple2(msg, model.page);
-		if ((_v0.a.$ === 'FrontMsg') && (_v0.b.$ === 'Front')) {
-			var subMsg = _v0.a.a;
-			var pageModel = _v0.b.a;
-			var _v1 = A2($author$project$Page$Front$update, subMsg, pageModel);
-			var updatedPageModel = _v1.a;
-			var updatedCmd = _v1.b;
-			return _Utils_Tuple2(
-				_Utils_update(
-					model,
-					{
-						page: $author$project$Main$Front(updatedPageModel)
-					}),
-				A2($elm$core$Platform$Cmd$map, $author$project$Main$FrontMsg, updatedCmd));
-		} else {
-			return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+		switch (_v0.a.$) {
+			case 'FrontMsg':
+				if (_v0.b.$ === 'Front') {
+					var subMsg = _v0.a.a;
+					var pageModel = _v0.b.a;
+					var _v1 = A2($author$project$Page$Front$update, subMsg, pageModel);
+					var updatedPageModel = _v1.a;
+					var updatedCmd = _v1.b;
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{
+								page: $author$project$Main$Front(updatedPageModel)
+							}),
+						A2($elm$core$Platform$Cmd$map, $author$project$Main$FrontMsg, updatedCmd));
+				} else {
+					return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+				}
+			case 'LinkClicked':
+				var urlRequest = _v0.a.a;
+				if (urlRequest.$ === 'Internal') {
+					var url = urlRequest.a;
+					return A2(
+						$elm$core$Debug$log,
+						'hier1 ' + $elm$url$Url$toString(url),
+						_Utils_Tuple2(
+							model,
+							A2(
+								$elm$browser$Browser$Navigation$pushUrl,
+								model.navKey,
+								$elm$url$Url$toString(url))));
+				} else {
+					switch (urlRequest.a) {
+						case '':
+							return A2(
+								$elm$core$Debug$log,
+								'hier2',
+								_Utils_Tuple2(model, $elm$core$Platform$Cmd$none));
+						case '/?':
+							return A2(
+								$elm$core$Debug$log,
+								'hier',
+								_Utils_Tuple2(model, $elm$core$Platform$Cmd$none));
+						default:
+							var url = urlRequest.a;
+							return A2(
+								$elm$core$Debug$log,
+								'hier3',
+								_Utils_Tuple2(
+									model,
+									$elm$browser$Browser$Navigation$load(url)));
+					}
+				}
+			default:
+				var url = _v0.a.a;
+				var newRoute = $author$project$Route$parseUrl(url);
+				return $author$project$Main$initCurrentPage(
+					_Utils_Tuple2(
+						_Utils_update(
+							model,
+							{route: newRoute}),
+						$elm$core$Platform$Cmd$none));
 		}
 	});
 var $elm$virtual_dom$VirtualDom$map = _VirtualDom_map;
@@ -6921,9 +7015,23 @@ var $author$project$Page$Front$Logout = {$: 'Logout'};
 var $author$project$Page$Front$ToEdit = function (a) {
 	return {$: 'ToEdit', a: a};
 };
+var $elm$html$Html$a = _VirtualDom_node('a');
 var $elm$html$Html$button = _VirtualDom_node('button');
 var $elm$html$Html$div = _VirtualDom_node('div');
 var $elm$html$Html$h1 = _VirtualDom_node('h1');
+var $elm$html$Html$Attributes$stringProperty = F2(
+	function (key, string) {
+		return A2(
+			_VirtualDom_property,
+			key,
+			$elm$json$Json$Encode$string(string));
+	});
+var $elm$html$Html$Attributes$href = function (url) {
+	return A2(
+		$elm$html$Html$Attributes$stringProperty,
+		'href',
+		_VirtualDom_noJavaScriptUri(url));
+};
 var $elm$virtual_dom$VirtualDom$Normal = function (a) {
 	return {$: 'Normal', a: a};
 };
@@ -6991,10 +7099,11 @@ var $author$project$Page$Front$viewBieter = function (bieter) {
 				_List_fromArray(
 					[
 						A2(
-						$elm$html$Html$button,
+						$elm$html$Html$a,
 						_List_fromArray(
 							[
-								$elm$html$Html$Events$onClick($author$project$Page$Front$Logout)
+								$elm$html$Html$Events$onClick($author$project$Page$Front$Logout),
+								$elm$html$Html$Attributes$href('')
 							]),
 						_List_fromArray(
 							[
@@ -7084,13 +7193,6 @@ var $elm$html$Html$Events$onInput = function (tagger) {
 			$elm$html$Html$Events$alwaysStop,
 			A2($elm$json$Json$Decode$map, tagger, $elm$html$Html$Events$targetValue)));
 };
-var $elm$html$Html$Attributes$stringProperty = F2(
-	function (key, string) {
-		return A2(
-			_VirtualDom_property,
-			key,
-			$elm$json$Json$Encode$string(string));
-	});
 var $elm$html$Html$Attributes$type_ = $elm$html$Html$Attributes$stringProperty('type');
 var $elm$html$Html$Attributes$value = $elm$html$Html$Attributes$stringProperty('value');
 var $author$project$Page$Front$viewEdit = function (data) {
