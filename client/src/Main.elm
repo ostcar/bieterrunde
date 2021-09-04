@@ -26,7 +26,6 @@ type Page
     | Front Front.Model
 
 
-
 init : () -> Url -> Nav.Key -> ( Model, Cmd Msg )
 init _ url navKey =
     let
@@ -37,8 +36,6 @@ init _ url navKey =
             }
     in
     initCurrentPage ( model, Cmd.none )
-
-
 
 
 initCurrentPage : ( Model, Cmd Msg ) -> ( Model, Cmd Msg )

@@ -34,18 +34,18 @@ type alias Model =
 
 
 type LoginPageMsg
-    = LoginRequestLogin
-    | LoginReceivedLogin (Result Http.Error Bieter.Bieter)
-    | LoginRequestCreate
-    | LoginReceivedCreate (Result Http.Error Bieter.Bieter)
-    | LoginSaveNumber String
-    | LoginSaveName String
+    = RequestLogin
+    | ReceivedLogin (Result Http.Error Bieter.Bieter)
+    | RequestCreate
+    | ReceivedCreate (Result Http.Error Bieter.Bieter)
+    | SaveNumber String
+    | SaveName String
+    | ReceivedLocalStoreBieter (Maybe String)
 
 
 type Msg
-    = ReceivedLocalStoreBieter (Maybe String)
-    | LoginPage LoginPageMsg
-    | ShowLogout
+    = LoginPage LoginPageMsg
+    | Logout
 
 
 init : Nav.Key -> ( Model, Cmd Msg )
@@ -56,16 +56,6 @@ init navKey =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        ReceivedLocalStoreBieter loadedData ->
-            case loadedData of
-                Just bieterNr ->
-                    ( { model | page = Login { emptyLoginData | formUserNr = bieterNr } }
-                    , Cmd.none
-                    )
-
-                Nothing ->
-                    ( model, Cmd.none )
-
         LoginPage loginMsg ->
             case model.page of
                 Login loginData ->
@@ -75,7 +65,7 @@ update msg model =
                     -- Received a loginpage msg on a non loginpage.
                     ( model, Cmd.none )
 
-        ShowLogout ->
+        Logout ->
             ( { model | page = Login emptyLoginData }
             , Ports.send Ports.RemoveBieterID
             )
@@ -84,20 +74,20 @@ update msg model =
 updateLoginPage : Model -> LoginPageMsg -> LoginPageData -> ( Model, Cmd Msg )
 updateLoginPage model loginMsg loginData =
     case loginMsg of
-        LoginSaveNumber nr ->
+        SaveNumber nr ->
             ( { model | page = Login { loginData | formUserNr = nr } }
             , Cmd.none
             )
 
-        LoginSaveName name ->
+        SaveName name ->
             ( { model | page = Login { loginData | formUserName = name } }
             , Cmd.none
             )
 
-        LoginRequestLogin ->
+        RequestLogin ->
             ( model, fetchBieter loginData.formUserNr )
 
-        LoginReceivedLogin response ->
+        ReceivedLogin response ->
             case response of
                 Ok bieter ->
                     ( { model | page = Show bieter }
@@ -113,10 +103,10 @@ updateLoginPage model loginMsg loginData =
                     , Cmd.none
                     )
 
-        LoginRequestCreate ->
+        RequestCreate ->
             ( model, createBieter loginData.formUserName )
 
-        LoginReceivedCreate response ->
+        ReceivedCreate response ->
             case response of
                 Ok bieter ->
                     ( { model | page = Show bieter }
@@ -131,6 +121,16 @@ updateLoginPage model loginMsg loginData =
                     ( { model | page = Login { loginData | errorMsg = Just errMsg } }
                     , Cmd.none
                     )
+
+        ReceivedLocalStoreBieter loadedData ->
+            case loadedData of
+                Just bieterNr ->
+                    ( { model | page = Login { emptyLoginData | formUserNr = bieterNr } }
+                    , fetchBieter bieterNr
+                    )
+
+                Nothing ->
+                    ( model, Cmd.none )
 
 
 fetchBieter : String -> Cmd Msg
@@ -139,7 +139,7 @@ fetchBieter id =
         { url = "/user/" ++ id
         , expect =
             Bieter.bieterDecoder
-                |> Http.expectJson LoginReceivedLogin
+                |> Http.expectJson ReceivedLogin
         }
         |> Cmd.map LoginPage
 
@@ -149,7 +149,7 @@ createBieter name =
     Http.post
         { url = "/user"
         , body = Http.jsonBody (bieterNameEncoder name)
-        , expect = Http.expectJson LoginReceivedCreate Bieter.bieterDecoder
+        , expect = Http.expectJson ReceivedCreate Bieter.bieterDecoder
         }
         |> Cmd.map LoginPage
 
@@ -187,6 +187,7 @@ buildErrorMessage httpError =
 subscriptions : Model -> Sub Msg
 subscriptions _ =
     Ports.toElm ReceivedLocalStoreBieter
+    |> Sub.map LoginPage
 
 
 view : Model -> Html Msg
@@ -205,14 +206,14 @@ viewLogin loginData =
     div []
         [ h1 [] [ text "Mit Bieternummer anmelden" ]
         , maybeError loginData
-        , Html.form [ onSubmit LoginRequestLogin ]
+        , Html.form [ onSubmit RequestLogin ]
             [ div []
                 [ text "Bieternummer"
                 , input
                     [ id "nummer"
                     , type_ "text"
                     , value loginData.formUserNr
-                    , onInput LoginSaveNumber
+                    , onInput SaveNumber
                     ]
                     []
                 ]
@@ -223,14 +224,14 @@ viewLogin loginData =
                 ]
             ]
         , h1 [] [ text "Neue Bieternummer anlegen" ]
-        , Html.form [ onSubmit LoginRequestCreate ]
+        , Html.form [ onSubmit RequestCreate ]
             [ div []
                 [ text "Bieternummer"
                 , input
                     [ id "name"
                     , type_ "text"
                     , value loginData.formUserName
-                    , onInput LoginSaveName
+                    , onInput SaveName
                     ]
                     []
                 ]
@@ -264,5 +265,5 @@ viewBieter bieter =
             ]
         , div [] [ text ("Adresse: " ++ bieter.adresse) ]
         , div [] [ text ("IBAN: " ++ bieter.iban) ]
-        , div [] [ a [ onClick ShowLogout ] [ text "logout" ] ]
+        , div [] [ button [ onClick Logout ] [ text "logout" ] ]
         ]

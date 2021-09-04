@@ -6259,38 +6259,11 @@ var $elm$url$Url$toString = function (url) {
 				url.path)));
 };
 var $author$project$Ports$RemoveBieterID = {$: 'RemoveBieterID'};
-var $author$project$Page$Front$Show = function (a) {
-	return {$: 'Show', a: a};
-};
-var $author$project$Ports$StoreBieterID = function (a) {
-	return {$: 'StoreBieterID', a: a};
-};
-var $author$project$Page$Front$buildErrorMessage = function (httpError) {
-	switch (httpError.$) {
-		case 'BadUrl':
-			var message = httpError.a;
-			return message;
-		case 'Timeout':
-			return 'Server is taking too long to respond. Please try again later.';
-		case 'NetworkError':
-			return 'Unable to reach server.';
-		case 'BadStatus':
-			var statusCode = httpError.a;
-			if (statusCode === 404) {
-				return 'Unbekannte Bieternummer';
-			} else {
-				return 'Request failed with status code: ' + $elm$core$String$fromInt(statusCode);
-			}
-		default:
-			var message = httpError.a;
-			return message;
-	}
-};
 var $author$project$Page$Front$LoginPage = function (a) {
 	return {$: 'LoginPage', a: a};
 };
-var $author$project$Page$Front$LoginReceivedCreate = function (a) {
-	return {$: 'LoginReceivedCreate', a: a};
+var $author$project$Page$Front$LoginReceivedLogin = function (a) {
+	return {$: 'LoginReceivedLogin', a: a};
 };
 var $author$project$Bieter$Bieter = F4(
 	function (id, name, adresse, iban) {
@@ -6326,15 +6299,6 @@ var $author$project$Bieter$bieterDecoder = A3(
 				'id',
 				$author$project$Bieter$idDecoder,
 				$elm$json$Json$Decode$succeed($author$project$Bieter$Bieter)))));
-var $author$project$Page$Front$bieterNameEncoder = function (name) {
-	return $elm$json$Json$Encode$object(
-		_List_fromArray(
-			[
-				_Utils_Tuple2(
-				'name',
-				$elm$json$Json$Encode$string(name))
-			]));
-};
 var $elm$json$Json$Decode$decodeString = _Json_runOnString;
 var $elm$http$Http$BadStatus_ = F2(
 	function (a, b) {
@@ -6434,12 +6398,7 @@ var $elm$http$Http$expectJson = F2(
 						A2($elm$json$Json$Decode$decodeString, decoder, string));
 				}));
 	});
-var $elm$http$Http$jsonBody = function (value) {
-	return A2(
-		_Http_pair,
-		'application/json',
-		A2($elm$json$Json$Encode$encode, 0, value));
-};
+var $elm$http$Http$emptyBody = _Http_emptyBody;
 var $elm$http$Http$Request = function (a) {
 	return {$: 'Request', a: a};
 };
@@ -6608,6 +6567,65 @@ var $elm$http$Http$request = function (r) {
 		$elm$http$Http$Request(
 			{allowCookiesFromOtherDomains: false, body: r.body, expect: r.expect, headers: r.headers, method: r.method, timeout: r.timeout, tracker: r.tracker, url: r.url}));
 };
+var $elm$http$Http$get = function (r) {
+	return $elm$http$Http$request(
+		{body: $elm$http$Http$emptyBody, expect: r.expect, headers: _List_Nil, method: 'GET', timeout: $elm$core$Maybe$Nothing, tracker: $elm$core$Maybe$Nothing, url: r.url});
+};
+var $author$project$Page$Front$fetchBieter = function (id) {
+	return A2(
+		$elm$core$Platform$Cmd$map,
+		$author$project$Page$Front$LoginPage,
+		$elm$http$Http$get(
+			{
+				expect: A2($elm$http$Http$expectJson, $author$project$Page$Front$LoginReceivedLogin, $author$project$Bieter$bieterDecoder),
+				url: '/user/' + id
+			}));
+};
+var $author$project$Page$Front$Show = function (a) {
+	return {$: 'Show', a: a};
+};
+var $author$project$Ports$StoreBieterID = function (a) {
+	return {$: 'StoreBieterID', a: a};
+};
+var $author$project$Page$Front$buildErrorMessage = function (httpError) {
+	switch (httpError.$) {
+		case 'BadUrl':
+			var message = httpError.a;
+			return message;
+		case 'Timeout':
+			return 'Server is taking too long to respond. Please try again later.';
+		case 'NetworkError':
+			return 'Unable to reach server.';
+		case 'BadStatus':
+			var statusCode = httpError.a;
+			if (statusCode === 404) {
+				return 'Unbekannte Bieternummer';
+			} else {
+				return 'Request failed with status code: ' + $elm$core$String$fromInt(statusCode);
+			}
+		default:
+			var message = httpError.a;
+			return message;
+	}
+};
+var $author$project$Page$Front$LoginReceivedCreate = function (a) {
+	return {$: 'LoginReceivedCreate', a: a};
+};
+var $author$project$Page$Front$bieterNameEncoder = function (name) {
+	return $elm$json$Json$Encode$object(
+		_List_fromArray(
+			[
+				_Utils_Tuple2(
+				'name',
+				$elm$json$Json$Encode$string(name))
+			]));
+};
+var $elm$http$Http$jsonBody = function (value) {
+	return A2(
+		_Http_pair,
+		'application/json',
+		A2($elm$json$Json$Encode$encode, 0, value));
+};
 var $elm$http$Http$post = function (r) {
 	return $elm$http$Http$request(
 		{body: r.body, expect: r.expect, headers: _List_Nil, method: 'POST', timeout: $elm$core$Maybe$Nothing, tracker: $elm$core$Maybe$Nothing, url: r.url});
@@ -6622,24 +6640,6 @@ var $author$project$Page$Front$createBieter = function (name) {
 					$author$project$Page$Front$bieterNameEncoder(name)),
 				expect: A2($elm$http$Http$expectJson, $author$project$Page$Front$LoginReceivedCreate, $author$project$Bieter$bieterDecoder),
 				url: '/user'
-			}));
-};
-var $author$project$Page$Front$LoginReceivedLogin = function (a) {
-	return {$: 'LoginReceivedLogin', a: a};
-};
-var $elm$http$Http$emptyBody = _Http_emptyBody;
-var $elm$http$Http$get = function (r) {
-	return $elm$http$Http$request(
-		{body: $elm$http$Http$emptyBody, expect: r.expect, headers: _List_Nil, method: 'GET', timeout: $elm$core$Maybe$Nothing, tracker: $elm$core$Maybe$Nothing, url: r.url});
-};
-var $author$project$Page$Front$fetchBieter = function (id) {
-	return A2(
-		$elm$core$Platform$Cmd$map,
-		$author$project$Page$Front$LoginPage,
-		$elm$http$Http$get(
-			{
-				expect: A2($elm$http$Http$expectJson, $author$project$Page$Front$LoginReceivedLogin, $author$project$Bieter$bieterDecoder),
-				url: '/user/' + id
 			}));
 };
 var $author$project$Page$Front$updateLoginPage = F3(
@@ -6740,26 +6740,31 @@ var $author$project$Page$Front$update = F2(
 		switch (msg.$) {
 			case 'ReceivedLocalStoreBieter':
 				var loadedData = msg.a;
-				if (loadedData.$ === 'Just') {
-					var bieterNr = loadedData.a;
-					return _Utils_Tuple2(
-						_Utils_update(
-							model,
-							{
-								page: $author$project$Page$Front$Login(
-									_Utils_update(
-										$author$project$Page$Front$emptyLoginData,
-										{formUserNr: bieterNr}))
-							}),
-						$elm$core$Platform$Cmd$none);
+				var _v1 = model.page;
+				if (_v1.$ === 'Login') {
+					if (loadedData.$ === 'Just') {
+						var bieterNr = loadedData.a;
+						return _Utils_Tuple2(
+							_Utils_update(
+								model,
+								{
+									page: $author$project$Page$Front$Login(
+										_Utils_update(
+											$author$project$Page$Front$emptyLoginData,
+											{formUserNr: bieterNr}))
+								}),
+							$author$project$Page$Front$fetchBieter(bieterNr));
+					} else {
+						return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+					}
 				} else {
 					return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 				}
 			case 'LoginPage':
 				var loginMsg = msg.a;
-				var _v2 = model.page;
-				if (_v2.$ === 'Login') {
-					var loginData = _v2.a;
+				var _v3 = model.page;
+				if (_v3.$ === 'Login') {
+					var loginData = _v3.a;
 					return A3($author$project$Page$Front$updateLoginPage, model, loginMsg, loginData);
 				} else {
 					return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
@@ -6834,8 +6839,8 @@ var $author$project$Main$notFoundView = A2(
 		[
 			$elm$html$Html$text('Oops! The page you requested was not found!')
 		]));
-var $author$project$Page$Front$ShowLogout = {$: 'ShowLogout'};
-var $elm$html$Html$a = _VirtualDom_node('a');
+var $author$project$Page$Front$Logout = {$: 'Logout'};
+var $elm$html$Html$button = _VirtualDom_node('button');
 var $elm$html$Html$div = _VirtualDom_node('div');
 var $elm$html$Html$h1 = _VirtualDom_node('h1');
 var $elm$virtual_dom$VirtualDom$Normal = function (a) {
@@ -6905,10 +6910,10 @@ var $author$project$Page$Front$viewBieter = function (bieter) {
 				_List_fromArray(
 					[
 						A2(
-						$elm$html$Html$a,
+						$elm$html$Html$button,
 						_List_fromArray(
 							[
-								$elm$html$Html$Events$onClick($author$project$Page$Front$ShowLogout)
+								$elm$html$Html$Events$onClick($author$project$Page$Front$Logout)
 							]),
 						_List_fromArray(
 							[
@@ -6925,7 +6930,6 @@ var $author$project$Page$Front$LoginSaveName = function (a) {
 var $author$project$Page$Front$LoginSaveNumber = function (a) {
 	return {$: 'LoginSaveNumber', a: a};
 };
-var $elm$html$Html$button = _VirtualDom_node('button');
 var $elm$html$Html$form = _VirtualDom_node('form');
 var $elm$html$Html$Attributes$stringProperty = F2(
 	function (key, string) {
