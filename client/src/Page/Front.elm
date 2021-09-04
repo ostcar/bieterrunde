@@ -33,14 +33,18 @@ type alias Model =
     }
 
 
-type Msg
-    = ReceivedLocalStoreBieter (Maybe String)
-    | LoginRequestLogin
+type LoginPageMsg
+    = LoginRequestLogin
     | LoginReceivedLogin (Result Http.Error Bieter.Bieter)
     | LoginRequestCreate
     | LoginReceivedCreate (Result Http.Error Bieter.Bieter)
     | LoginSaveNumber String
     | LoginSaveName String
+
+
+type Msg
+    = ReceivedLocalStoreBieter (Maybe String)
+    | LoginPage LoginPageMsg
     | ShowLogout
 
 
@@ -55,99 +59,71 @@ update msg model =
         ReceivedLocalStoreBieter loadedData ->
             case loadedData of
                 Just bieterNr ->
-                    ( { model | page = Login {emptyLoginData | formUserNr = bieterNr}}
+                    ( { model | page = Login { emptyLoginData | formUserNr = bieterNr } }
                     , Cmd.none
                     )
 
                 Nothing ->
                     ( model, Cmd.none )
 
-        LoginSaveNumber nr ->
+        LoginPage loginMsg ->
             case model.page of
                 Login loginData ->
-                    ( { model | page = Login { loginData | formUserNr = nr } }
-                    , Cmd.none
-                    )
-
-                _ ->
-                    -- User not on login page. TODO: Make this impossible
-                    ( model, Cmd.none )
-
-        LoginSaveName name ->
-            case model.page of
-                Login loginData ->
-                    ( { model | page = Login { loginData | formUserName = name } }
-                    , Cmd.none
-                    )
-
-                _ ->
-                    -- User not on login page. TODO: Make this impossible
-                    ( model, Cmd.none )
-
-        LoginRequestLogin ->
-            case model.page of
-                Login loginData ->
-                    ( model, fetchBieter loginData.formUserNr )
-
-                _ ->
-                    -- User not on login page. TODO: Make this impossible
-                    ( model, Cmd.none )
-
-        LoginReceivedLogin response ->
-            case model.page of
-                Login loginData ->
-                    case response of
-                        Ok bieter ->
-                            ( { model | page = Show bieter }
-                            , Ports.storeBieterID (Bieter.idToString  bieter.id)
-                            )
-
-                        Err e ->
-                            let
-                                errMsg =
-                                    buildErrorMessage e
-                            in
-                            ( { model | page = Login { loginData | errorMsg = Just errMsg } }
+                    case loginMsg of
+                        LoginSaveNumber nr ->
+                            ( { model | page = Login { loginData | formUserNr = nr } }
                             , Cmd.none
                             )
 
-                _ ->
-                    -- User not on login page. TODO: Make this impossible
-                    ( model, Cmd.none )
-
-        LoginRequestCreate ->
-            case model.page of
-                Login loginData ->
-                    ( model, createBieter loginData.formUserName )
-
-                _ ->
-                    -- User not on login page. TODO: Make this impossible
-                    ( model, Cmd.none )
-
-        LoginReceivedCreate response ->
-            case model.page of
-                Login loginData ->
-                    case response of
-                        Ok bieter ->
-                            ( { model | page = Show bieter }
-                            , Ports.storeBieterID (Bieter.idToString  bieter.id)
-                            )
-
-                        Err e ->
-                            let
-                                errMsg =
-                                    buildErrorMessage e
-                            in
-                            ( { model | page = Login { loginData | errorMsg = Just errMsg } }
+                        LoginSaveName name ->
+                            ( { model | page = Login { loginData | formUserName = name } }
                             , Cmd.none
                             )
 
+                        LoginRequestLogin ->
+                            ( model, fetchBieter loginData.formUserNr )
+
+                        LoginReceivedLogin response ->
+                            case response of
+                                Ok bieter ->
+                                    ( { model | page = Show bieter }
+                                    , Ports.storeBieterID (Bieter.idToString bieter.id)
+                                    )
+
+                                Err e ->
+                                    let
+                                        errMsg =
+                                            buildErrorMessage e
+                                    in
+                                    ( { model | page = Login { loginData | errorMsg = Just errMsg } }
+                                    , Cmd.none
+                                    )
+
+                        LoginRequestCreate ->
+                            ( model, createBieter loginData.formUserName )
+
+                        LoginReceivedCreate response ->
+                            case response of
+                                Ok bieter ->
+                                    ( { model | page = Show bieter }
+                                    , Ports.storeBieterID (Bieter.idToString bieter.id)
+                                    )
+
+                                Err e ->
+                                    let
+                                        errMsg =
+                                            buildErrorMessage e
+                                    in
+                                    ( { model | page = Login { loginData | errorMsg = Just errMsg } }
+                                    , Cmd.none
+                                    )
+
                 _ ->
                     -- User not on login page. TODO: Make this impossible
                     ( model, Cmd.none )
-        
+
         ShowLogout ->
-            ( { model | page = Login emptyLoginData}
+            ( { model | page = Login emptyLoginData }
             , Ports.removeBieterID ()
             )
 
@@ -160,6 +136,7 @@ fetchBieter id =
             Bieter.bieterDecoder
                 |> Http.expectJson LoginReceivedLogin
         }
+        |> Cmd.map LoginPage
 
 
 createBieter : String -> Cmd Msg
@@ -169,6 +146,7 @@ createBieter name =
         , body = Http.jsonBody (bieterNameEncoder name)
         , expect = Http.expectJson LoginReceivedCreate Bieter.bieterDecoder
         }
+        |> Cmd.map LoginPage
 
 
 bieterNameEncoder : String -> Encode.Value
@@ -211,12 +189,13 @@ view model =
     case model.page of
         Login data ->
             viewLogin data
+                |> Html.map LoginPage
 
         Show bieter ->
             viewBieter bieter
 
 
-viewLogin : LoginPageData -> Html Msg
+viewLogin : LoginPageData -> Html LoginPageMsg
 viewLogin loginData =
     div []
         [ h1 [] [ text "Mit Bieternummer anmelden" ]
@@ -259,7 +238,7 @@ viewLogin loginData =
         ]
 
 
-maybeError : LoginPageData -> Html Msg
+maybeError : LoginPageData -> Html msg
 maybeError model =
     case model.errorMsg of
         Just message ->
@@ -280,5 +259,5 @@ viewBieter bieter =
             ]
         , div [] [ text ("Adresse: " ++ bieter.adresse) ]
         , div [] [ text ("IBAN: " ++ bieter.iban) ]
-        , div [] [a [onClick ShowLogout] [text "logout"]]
+        , div [] [ a [ onClick ShowLogout ] [ text "logout" ] ]
         ]
