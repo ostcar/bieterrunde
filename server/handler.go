@@ -22,11 +22,12 @@ func registerHandlers(router *mux.Router, config Config, db *Database) {
 	router.Use(loggingMiddleware)
 
 	handleStatic(router)
-	handleElm(router)
+	handleElmIndex(router)
+	handleElmJS(router)
 	handleElmGetUser(router, db)
 	handleElmCreateUser(router, db)
 
-	handleFrontpage(router, db)
+	//handleFrontpage(router, db)
 
 	handleCreate(router, db)
 	handleUpdate(router, db)
@@ -40,15 +41,28 @@ type ViewUser struct {
 	UserData
 }
 
-func handleElm(router *mux.Router) {
-	router.Path("/elm").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func handleElmIndex(router *mux.Router) {
+	handler := func(w http.ResponseWriter, r *http.Request) {
 		bs, err := os.ReadFile("client/index.html")
 		if err != nil {
 			log.Println(err)
 			http.Error(w, "Internal", 500)
 		}
 		w.Write(bs)
-	})
+	}
+	router.Path("/").HandlerFunc(handler)
+}
+
+func handleElmJS(router *mux.Router) {
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		bs, err := os.ReadFile("client/elm.js")
+		if err != nil {
+			log.Println(err)
+			http.Error(w, "Internal", 500)
+		}
+		w.Write(bs)
+	}
+	router.Path("/elm.js").HandlerFunc(handler)
 }
 
 func handleElmGetUser(router *mux.Router, db *Database) {
