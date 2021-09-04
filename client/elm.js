@@ -6183,6 +6183,9 @@ var $author$project$Main$init = F3(
 var $elm$core$Platform$Sub$map = _Platform_map;
 var $elm$core$Platform$Sub$batch = _Platform_batch;
 var $elm$core$Platform$Sub$none = $elm$core$Platform$Sub$batch(_List_Nil);
+var $author$project$Page$Front$LoginPage = function (a) {
+	return {$: 'LoginPage', a: a};
+};
 var $author$project$Page$Front$ReceivedLocalStoreBieter = function (a) {
 	return {$: 'ReceivedLocalStoreBieter', a: a};
 };
@@ -6198,7 +6201,10 @@ var $author$project$Ports$toElm = _Platform_incomingPort(
 				A2($elm$json$Json$Decode$map, $elm$core$Maybe$Just, $elm$json$Json$Decode$string)
 			])));
 var $author$project$Page$Front$subscriptions = function (_v0) {
-	return $author$project$Ports$toElm($author$project$Page$Front$ReceivedLocalStoreBieter);
+	return A2(
+		$elm$core$Platform$Sub$map,
+		$author$project$Page$Front$LoginPage,
+		$author$project$Ports$toElm($author$project$Page$Front$ReceivedLocalStoreBieter));
 };
 var $author$project$Main$subscriptions = function (model) {
 	var _v0 = model.page;
@@ -6212,58 +6218,46 @@ var $author$project$Main$subscriptions = function (model) {
 		return $elm$core$Platform$Sub$none;
 	}
 };
-var $elm$browser$Browser$Navigation$load = _Browser_load;
-var $elm$browser$Browser$Navigation$pushUrl = _Browser_pushUrl;
-var $elm$url$Url$addPort = F2(
-	function (maybePort, starter) {
-		if (maybePort.$ === 'Nothing') {
-			return starter;
-		} else {
-			var port_ = maybePort.a;
-			return starter + (':' + $elm$core$String$fromInt(port_));
-		}
-	});
-var $elm$url$Url$addPrefixed = F3(
-	function (prefix, maybeSegment, starter) {
-		if (maybeSegment.$ === 'Nothing') {
-			return starter;
-		} else {
-			var segment = maybeSegment.a;
-			return _Utils_ap(
-				starter,
-				_Utils_ap(prefix, segment));
-		}
-	});
-var $elm$url$Url$toString = function (url) {
-	var http = function () {
-		var _v0 = url.protocol;
-		if (_v0.$ === 'Http') {
-			return 'http://';
-		} else {
-			return 'https://';
-		}
-	}();
-	return A3(
-		$elm$url$Url$addPrefixed,
-		'#',
-		url.fragment,
-		A3(
-			$elm$url$Url$addPrefixed,
-			'?',
-			url.query,
-			_Utils_ap(
-				A2(
-					$elm$url$Url$addPort,
-					url.port_,
-					_Utils_ap(http, url.host)),
-				url.path)));
+var $author$project$Page$Front$Edit = function (a) {
+	return {$: 'Edit', a: a};
 };
 var $author$project$Ports$RemoveBieterID = {$: 'RemoveBieterID'};
-var $author$project$Page$Front$LoginPage = function (a) {
-	return {$: 'LoginPage', a: a};
+var $author$project$Page$Front$EditPageData = F3(
+	function (errorMsg, bieter, origBieter) {
+		return {bieter: bieter, errorMsg: errorMsg, origBieter: origBieter};
+	});
+var $author$project$Page$Front$createEditPageData = function (bieter) {
+	return A3($author$project$Page$Front$EditPageData, $elm$core$Maybe$Nothing, bieter, bieter);
 };
-var $author$project$Page$Front$LoginReceivedLogin = function (a) {
-	return {$: 'LoginReceivedLogin', a: a};
+var $author$project$Page$Front$Show = function (a) {
+	return {$: 'Show', a: a};
+};
+var $author$project$Page$Front$buildErrorMessage = function (httpError) {
+	switch (httpError.$) {
+		case 'BadUrl':
+			var message = httpError.a;
+			return message;
+		case 'Timeout':
+			return 'Server is taking too long to respond. Please try again later.';
+		case 'NetworkError':
+			return 'Unable to reach server.';
+		case 'BadStatus':
+			var statusCode = httpError.a;
+			if (statusCode === 404) {
+				return 'Unbekannte Bieternummer';
+			} else {
+				return 'Request failed with status code: ' + $elm$core$String$fromInt(statusCode);
+			}
+		default:
+			var message = httpError.a;
+			return message;
+	}
+};
+var $author$project$Page$Front$EditPage = function (a) {
+	return {$: 'EditPage', a: a};
+};
+var $author$project$Page$Front$FormReceived = function (a) {
+	return {$: 'FormReceived', a: a};
 };
 var $author$project$Bieter$Bieter = F4(
 	function (id, name, adresse, iban) {
@@ -6299,6 +6293,21 @@ var $author$project$Bieter$bieterDecoder = A3(
 				'id',
 				$author$project$Bieter$idDecoder,
 				$elm$json$Json$Decode$succeed($author$project$Bieter$Bieter)))));
+var $author$project$Bieter$bieterEncoder = function (bieter) {
+	return $elm$json$Json$Encode$object(
+		_List_fromArray(
+			[
+				_Utils_Tuple2(
+				'name',
+				$elm$json$Json$Encode$string(bieter.name)),
+				_Utils_Tuple2(
+				'adresse',
+				$elm$json$Json$Encode$string(bieter.adresse)),
+				_Utils_Tuple2(
+				'iban',
+				$elm$json$Json$Encode$string(bieter.iban))
+			]));
+};
 var $elm$json$Json$Decode$decodeString = _Json_runOnString;
 var $elm$http$Http$BadStatus_ = F2(
 	function (a, b) {
@@ -6398,7 +6407,12 @@ var $elm$http$Http$expectJson = F2(
 						A2($elm$json$Json$Decode$decodeString, decoder, string));
 				}));
 	});
-var $elm$http$Http$emptyBody = _Http_emptyBody;
+var $elm$http$Http$jsonBody = function (value) {
+	return A2(
+		_Http_pair,
+		'application/json',
+		A2($elm$json$Json$Encode$encode, 0, value));
+};
 var $elm$http$Http$Request = function (a) {
 	return {$: 'Request', a: a};
 };
@@ -6567,49 +6581,119 @@ var $elm$http$Http$request = function (r) {
 		$elm$http$Http$Request(
 			{allowCookiesFromOtherDomains: false, body: r.body, expect: r.expect, headers: r.headers, method: r.method, timeout: r.timeout, tracker: r.tracker, url: r.url}));
 };
-var $elm$http$Http$get = function (r) {
+var $elm$http$Http$post = function (r) {
 	return $elm$http$Http$request(
-		{body: $elm$http$Http$emptyBody, expect: r.expect, headers: _List_Nil, method: 'GET', timeout: $elm$core$Maybe$Nothing, tracker: $elm$core$Maybe$Nothing, url: r.url});
+		{body: r.body, expect: r.expect, headers: _List_Nil, method: 'POST', timeout: $elm$core$Maybe$Nothing, tracker: $elm$core$Maybe$Nothing, url: r.url});
 };
-var $author$project$Page$Front$fetchBieter = function (id) {
+var $author$project$Page$Front$updateBieter = function (bieter) {
 	return A2(
 		$elm$core$Platform$Cmd$map,
-		$author$project$Page$Front$LoginPage,
-		$elm$http$Http$get(
+		$author$project$Page$Front$EditPage,
+		$elm$http$Http$post(
 			{
-				expect: A2($elm$http$Http$expectJson, $author$project$Page$Front$LoginReceivedLogin, $author$project$Bieter$bieterDecoder),
-				url: '/user/' + id
+				body: $elm$http$Http$jsonBody(
+					$author$project$Bieter$bieterEncoder(bieter)),
+				expect: A2($elm$http$Http$expectJson, $author$project$Page$Front$FormReceived, $author$project$Bieter$bieterDecoder),
+				url: '/user/' + $author$project$Bieter$idToString(bieter.id)
 			}));
 };
-var $author$project$Page$Front$Show = function (a) {
-	return {$: 'Show', a: a};
-};
+var $author$project$Page$Front$updateEditPage = F3(
+	function (model, editMsg, editData) {
+		var oldBieter = editData.bieter;
+		switch (editMsg.$) {
+			case 'FormSaveAdresse':
+				var addr = editMsg.a;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{
+							page: $author$project$Page$Front$Edit(
+								_Utils_update(
+									editData,
+									{
+										bieter: _Utils_update(
+											oldBieter,
+											{adresse: addr})
+									}))
+						}),
+					$elm$core$Platform$Cmd$none);
+			case 'FormSaveName':
+				var name = editMsg.a;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{
+							page: $author$project$Page$Front$Edit(
+								_Utils_update(
+									editData,
+									{
+										bieter: _Utils_update(
+											oldBieter,
+											{name: name})
+									}))
+						}),
+					$elm$core$Platform$Cmd$none);
+			case 'FormSaveIBAN':
+				var iban = editMsg.a;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{
+							page: $author$project$Page$Front$Edit(
+								_Utils_update(
+									editData,
+									{
+										bieter: _Utils_update(
+											oldBieter,
+											{iban: iban})
+									}))
+						}),
+					$elm$core$Platform$Cmd$none);
+			case 'FormSubmit':
+				return _Utils_Tuple2(
+					model,
+					$author$project$Page$Front$updateBieter(editData.bieter));
+			case 'FormReceived':
+				var response = editMsg.a;
+				if (response.$ === 'Ok') {
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{
+								page: $author$project$Page$Front$Show(editData.bieter)
+							}),
+						$elm$core$Platform$Cmd$none);
+				} else {
+					var e = response.a;
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{
+								page: $author$project$Page$Front$Edit(
+									_Utils_update(
+										editData,
+										{
+											errorMsg: $elm$core$Maybe$Just(
+												$author$project$Page$Front$buildErrorMessage(e))
+										}))
+							}),
+						$elm$core$Platform$Cmd$none);
+				}
+			default:
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{
+							page: $author$project$Page$Front$Show(editData.origBieter)
+						}),
+					$elm$core$Platform$Cmd$none);
+		}
+	});
 var $author$project$Ports$StoreBieterID = function (a) {
 	return {$: 'StoreBieterID', a: a};
 };
-var $author$project$Page$Front$buildErrorMessage = function (httpError) {
-	switch (httpError.$) {
-		case 'BadUrl':
-			var message = httpError.a;
-			return message;
-		case 'Timeout':
-			return 'Server is taking too long to respond. Please try again later.';
-		case 'NetworkError':
-			return 'Unable to reach server.';
-		case 'BadStatus':
-			var statusCode = httpError.a;
-			if (statusCode === 404) {
-				return 'Unbekannte Bieternummer';
-			} else {
-				return 'Request failed with status code: ' + $elm$core$String$fromInt(statusCode);
-			}
-		default:
-			var message = httpError.a;
-			return message;
-	}
-};
-var $author$project$Page$Front$LoginReceivedCreate = function (a) {
-	return {$: 'LoginReceivedCreate', a: a};
+var $author$project$Page$Front$ReceivedCreate = function (a) {
+	return {$: 'ReceivedCreate', a: a};
 };
 var $author$project$Page$Front$bieterNameEncoder = function (name) {
 	return $elm$json$Json$Encode$object(
@@ -6620,16 +6704,6 @@ var $author$project$Page$Front$bieterNameEncoder = function (name) {
 				$elm$json$Json$Encode$string(name))
 			]));
 };
-var $elm$http$Http$jsonBody = function (value) {
-	return A2(
-		_Http_pair,
-		'application/json',
-		A2($elm$json$Json$Encode$encode, 0, value));
-};
-var $elm$http$Http$post = function (r) {
-	return $elm$http$Http$request(
-		{body: r.body, expect: r.expect, headers: _List_Nil, method: 'POST', timeout: $elm$core$Maybe$Nothing, tracker: $elm$core$Maybe$Nothing, url: r.url});
-};
 var $author$project$Page$Front$createBieter = function (name) {
 	return A2(
 		$elm$core$Platform$Cmd$map,
@@ -6638,14 +6712,32 @@ var $author$project$Page$Front$createBieter = function (name) {
 			{
 				body: $elm$http$Http$jsonBody(
 					$author$project$Page$Front$bieterNameEncoder(name)),
-				expect: A2($elm$http$Http$expectJson, $author$project$Page$Front$LoginReceivedCreate, $author$project$Bieter$bieterDecoder),
+				expect: A2($elm$http$Http$expectJson, $author$project$Page$Front$ReceivedCreate, $author$project$Bieter$bieterDecoder),
 				url: '/user'
+			}));
+};
+var $author$project$Page$Front$ReceivedLogin = function (a) {
+	return {$: 'ReceivedLogin', a: a};
+};
+var $elm$http$Http$emptyBody = _Http_emptyBody;
+var $elm$http$Http$get = function (r) {
+	return $elm$http$Http$request(
+		{body: $elm$http$Http$emptyBody, expect: r.expect, headers: _List_Nil, method: 'GET', timeout: $elm$core$Maybe$Nothing, tracker: $elm$core$Maybe$Nothing, url: r.url});
+};
+var $author$project$Page$Front$fetchBieter = function (id) {
+	return A2(
+		$elm$core$Platform$Cmd$map,
+		$author$project$Page$Front$LoginPage,
+		$elm$http$Http$get(
+			{
+				expect: A2($elm$http$Http$expectJson, $author$project$Page$Front$ReceivedLogin, $author$project$Bieter$bieterDecoder),
+				url: '/user/' + id
 			}));
 };
 var $author$project$Page$Front$updateLoginPage = F3(
 	function (model, loginMsg, loginData) {
 		switch (loginMsg.$) {
-			case 'LoginSaveNumber':
+			case 'SaveNumber':
 				var nr = loginMsg.a;
 				return _Utils_Tuple2(
 					_Utils_update(
@@ -6657,7 +6749,7 @@ var $author$project$Page$Front$updateLoginPage = F3(
 									{formUserNr: nr}))
 						}),
 					$elm$core$Platform$Cmd$none);
-			case 'LoginSaveName':
+			case 'SaveName':
 				var name = loginMsg.a;
 				return _Utils_Tuple2(
 					_Utils_update(
@@ -6669,11 +6761,11 @@ var $author$project$Page$Front$updateLoginPage = F3(
 									{formUserName: name}))
 						}),
 					$elm$core$Platform$Cmd$none);
-			case 'LoginRequestLogin':
+			case 'RequestLogin':
 				return _Utils_Tuple2(
 					model,
 					$author$project$Page$Front$fetchBieter(loginData.formUserNr));
-			case 'LoginReceivedLogin':
+			case 'ReceivedLogin':
 				var response = loginMsg.a;
 				if (response.$ === 'Ok') {
 					var bieter = response.a;
@@ -6701,11 +6793,11 @@ var $author$project$Page$Front$updateLoginPage = F3(
 							}),
 						$elm$core$Platform$Cmd$none);
 				}
-			case 'LoginRequestCreate':
+			case 'RequestCreate':
 				return _Utils_Tuple2(
 					model,
 					$author$project$Page$Front$createBieter(loginData.formUserName));
-			default:
+			case 'ReceivedCreate':
 				var response = loginMsg.a;
 				if (response.$ === 'Ok') {
 					var bieter = response.a;
@@ -6732,44 +6824,48 @@ var $author$project$Page$Front$updateLoginPage = F3(
 										}))
 							}),
 						$elm$core$Platform$Cmd$none);
+				}
+			default:
+				var loadedData = loginMsg.a;
+				if (loadedData.$ === 'Just') {
+					var bieterNr = loadedData.a;
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{
+								page: $author$project$Page$Front$Login(
+									_Utils_update(
+										$author$project$Page$Front$emptyLoginData,
+										{formUserNr: bieterNr}))
+							}),
+						$author$project$Page$Front$fetchBieter(bieterNr));
+				} else {
+					return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 				}
 		}
 	});
 var $author$project$Page$Front$update = F2(
 	function (msg, model) {
 		switch (msg.$) {
-			case 'ReceivedLocalStoreBieter':
-				var loadedData = msg.a;
-				var _v1 = model.page;
-				if (_v1.$ === 'Login') {
-					if (loadedData.$ === 'Just') {
-						var bieterNr = loadedData.a;
-						return _Utils_Tuple2(
-							_Utils_update(
-								model,
-								{
-									page: $author$project$Page$Front$Login(
-										_Utils_update(
-											$author$project$Page$Front$emptyLoginData,
-											{formUserNr: bieterNr}))
-								}),
-							$author$project$Page$Front$fetchBieter(bieterNr));
-					} else {
-						return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
-					}
-				} else {
-					return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
-				}
 			case 'LoginPage':
 				var loginMsg = msg.a;
-				var _v3 = model.page;
-				if (_v3.$ === 'Login') {
-					var loginData = _v3.a;
+				var _v1 = model.page;
+				if (_v1.$ === 'Login') {
+					var loginData = _v1.a;
 					return A3($author$project$Page$Front$updateLoginPage, model, loginMsg, loginData);
 				} else {
 					return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 				}
-			default:
+			case 'EditPage':
+				var editMsg = msg.a;
+				var _v2 = model.page;
+				if (_v2.$ === 'Edit') {
+					var editData = _v2.a;
+					return A3($author$project$Page$Front$updateEditPage, model, editMsg, editData);
+				} else {
+					return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+				}
+			case 'Logout':
 				return _Utils_Tuple2(
 					_Utils_update(
 						model,
@@ -6777,54 +6873,36 @@ var $author$project$Page$Front$update = F2(
 							page: $author$project$Page$Front$Login($author$project$Page$Front$emptyLoginData)
 						}),
 					$author$project$Ports$send($author$project$Ports$RemoveBieterID));
+			default:
+				var bieter = msg.a;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{
+							page: $author$project$Page$Front$Edit(
+								$author$project$Page$Front$createEditPageData(bieter))
+						}),
+					$elm$core$Platform$Cmd$none);
 		}
 	});
 var $author$project$Main$update = F2(
 	function (msg, model) {
 		var _v0 = _Utils_Tuple2(msg, model.page);
-		switch (_v0.a.$) {
-			case 'FrontMsg':
-				if (_v0.b.$ === 'Front') {
-					var subMsg = _v0.a.a;
-					var pageModel = _v0.b.a;
-					var _v1 = A2($author$project$Page$Front$update, subMsg, pageModel);
-					var updatedPageModel = _v1.a;
-					var updatedCmd = _v1.b;
-					return _Utils_Tuple2(
-						_Utils_update(
-							model,
-							{
-								page: $author$project$Main$Front(updatedPageModel)
-							}),
-						A2($elm$core$Platform$Cmd$map, $author$project$Main$FrontMsg, updatedCmd));
-				} else {
-					return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
-				}
-			case 'LinkClicked':
-				var urlRequest = _v0.a.a;
-				if (urlRequest.$ === 'Internal') {
-					var url = urlRequest.a;
-					return _Utils_Tuple2(
-						model,
-						A2(
-							$elm$browser$Browser$Navigation$pushUrl,
-							model.navKey,
-							$elm$url$Url$toString(url)));
-				} else {
-					var url = urlRequest.a;
-					return _Utils_Tuple2(
-						model,
-						$elm$browser$Browser$Navigation$load(url));
-				}
-			default:
-				var url = _v0.a.a;
-				var newRoute = $author$project$Route$parseUrl(url);
-				return $author$project$Main$initCurrentPage(
-					_Utils_Tuple2(
-						_Utils_update(
-							model,
-							{route: newRoute}),
-						$elm$core$Platform$Cmd$none));
+		if ((_v0.a.$ === 'FrontMsg') && (_v0.b.$ === 'Front')) {
+			var subMsg = _v0.a.a;
+			var pageModel = _v0.b.a;
+			var _v1 = A2($author$project$Page$Front$update, subMsg, pageModel);
+			var updatedPageModel = _v1.a;
+			var updatedCmd = _v1.b;
+			return _Utils_Tuple2(
+				_Utils_update(
+					model,
+					{
+						page: $author$project$Main$Front(updatedPageModel)
+					}),
+				A2($elm$core$Platform$Cmd$map, $author$project$Main$FrontMsg, updatedCmd));
+		} else {
+			return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 		}
 	});
 var $elm$virtual_dom$VirtualDom$map = _VirtualDom_map;
@@ -6840,6 +6918,9 @@ var $author$project$Main$notFoundView = A2(
 			$elm$html$Html$text('Oops! The page you requested was not found!')
 		]));
 var $author$project$Page$Front$Logout = {$: 'Logout'};
+var $author$project$Page$Front$ToEdit = function (a) {
+	return {$: 'ToEdit', a: a};
+};
 var $elm$html$Html$button = _VirtualDom_node('button');
 var $elm$html$Html$div = _VirtualDom_node('div');
 var $elm$html$Html$h1 = _VirtualDom_node('h1');
@@ -6919,31 +7000,41 @@ var $author$project$Page$Front$viewBieter = function (bieter) {
 							[
 								$elm$html$Html$text('logout')
 							]))
+					])),
+				A2(
+				$elm$html$Html$div,
+				_List_Nil,
+				_List_fromArray(
+					[
+						A2(
+						$elm$html$Html$button,
+						_List_fromArray(
+							[
+								$elm$html$Html$Events$onClick(
+								$author$project$Page$Front$ToEdit(bieter))
+							]),
+						_List_fromArray(
+							[
+								$elm$html$Html$text('Bearbeiten')
+							]))
 					]))
 			]));
 };
-var $author$project$Page$Front$LoginRequestCreate = {$: 'LoginRequestCreate'};
-var $author$project$Page$Front$LoginRequestLogin = {$: 'LoginRequestLogin'};
-var $author$project$Page$Front$LoginSaveName = function (a) {
-	return {$: 'LoginSaveName', a: a};
+var $author$project$Page$Front$FormGoBack = {$: 'FormGoBack'};
+var $author$project$Page$Front$FormSaveAdresse = function (a) {
+	return {$: 'FormSaveAdresse', a: a};
 };
-var $author$project$Page$Front$LoginSaveNumber = function (a) {
-	return {$: 'LoginSaveNumber', a: a};
+var $author$project$Page$Front$FormSaveIBAN = function (a) {
+	return {$: 'FormSaveIBAN', a: a};
 };
-var $elm$html$Html$form = _VirtualDom_node('form');
-var $elm$html$Html$Attributes$stringProperty = F2(
-	function (key, string) {
-		return A2(
-			_VirtualDom_property,
-			key,
-			$elm$json$Json$Encode$string(string));
-	});
-var $elm$html$Html$Attributes$id = $elm$html$Html$Attributes$stringProperty('id');
+var $author$project$Page$Front$FormSaveName = function (a) {
+	return {$: 'FormSaveName', a: a};
+};
+var $author$project$Page$Front$FormSubmit = {$: 'FormSubmit'};
 var $elm$html$Html$input = _VirtualDom_node('input');
-var $author$project$Page$Front$maybeError = function (model) {
-	var _v0 = model.errorMsg;
-	if (_v0.$ === 'Just') {
-		var message = _v0.a;
+var $author$project$Page$Front$maybeError = function (errorMsg) {
+	if (errorMsg.$ === 'Just') {
+		var message = errorMsg.a;
 		return A2(
 			$elm$html$Html$div,
 			_List_Nil,
@@ -6993,6 +7084,108 @@ var $elm$html$Html$Events$onInput = function (tagger) {
 			$elm$html$Html$Events$alwaysStop,
 			A2($elm$json$Json$Decode$map, tagger, $elm$html$Html$Events$targetValue)));
 };
+var $elm$html$Html$Attributes$stringProperty = F2(
+	function (key, string) {
+		return A2(
+			_VirtualDom_property,
+			key,
+			$elm$json$Json$Encode$string(string));
+	});
+var $elm$html$Html$Attributes$type_ = $elm$html$Html$Attributes$stringProperty('type');
+var $elm$html$Html$Attributes$value = $elm$html$Html$Attributes$stringProperty('value');
+var $author$project$Page$Front$viewEdit = function (data) {
+	return A2(
+		$elm$html$Html$div,
+		_List_Nil,
+		_List_fromArray(
+			[
+				$author$project$Page$Front$maybeError(data.errorMsg),
+				A2(
+				$elm$html$Html$div,
+				_List_Nil,
+				_List_fromArray(
+					[
+						$elm$html$Html$text('Name'),
+						A2(
+						$elm$html$Html$input,
+						_List_fromArray(
+							[
+								$elm$html$Html$Attributes$type_('text'),
+								$elm$html$Html$Attributes$value(data.bieter.name),
+								$elm$html$Html$Events$onInput($author$project$Page$Front$FormSaveName)
+							]),
+						_List_Nil)
+					])),
+				A2(
+				$elm$html$Html$div,
+				_List_Nil,
+				_List_fromArray(
+					[
+						$elm$html$Html$text('Adresse'),
+						A2(
+						$elm$html$Html$input,
+						_List_fromArray(
+							[
+								$elm$html$Html$Attributes$type_('text'),
+								$elm$html$Html$Attributes$value(data.bieter.adresse),
+								$elm$html$Html$Events$onInput($author$project$Page$Front$FormSaveAdresse)
+							]),
+						_List_Nil)
+					])),
+				A2(
+				$elm$html$Html$div,
+				_List_Nil,
+				_List_fromArray(
+					[
+						$elm$html$Html$text('IBAN'),
+						A2(
+						$elm$html$Html$input,
+						_List_fromArray(
+							[
+								$elm$html$Html$Attributes$type_('text'),
+								$elm$html$Html$Attributes$value(data.bieter.iban),
+								$elm$html$Html$Events$onInput($author$project$Page$Front$FormSaveIBAN)
+							]),
+						_List_Nil)
+					])),
+				A2(
+				$elm$html$Html$div,
+				_List_Nil,
+				_List_fromArray(
+					[
+						A2(
+						$elm$html$Html$button,
+						_List_fromArray(
+							[
+								$elm$html$Html$Events$onClick($author$project$Page$Front$FormSubmit)
+							]),
+						_List_fromArray(
+							[
+								$elm$html$Html$text('Speichern')
+							])),
+						A2(
+						$elm$html$Html$button,
+						_List_fromArray(
+							[
+								$elm$html$Html$Events$onClick($author$project$Page$Front$FormGoBack)
+							]),
+						_List_fromArray(
+							[
+								$elm$html$Html$text('Zurück')
+							]))
+					]))
+			]));
+};
+var $author$project$Page$Front$RequestCreate = {$: 'RequestCreate'};
+var $author$project$Page$Front$RequestLogin = {$: 'RequestLogin'};
+var $author$project$Page$Front$SaveName = function (a) {
+	return {$: 'SaveName', a: a};
+};
+var $author$project$Page$Front$SaveNumber = function (a) {
+	return {$: 'SaveNumber', a: a};
+};
+var $elm$html$Html$form = _VirtualDom_node('form');
+var $elm$html$Html$Attributes$id = $elm$html$Html$Attributes$stringProperty('id');
 var $elm$html$Html$Events$alwaysPreventDefault = function (msg) {
 	return _Utils_Tuple2(msg, true);
 };
@@ -7015,8 +7208,6 @@ var $elm$html$Html$Events$onSubmit = function (msg) {
 			$elm$html$Html$Events$alwaysPreventDefault,
 			$elm$json$Json$Decode$succeed(msg)));
 };
-var $elm$html$Html$Attributes$type_ = $elm$html$Html$Attributes$stringProperty('type');
-var $elm$html$Html$Attributes$value = $elm$html$Html$Attributes$stringProperty('value');
 var $author$project$Page$Front$viewLogin = function (loginData) {
 	return A2(
 		$elm$html$Html$div,
@@ -7030,12 +7221,12 @@ var $author$project$Page$Front$viewLogin = function (loginData) {
 					[
 						$elm$html$Html$text('Mit Bieternummer anmelden')
 					])),
-				$author$project$Page$Front$maybeError(loginData),
+				$author$project$Page$Front$maybeError(loginData.errorMsg),
 				A2(
 				$elm$html$Html$form,
 				_List_fromArray(
 					[
-						$elm$html$Html$Events$onSubmit($author$project$Page$Front$LoginRequestLogin)
+						$elm$html$Html$Events$onSubmit($author$project$Page$Front$RequestLogin)
 					]),
 				_List_fromArray(
 					[
@@ -7052,7 +7243,7 @@ var $author$project$Page$Front$viewLogin = function (loginData) {
 										$elm$html$Html$Attributes$id('nummer'),
 										$elm$html$Html$Attributes$type_('text'),
 										$elm$html$Html$Attributes$value(loginData.formUserNr),
-										$elm$html$Html$Events$onInput($author$project$Page$Front$LoginSaveNumber)
+										$elm$html$Html$Events$onInput($author$project$Page$Front$SaveNumber)
 									]),
 								_List_Nil)
 							])),
@@ -7084,7 +7275,7 @@ var $author$project$Page$Front$viewLogin = function (loginData) {
 				$elm$html$Html$form,
 				_List_fromArray(
 					[
-						$elm$html$Html$Events$onSubmit($author$project$Page$Front$LoginRequestCreate)
+						$elm$html$Html$Events$onSubmit($author$project$Page$Front$RequestCreate)
 					]),
 				_List_fromArray(
 					[
@@ -7101,7 +7292,7 @@ var $author$project$Page$Front$viewLogin = function (loginData) {
 										$elm$html$Html$Attributes$id('name'),
 										$elm$html$Html$Attributes$type_('text'),
 										$elm$html$Html$Attributes$value(loginData.formUserName),
-										$elm$html$Html$Events$onInput($author$project$Page$Front$LoginSaveName)
+										$elm$html$Html$Events$onInput($author$project$Page$Front$SaveName)
 									]),
 								_List_Nil)
 							])),
@@ -7126,15 +7317,22 @@ var $author$project$Page$Front$viewLogin = function (loginData) {
 };
 var $author$project$Page$Front$view = function (model) {
 	var _v0 = model.page;
-	if (_v0.$ === 'Login') {
-		var data = _v0.a;
-		return A2(
-			$elm$html$Html$map,
-			$author$project$Page$Front$LoginPage,
-			$author$project$Page$Front$viewLogin(data));
-	} else {
-		var bieter = _v0.a;
-		return $author$project$Page$Front$viewBieter(bieter);
+	switch (_v0.$) {
+		case 'Login':
+			var data = _v0.a;
+			return A2(
+				$elm$html$Html$map,
+				$author$project$Page$Front$LoginPage,
+				$author$project$Page$Front$viewLogin(data));
+		case 'Show':
+			var bieter = _v0.a;
+			return $author$project$Page$Front$viewBieter(bieter);
+		default:
+			var editData = _v0.a;
+			return A2(
+				$elm$html$Html$map,
+				$author$project$Page$Front$EditPage,
+				$author$project$Page$Front$viewEdit(editData));
 	}
 };
 var $author$project$Main$currentView = function (model) {

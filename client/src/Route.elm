@@ -38,4 +38,4 @@ routeToString route =
             "/not-found"
 
         Front ->
-            "/"
+            ""

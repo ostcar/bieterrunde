@@ -26,6 +26,7 @@ func registerHandlers(router *mux.Router, config Config, db *Database) {
 	handleElmJS(router)
 	handleElmGetUser(router, db)
 	handleElmCreateUser(router, db)
+	handleElmUpdateUser(router, db)
 
 	//handleFrontpage(router, db)
 
@@ -66,7 +67,7 @@ func handleElmJS(router *mux.Router) {
 }
 
 func handleElmGetUser(router *mux.Router, db *Database) {
-	router.Path("/user/{id}").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	router.Path("/user/{id}").Methods("GET").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		userID := mux.Vars(r)["id"]
 		user, exist := db.User(userID)
 		if !exist {
@@ -121,6 +122,51 @@ func handleElmCreateUser(router *mux.Router, db *Database) {
 			}
 		},
 	)
+}
+
+func handleElmUpdateUser(router *mux.Router, db *Database) {
+	router.Path("/user/{id}").Methods("POST").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		userID := mux.Vars(r)["id"]
+		_, exist := db.User(userID)
+		if !exist {
+			http.Error(w, "Nutzer existiert nicht", 404)
+			return
+		}
+
+		var user UserData
+		if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
+			http.Error(w, "ungültige Daten", 400)
+			return
+		}
+
+		event, err := newUpdateEvent(
+			userID,
+			user.Name,
+			user.Adresse,
+			user.IBAN,
+		)
+		if err != nil {
+			log.Println(err)
+			http.Error(w, "Fehler", 500)
+			return
+		}
+
+		if err := db.writeEvent(event); err != nil {
+			log.Printf("Error: %v", err)
+			http.Error(w, "Interner Fehler", 500)
+		}
+
+		vuser := ViewUser{
+			userID,
+			user,
+		}
+
+		if err := json.NewEncoder(w).Encode(vuser); err != nil {
+			log.Println(err)
+			http.Error(w, "Fehler", 500)
+			return
+		}
+	})
 }
 
 func loggingMiddleware(next http.Handler) http.Handler {

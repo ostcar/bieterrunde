@@ -1,7 +1,8 @@
-module Bieter exposing (Bieter, ID, bieterDecoder, idDecoder, idFromString, idToString)
+module Bieter exposing (Bieter, ID, bieterDecoder, bieterEncoder, idDecoder, idFromString, idToString)
 
 import Json.Decode as Decode exposing (Decoder, string)
 import Json.Decode.Pipeline exposing (required)
+import Json.Encode as Encode
 
 
 type alias Bieter =
@@ -19,6 +20,15 @@ bieterDecoder =
         |> required "name" string
         |> required "adresse" string
         |> required "iban" string
+
+
+bieterEncoder : Bieter -> Encode.Value
+bieterEncoder bieter =
+    Encode.object
+        [ ( "name", Encode.string bieter.name )
+        , ( "adresse", Encode.string bieter.adresse )
+        , ( "iban", Encode.string bieter.iban )
+        ]
 
 
 type ID
