@@ -1,13 +1,37 @@
-port module Ports exposing (readBieterID, receivedBieterID, removeBieterID, storeBieterID)
+port module Ports exposing (Msg(..), send, toElm)
+
+import Bieter
 
 
-port storeBieterID : String -> Cmd msg
+type Msg
+    = StoreBieterID Bieter.ID
+    | RemoveBieterID
+    | RequestBieterID
 
 
-port removeBieterID : () -> Cmd msg
+type alias SendData =
+    { tag : String
+    , data : String
+    }
 
 
-port readBieterID : () -> Cmd msg
+send : Msg -> Cmd msg
+send msg =
+    case msg of
+        StoreBieterID id ->
+            SendData "store-id" (Bieter.idToString id)
+                |> fromElm
+
+        RemoveBieterID ->
+            SendData "remove-id" ""
+                |> fromElm
+
+        RequestBieterID ->
+            SendData "get-id" ""
+                |> fromElm
 
 
-port receivedBieterID : (Maybe String -> msg) -> Sub msg
+port fromElm : SendData -> Cmd msg
+
+
+port toElm : (Maybe String -> msg) -> Sub msg

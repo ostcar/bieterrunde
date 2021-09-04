@@ -50,7 +50,7 @@ type Msg
 
 init : Nav.Key -> ( Model, Cmd Msg )
 init navKey =
-    ( Model navKey (Login emptyLoginData), Ports.readBieterID () )
+    ( Model navKey (Login emptyLoginData), Ports.send Ports.RequestBieterID )
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -69,63 +69,68 @@ update msg model =
         LoginPage loginMsg ->
             case model.page of
                 Login loginData ->
-                    case loginMsg of
-                        LoginSaveNumber nr ->
-                            ( { model | page = Login { loginData | formUserNr = nr } }
-                            , Cmd.none
-                            )
-
-                        LoginSaveName name ->
-                            ( { model | page = Login { loginData | formUserName = name } }
-                            , Cmd.none
-                            )
-
-                        LoginRequestLogin ->
-                            ( model, fetchBieter loginData.formUserNr )
-
-                        LoginReceivedLogin response ->
-                            case response of
-                                Ok bieter ->
-                                    ( { model | page = Show bieter }
-                                    , Ports.storeBieterID (Bieter.idToString bieter.id)
-                                    )
-
-                                Err e ->
-                                    let
-                                        errMsg =
-                                            buildErrorMessage e
-                                    in
-                                    ( { model | page = Login { loginData | errorMsg = Just errMsg } }
-                                    , Cmd.none
-                                    )
-
-                        LoginRequestCreate ->
-                            ( model, createBieter loginData.formUserName )
-
-                        LoginReceivedCreate response ->
-                            case response of
-                                Ok bieter ->
-                                    ( { model | page = Show bieter }
-                                    , Ports.storeBieterID (Bieter.idToString bieter.id)
-                                    )
-
-                                Err e ->
-                                    let
-                                        errMsg =
-                                            buildErrorMessage e
-                                    in
-                                    ( { model | page = Login { loginData | errorMsg = Just errMsg } }
-                                    , Cmd.none
-                                    )
+                    updateLoginPage model loginMsg loginData
 
                 _ ->
-                    -- User not on login page. TODO: Make this impossible
+                    -- Received a loginpage msg on a non loginpage.
                     ( model, Cmd.none )
 
         ShowLogout ->
             ( { model | page = Login emptyLoginData }
-            , Ports.removeBieterID ()
+            , Ports.send Ports.RemoveBieterID
             )
+
+
+updateLoginPage : Model -> LoginPageMsg -> LoginPageData -> ( Model, Cmd Msg )
+updateLoginPage model loginMsg loginData =
+    case loginMsg of
+        LoginSaveNumber nr ->
+            ( { model | page = Login { loginData | formUserNr = nr } }
+            , Cmd.none
+            )
+
+        LoginSaveName name ->
+            ( { model | page = Login { loginData | formUserName = name } }
+            , Cmd.none
+            )
+
+        LoginRequestLogin ->
+            ( model, fetchBieter loginData.formUserNr )
+
+        LoginReceivedLogin response ->
+            case response of
+                Ok bieter ->
+                    ( { model | page = Show bieter }
+                    , Ports.send (Ports.StoreBieterID bieter.id)
+                    )
+
+                Err e ->
+                    let
+                        errMsg =
+                            buildErrorMessage e
+                    in
+                    ( { model | page = Login { loginData | errorMsg = Just errMsg } }
+                    , Cmd.none
+                    )
+
+        LoginRequestCreate ->
+            ( model, createBieter loginData.formUserName )
+
+        LoginReceivedCreate response ->
+            case response of
+                Ok bieter ->
+                    ( { model | page = Show bieter }
+                    , Ports.send (Ports.StoreBieterID bieter.id)
+                    )
+
+                Err e ->
+                    let
+                        errMsg =
+                            buildErrorMessage e
+                    in
+                    ( { model | page = Login { loginData | errorMsg = Just errMsg } }
+                    , Cmd.none
+                    )
 
 
 fetchBieter : String -> Cmd Msg
@@ -181,7 +186,7 @@ buildErrorMessage httpError =
 
 subscriptions : Model -> Sub Msg
 subscriptions _ =
-    Ports.receivedBieterID ReceivedLocalStoreBieter
+    Ports.toElm ReceivedLocalStoreBieter
 
 
 view : Model -> Html Msg

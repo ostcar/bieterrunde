@@ -1,24 +1,26 @@
 <!DOCTYPE html>
 <html>
-<body>		
-    <script src="elm.js"></script>
-    <script>
-		var app = Elm.Main.init({flags: ""});
 
-		app.ports.storeBieterID.subscribe(function(bieter_id) {
-			console.log("saving ", bieter_id);
-			localStorage.setItem('bieter_id', bieter_id);
-		});
+<body>
+	<script src="elm.js"></script>
+	<script>
+		var app = Elm.Main.init({ flags: "" });
 
-		app.ports.removeBieterID.subscribe(function() {
-			console.log("removing bieter");
-			localStorage.removeItem('bieter_id');
+		app.ports.fromElm.subscribe(function (msg) {
+			if (msg.tag == "store-id") {
+				console.log("saving ", msg.data);
+				localStorage.setItem('bieter_id', msg.data);
+			} else if (msg.tag == "remove-id") {
+				console.log("removing bieter");
+				localStorage.removeItem('bieter_id');
+			} else if (msg.tag == "get-id") {
+				console.log("read bieter");
+				app.ports.toElm.send(localStorage.getItem('bieter_id'));
+			} else {
+				console.log("unknown message type")
+			}
 		});
-
-		app.ports.readBieterID.subscribe(function() {
-			console.log("read bieter");
-			app.ports.receivedBieterID.send(localStorage.getItem('bieter_id'));
-		});
-    </script>
+	</script>
 </body>
+
 </html>
