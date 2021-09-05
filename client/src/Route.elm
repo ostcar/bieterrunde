@@ -8,6 +8,7 @@ import Browser.Navigation as Nav
 type Route
     = NotFound
     | Front
+    | Admin
 
 
 parseUrl : Url -> Route
@@ -24,6 +25,7 @@ matchRoute : Parser (Route -> a) a
 matchRoute =
     oneOf
         [ map Front top
+        , map Admin (s "admin")
         ]
 
 pushUrl : Route -> Nav.Key -> Cmd msg
@@ -38,4 +40,7 @@ routeToString route =
             "/not-found"
 
         Front ->
-            ""
+            "/"
+        
+        Admin ->
+            "/admin"

@@ -1,6 +1,6 @@
-module Bieter exposing (Bieter, ID, bieterDecoder, bieterEncoder, idDecoder, idFromString, idToString)
+module Bieter exposing (Bieter, ID, bieterDecoder, bieterEncoder, idDecoder, idFromString, idToString, bieterListDecoder)
 
-import Json.Decode as Decode exposing (Decoder, string)
+import Json.Decode as Decode exposing (Decoder, string, list)
 import Json.Decode.Pipeline exposing (required)
 import Json.Encode as Encode
 
@@ -20,6 +20,10 @@ bieterDecoder =
         |> required "name" string
         |> required "adresse" string
         |> required "iban" string
+
+bieterListDecoder : Decoder (List Bieter)
+bieterListDecoder =
+    list bieterDecoder
 
 
 bieterEncoder : Bieter -> Encode.Value

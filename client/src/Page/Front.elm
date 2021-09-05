@@ -219,7 +219,7 @@ updateEditPage model editMsg editData =
 fetchBieter : String -> Cmd Msg
 fetchBieter id =
     Http.get
-        { url = "/user/" ++ id
+        { url = "/api/user/" ++ id
         , expect =
             Bieter.bieterDecoder
                 |> Http.expectJson ReceivedLogin
@@ -230,7 +230,7 @@ fetchBieter id =
 createBieter : String -> Cmd Msg
 createBieter name =
     Http.post
-        { url = "/user"
+        { url = "/api/user"
         , body = Http.jsonBody (bieterNameEncoder name)
         , expect = Http.expectJson ReceivedCreate Bieter.bieterDecoder
         }
@@ -240,7 +240,7 @@ createBieter name =
 updateBieter : Bieter.Bieter -> Cmd Msg
 updateBieter bieter =
     Http.post
-        { url = "/user/" ++ Bieter.idToString bieter.id
+        { url = "/api/user/" ++ Bieter.idToString bieter.id
         , body = Http.jsonBody (Bieter.bieterEncoder bieter)
         , expect = Http.expectJson FormReceived Bieter.bieterDecoder
         }
@@ -364,6 +364,7 @@ viewBieter bieter =
         , div [] [ text ("IBAN: " ++ bieter.iban) ]
         , div [] [ button [ onClick Logout ] [ text "logout" ] ]
         , div [] [ button [ onClick (ToEdit bieter) ] [ text "Bearbeiten" ] ]
+        , div [] [ a [ href "/admin" ] [ text "Admin" ] ]
         ]
 
 

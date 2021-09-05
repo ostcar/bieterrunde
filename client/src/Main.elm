@@ -4,6 +4,7 @@ import Browser exposing (Document, UrlRequest)
 import Browser.Navigation as Nav
 import Html exposing (..)
 import Page.Front as Front
+import Page.Admin as Admin
 import Route exposing (Route(..))
 import Url exposing (Url)
 
@@ -17,6 +18,7 @@ type alias Model =
 
 type Msg
     = FrontMsg Front.Msg
+    | AdminMsg Admin.Msg
     | LinkClicked UrlRequest
     | UrlChanged Url
 
@@ -24,6 +26,7 @@ type Msg
 type Page
     = NotFoundPage
     | Front Front.Model
+    | Admin Admin.Model
 
 
 init : () -> Url -> Nav.Key -> ( Model, Cmd Msg )
@@ -52,6 +55,13 @@ initCurrentPage ( model, existingCmds ) =
                             Front.init model.navKey
                     in
                     ( Front pageModel, Cmd.map FrontMsg pageCmds )
+
+                Route.Admin ->
+                    let
+                        ( pageModel, pageCmds ) =
+                            Admin.init model.navKey
+                    in
+                    ( Admin pageModel, Cmd.map AdminMsg pageCmds )
     in
     ( { model | page = currentPage }
     , Cmd.batch [ existingCmds, mappedPageCmds ]
@@ -75,6 +85,10 @@ currentView model =
             Front.view pageModel
                 |> Html.map FrontMsg
 
+        Admin pageModel ->
+            Admin.view pageModel
+            |> Html.map AdminMsg
+
 
 notFoundView : Html msg
 notFoundView =
@@ -91,6 +105,15 @@ update msg model =
             in
             ( { model | page = Front updatedPageModel }
             , Cmd.map FrontMsg updatedCmd
+            )
+        
+        ( AdminMsg subMsg, Admin pageModel ) ->
+            let
+                ( updatedPageModel, updatedCmd ) =
+                    Admin.update subMsg pageModel
+            in
+            ( { model | page = Admin updatedPageModel }
+            , Cmd.map AdminMsg updatedCmd
             )
 
         ( LinkClicked urlRequest, _ ) ->

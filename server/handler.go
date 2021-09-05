@@ -8,31 +8,35 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/gorilla/mux"
 )
 
 const (
-	cookieUserID  = "bieteruser"
-	cookieAdminPW = "bieteradmin"
+	cookieUserID     = "bieteruser"
+	cookieAdminPW    = "bieteradmin"
+	pathPrefixAPI    = "/api"
+	pathPrefixStatic = "/static"
 )
 
 func registerHandlers(router *mux.Router, config Config, db *Database) {
 	router.Use(loggingMiddleware)
 
 	handleStatic(router)
-	handleElmIndex(router)
 	handleElmJS(router)
 	handleElmGetUser(router, db)
 	handleElmCreateUser(router, db)
 	handleElmUpdateUser(router, db)
+	handleElmIndex(router)
+	handleElmGetUsers(router, db, config)
 
 	//handleFrontpage(router, db)
 
-	handleCreate(router, db)
-	handleUpdate(router, db)
-	handleAdmin(router, db, config)
+	// handleCreate(router, db)
+	// handleUpdate(router, db)
+	// handleAdmin(router, db, config)
 
 }
 
@@ -51,7 +55,11 @@ func handleElmIndex(router *mux.Router) {
 		}
 		w.Write(bs)
 	}
-	router.Path("/").HandlerFunc(handler)
+
+	router.MatcherFunc(func(r *http.Request, m *mux.RouteMatch) bool {
+		// Match every path expect /api and /static
+		return !strings.HasPrefix(r.URL.Path, pathPrefixAPI) && !strings.HasPrefix(r.URL.Path, pathPrefixStatic)
+	}).HandlerFunc(handler)
 }
 
 func handleElmJS(router *mux.Router) {
@@ -67,7 +75,7 @@ func handleElmJS(router *mux.Router) {
 }
 
 func handleElmGetUser(router *mux.Router, db *Database) {
-	router.Path("/user/{id}").Methods("GET").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	router.Path(pathPrefixAPI + "/user/{id}").Methods("GET").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		userID := mux.Vars(r)["id"]
 		user, exist := db.User(userID)
 		if !exist {
@@ -89,7 +97,7 @@ func handleElmGetUser(router *mux.Router, db *Database) {
 }
 
 func handleElmCreateUser(router *mux.Router, db *Database) {
-	router.Path("/user").Methods("POST").HandlerFunc(
+	router.Path(pathPrefixAPI + "/user").Methods("POST").HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
 			var userName struct {
 				Name string `json:"name"`
@@ -125,7 +133,7 @@ func handleElmCreateUser(router *mux.Router, db *Database) {
 }
 
 func handleElmUpdateUser(router *mux.Router, db *Database) {
-	router.Path("/user/{id}").Methods("POST").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	router.Path(pathPrefixAPI + "/user/{id}").Methods("POST").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		userID := mux.Vars(r)["id"]
 		_, exist := db.User(userID)
 		if !exist {
@@ -169,6 +177,39 @@ func handleElmUpdateUser(router *mux.Router, db *Database) {
 	})
 }
 
+func handleElmGetUsers(router *mux.Router, db *Database, c Config) {
+	if c.AdminPW == "" {
+		return
+	}
+
+	router.Path(pathPrefixAPI + "/user").Methods("GET").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		adminPW := r.Header.Get("Auth")
+		if adminPW == "" {
+			http.Error(w, "Hier gibts nichts", 403)
+			return
+		}
+
+		if adminPW != c.AdminPW {
+			http.Error(w, "Password ist falsch", 401)
+			return
+		}
+
+		var users []ViewUser
+
+		for id, user := range db.Users() {
+			users = append(users, ViewUser{
+				ID:       id,
+				UserData: user,
+			})
+		}
+
+		if err := json.NewEncoder(w).Encode(users); err != nil {
+			log.Println(err)
+			http.Error(w, "Error", 500)
+		}
+	})
+}
+
 func loggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		log.Println(r.RequestURI)
@@ -181,7 +222,7 @@ func loadTemplate(name string) *template.Template {
 }
 
 func handleStatic(router *mux.Router) {
-	router.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("./static"))))
+	router.PathPrefix(pathPrefixStatic).Handler(http.StripPrefix(pathPrefixStatic, http.FileServer(http.Dir("./static"))))
 }
 
 func handleFrontpage(router *mux.Router, db *Database) {
