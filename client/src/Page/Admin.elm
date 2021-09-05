@@ -28,7 +28,7 @@ type Msg
 
 init : Nav.Key -> ( Model, Cmd Msg )
 init navKey =
-    ( Model navKey Nothing Nothing "" Nothing 
+    ( Model navKey Nothing Nothing "" Nothing
     , Cmd.none
     )
 
@@ -77,7 +77,6 @@ update msg model =
             ( model
             , Route.pushUrl Route.Front model.navKey
             )
-
 
 
 fetchBieter : String -> Cmd Msg
@@ -165,14 +164,13 @@ view model =
                     text "todo no bieter"
 
 
-viewList :  List (Bieter.Bieter) -> Html Msg
+viewList : List Bieter.Bieter -> Html Msg
 viewList bieter =
     div []
-        [ h1 [] [text "Bieter"]
-        , text ("Anzahl:" ++ (String.fromInt (List.length bieter)))
+        [ h1 [] [ text "Bieter" ]
+        , text ("Anzahl:" ++ String.fromInt (List.length bieter))
         ]
 
-        
 
 viewLogin : Model -> Html Msg
 viewLogin model =

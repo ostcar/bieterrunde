@@ -1,0 +1,35 @@
+version: '3'
+
+tasks:
+  default:
+    cmds:
+      - task: start
+  client:
+    dir: client
+    cmds:
+      - elm make src/Main.elm --output elm.js
+    sources:
+      - elm.js
+      - src/**/*.elm
+    generates:
+      - elm.js
+  
+  server:
+    cmds:
+      - go build
+    sources:
+      - main.go
+      - server/**/*.go
+    generates:
+      - bieterrunde
+
+  build:
+    deps:
+      - client
+      - server
+
+  start:
+    deps: 
+      - build
+    cmds:
+    - ./bieterrunde
