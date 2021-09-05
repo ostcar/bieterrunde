@@ -7442,7 +7442,7 @@ var $author$project$Page$Admin$viewLogin = function (model) {
 									]),
 								_List_fromArray(
 									[
-										$elm$html$Html$text('Speichern')
+										$elm$html$Html$text('Absenden')
 									])),
 								A2(
 								$elm$html$Html$button,
