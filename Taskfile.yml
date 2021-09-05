@@ -39,6 +39,7 @@ tasks:
 
     deps: 
       - build
+      - config
 
     cmds:
     - ./bieterrunde
@@ -47,7 +48,7 @@ tasks:
       - config.toml
 
     method: none
-    
+
     ignore_error: true
 
 
@@ -71,6 +72,9 @@ tasks:
         admin_password = "{{or .admin_password .DEFAULT_ADMIN_PASS}}"
         listen_addr = "{{or .listen_addr .DEFAULT_LISTEN_ADDR}}"
         EOF
+
+    sources:
+    - Taskfile.yml
     
     generates:
       - config.toml

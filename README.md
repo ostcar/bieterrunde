@@ -19,21 +19,17 @@ Anschließend kann http://localhost:9600 im browser aufgerufen werden.
 
 ## Entwicklung
 
-Für die Entwicklung muss zusätzlich [elm](https://elm-lang.org/) installiert sein.
+Für die Entwicklung sollte folgende Software installiert sein:
+
+* [go](https://golang.org/dl/)
+* [elm](https://guide.elm-lang.org/install/elm.html)
+* [Task](https://taskfile.dev/#/installation)
 
 
-### Automatischer Restart bei Code Änderungen
 
-Für die Entwicklung bietet es sich an zusätzlich [Task](https://taskfile.dev/) zu installieren.
-
-```
-go install github.com/go-task/task/v3/cmd/task@latest
-```
-
-Anschließend kann der Server mit 
+Anschließend kann mit folgendem Befehl der Server gestartet werden. Ändert sich
+der Code oder die Configuration, dann wird der Server automatisch neu gestartet.
 
 ```
-task --watch
+task start --watch
 ```
-
-gestartet werden. Ändernt sich der Sourcecode vom Server oder vom Client, dann wird der Server automatisch neu gestartet.
