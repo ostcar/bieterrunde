@@ -3,15 +3,14 @@
 Programm für eine Bieterrunde
 
 
-## Starten
+## Installieren
 
 Zum Starten muss [go](https://golang.org/) installiert sein.
 
 Anschließend kann es mit folgenden Befehlen gebaut und gestartet werden.
 
 ```
-go build
-./bieterrunde
+go install  github.com/ostcar/bieterrunde@latest
 ```
 
 Anschließend kann http://localhost:9600 im browser aufgerufen werden.
