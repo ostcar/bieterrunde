@@ -78,4 +78,18 @@ tasks:
     
     generates:
       - config.toml
+
+  clean:
+    desc: Removes all generated files
+    cmds:
+      - git clean -xf
+
+  release:
+    desc: |
+      Creates a new release. 
+      
+        You manually have to create a git tag and set the
+        ENC-variable `GITHUB_TOKEN`.
+    cmds:
+      - goreleaser release
       
