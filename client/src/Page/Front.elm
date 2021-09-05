@@ -364,7 +364,6 @@ viewBieter bieter =
         , div [] [ text ("IBAN: " ++ bieter.iban) ]
         , div [] [ button [ onClick Logout ] [ text "logout" ] ]
         , div [] [ button [ onClick (ToEdit bieter) ] [ text "Bearbeiten" ] ]
-        , div [] [ a [ href "/admin" ] [ text "Admin" ] ]
         ]
 
 

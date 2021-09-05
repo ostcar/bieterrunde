@@ -3,8 +3,9 @@ module Main exposing (main)
 import Browser exposing (Document, UrlRequest)
 import Browser.Navigation as Nav
 import Html exposing (..)
-import Page.Front as Front
+import Html.Attributes exposing (..)
 import Page.Admin as Admin
+import Page.Front as Front
 import Route exposing (Route(..))
 import Url exposing (Url)
 
@@ -68,28 +69,6 @@ initCurrentPage ( model, existingCmds ) =
     )
 
 
-view : Model -> Document Msg
-view model =
-    { title = "Bieterrunde"
-    , body = [ currentView model ]
-    }
-
-
-currentView : Model -> Html Msg
-currentView model =
-    case model.page of
-        NotFoundPage ->
-            notFoundView
-
-        Front pageModel ->
-            Front.view pageModel
-                |> Html.map FrontMsg
-
-        Admin pageModel ->
-            Admin.view pageModel
-            |> Html.map AdminMsg
-
-
 notFoundView : Html msg
 notFoundView =
     h3 [] [ text "Oops! The page you requested was not found!" ]
@@ -106,7 +85,7 @@ update msg model =
             ( { model | page = Front updatedPageModel }
             , Cmd.map FrontMsg updatedCmd
             )
-        
+
         ( AdminMsg subMsg, Admin pageModel ) ->
             let
                 ( updatedPageModel, updatedCmd ) =
@@ -125,7 +104,7 @@ update msg model =
 
                 Browser.External "" ->
                     ( model
-                    , Cmd.none 
+                    , Cmd.none
                     )
 
                 Browser.External url ->
@@ -143,6 +122,47 @@ update msg model =
 
         ( _, _ ) ->
             ( model, Cmd.none )
+
+
+view : Model -> Document Msg
+view model =
+    { title = "Bieterrunde"
+    , body =
+        [ viewHeader
+        , currentView model
+        , viewFooter
+        ]
+    }
+
+
+viewHeader : Html Msg
+viewHeader =
+    div []
+        [ h1 [] [ text "Bieterrunde" ]
+        ]
+
+
+viewFooter : Html Msg
+viewFooter =
+    div []
+        [ div [] [ text "Logout" ]
+        , div [] [ a [ href (Route.routeToString Route.Admin) ] [ text "Admin" ] ]
+        ]
+
+
+currentView : Model -> Html Msg
+currentView model =
+    case model.page of
+        NotFoundPage ->
+            notFoundView
+
+        Front pageModel ->
+            Front.view pageModel
+                |> Html.map FrontMsg
+
+        Admin pageModel ->
+            Admin.view pageModel
+                |> Html.map AdminMsg
 
 
 subscriptions : Model -> Sub Msg

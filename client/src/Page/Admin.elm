@@ -169,6 +169,28 @@ viewList bieter =
     div []
         [ h1 [] [ text "Bieter" ]
         , text ("Anzahl:" ++ String.fromInt (List.length bieter))
+        , table []
+            (viewBieterTableHeader :: List.map viewBieterLine bieter)
+        ]
+
+
+viewBieterTableHeader : Html Msg
+viewBieterTableHeader =
+    tr []
+        [ th [] [ text "ID" ]
+        , th [] [ text "Name" ]
+        , th [] [ text "Adresse" ]
+        , th [] [ text "IBAN" ]
+        ]
+
+
+viewBieterLine : Bieter.Bieter -> Html Msg
+viewBieterLine bieter =
+    tr []
+        [ td [] [ text (Bieter.idToString bieter.id) ]
+        , td [] [ text bieter.name ]
+        , td [] [ text bieter.adresse ]
+        , td [] [ text bieter.iban ]
         ]
 
 

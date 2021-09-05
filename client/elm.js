@@ -7214,6 +7214,81 @@ var $author$project$Main$notFoundView = A2(
 		]));
 var $elm$html$Html$div = _VirtualDom_node('div');
 var $elm$html$Html$h1 = _VirtualDom_node('h1');
+var $elm$html$Html$table = _VirtualDom_node('table');
+var $elm$html$Html$td = _VirtualDom_node('td');
+var $elm$html$Html$tr = _VirtualDom_node('tr');
+var $author$project$Page$Admin$viewBieterLine = function (bieter) {
+	return A2(
+		$elm$html$Html$tr,
+		_List_Nil,
+		_List_fromArray(
+			[
+				A2(
+				$elm$html$Html$td,
+				_List_Nil,
+				_List_fromArray(
+					[
+						$elm$html$Html$text(
+						$author$project$Bieter$idToString(bieter.id))
+					])),
+				A2(
+				$elm$html$Html$td,
+				_List_Nil,
+				_List_fromArray(
+					[
+						$elm$html$Html$text(bieter.name)
+					])),
+				A2(
+				$elm$html$Html$td,
+				_List_Nil,
+				_List_fromArray(
+					[
+						$elm$html$Html$text(bieter.adresse)
+					])),
+				A2(
+				$elm$html$Html$td,
+				_List_Nil,
+				_List_fromArray(
+					[
+						$elm$html$Html$text(bieter.iban)
+					]))
+			]));
+};
+var $elm$html$Html$th = _VirtualDom_node('th');
+var $author$project$Page$Admin$viewBieterTableHeader = A2(
+	$elm$html$Html$tr,
+	_List_Nil,
+	_List_fromArray(
+		[
+			A2(
+			$elm$html$Html$th,
+			_List_Nil,
+			_List_fromArray(
+				[
+					$elm$html$Html$text('ID')
+				])),
+			A2(
+			$elm$html$Html$th,
+			_List_Nil,
+			_List_fromArray(
+				[
+					$elm$html$Html$text('Name')
+				])),
+			A2(
+			$elm$html$Html$th,
+			_List_Nil,
+			_List_fromArray(
+				[
+					$elm$html$Html$text('Adresse')
+				])),
+			A2(
+			$elm$html$Html$th,
+			_List_Nil,
+			_List_fromArray(
+				[
+					$elm$html$Html$text('IBAN')
+				]))
+		]));
 var $author$project$Page$Admin$viewList = function (bieter) {
 	return A2(
 		$elm$html$Html$div,
@@ -7229,7 +7304,14 @@ var $author$project$Page$Admin$viewList = function (bieter) {
 					])),
 				$elm$html$Html$text(
 				'Anzahl:' + $elm$core$String$fromInt(
-					$elm$core$List$length(bieter)))
+					$elm$core$List$length(bieter))),
+				A2(
+				$elm$html$Html$table,
+				_List_Nil,
+				A2(
+					$elm$core$List$cons,
+					$author$project$Page$Admin$viewBieterTableHeader,
+					A2($elm$core$List$map, $author$project$Page$Admin$viewBieterLine, bieter)))
 			]));
 };
 var $author$project$Page$Admin$LoginFormGoBack = {$: 'LoginFormGoBack'};
@@ -7394,13 +7476,6 @@ var $author$project$Page$Front$Logout = {$: 'Logout'};
 var $author$project$Page$Front$ToEdit = function (a) {
 	return {$: 'ToEdit', a: a};
 };
-var $elm$html$Html$a = _VirtualDom_node('a');
-var $elm$html$Html$Attributes$href = function (url) {
-	return A2(
-		$elm$html$Html$Attributes$stringProperty,
-		'href',
-		_VirtualDom_noJavaScriptUri(url));
-};
 var $author$project$Page$Front$viewBieter = function (bieter) {
 	return A2(
 		$elm$html$Html$div,
@@ -7475,22 +7550,6 @@ var $author$project$Page$Front$viewBieter = function (bieter) {
 						_List_fromArray(
 							[
 								$elm$html$Html$text('Bearbeiten')
-							]))
-					])),
-				A2(
-				$elm$html$Html$div,
-				_List_Nil,
-				_List_fromArray(
-					[
-						A2(
-						$elm$html$Html$a,
-						_List_fromArray(
-							[
-								$elm$html$Html$Attributes$href('/admin')
-							]),
-						_List_fromArray(
-							[
-								$elm$html$Html$text('Admin')
 							]))
 					]))
 			]));
@@ -7788,11 +7847,63 @@ var $author$project$Main$currentView = function (model) {
 				$author$project$Page$Admin$view(pageModel));
 	}
 };
+var $elm$html$Html$a = _VirtualDom_node('a');
+var $elm$html$Html$Attributes$href = function (url) {
+	return A2(
+		$elm$html$Html$Attributes$stringProperty,
+		'href',
+		_VirtualDom_noJavaScriptUri(url));
+};
+var $author$project$Main$viewFooter = A2(
+	$elm$html$Html$div,
+	_List_Nil,
+	_List_fromArray(
+		[
+			A2(
+			$elm$html$Html$div,
+			_List_Nil,
+			_List_fromArray(
+				[
+					$elm$html$Html$text('Logout')
+				])),
+			A2(
+			$elm$html$Html$div,
+			_List_Nil,
+			_List_fromArray(
+				[
+					A2(
+					$elm$html$Html$a,
+					_List_fromArray(
+						[
+							$elm$html$Html$Attributes$href(
+							$author$project$Route$routeToString($author$project$Route$Admin))
+						]),
+					_List_fromArray(
+						[
+							$elm$html$Html$text('Admin')
+						]))
+				]))
+		]));
+var $author$project$Main$viewHeader = A2(
+	$elm$html$Html$div,
+	_List_Nil,
+	_List_fromArray(
+		[
+			A2(
+			$elm$html$Html$h1,
+			_List_Nil,
+			_List_fromArray(
+				[
+					$elm$html$Html$text('Bieterrunde')
+				]))
+		]));
 var $author$project$Main$view = function (model) {
 	return {
 		body: _List_fromArray(
 			[
-				$author$project$Main$currentView(model)
+				$author$project$Main$viewHeader,
+				$author$project$Main$currentView(model),
+				$author$project$Main$viewFooter
 			]),
 		title: 'Bieterrunde'
 	};
