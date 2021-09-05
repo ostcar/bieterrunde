@@ -3,7 +3,8 @@ version: '3'
 tasks:
   default:
     cmds:
-      - task: start
+      - task --list
+
   client:
     dir: client
     cmds:
@@ -29,7 +30,48 @@ tasks:
       - server
 
   start:
+    desc: |
+      Starts the server. 
+      
+        Use --watch to restart the server if the source changes.
+
+        task start --watch
+
     deps: 
       - build
+
     cmds:
     - ./bieterrunde
+
+    sources:
+      - config.toml
+
+    method: none
+    
+    ignore_error: true
+
+
+  config:
+    desc: |
+      Creates the config file
+
+        Example: task config admin_password="my password"
+
+        Variables:
+        - admin_password   (default: admin)
+        - listen_addr      (default: :9600)
+
+    vars:
+      DEFAULT_ADMIN_PASS: admin
+      DEFAULT_LISTEN_ADDR: :9600
+
+    cmds:
+      - |
+        cat << EOF > config.toml
+        admin_password = "{{or .admin_password .DEFAULT_ADMIN_PASS}}"
+        listen_addr = "{{or .listen_addr .DEFAULT_LISTEN_ADDR}}"
+        EOF
+    
+    generates:
+      - config.toml
+      
