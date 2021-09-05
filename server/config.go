@@ -18,7 +18,7 @@ type Config struct {
 // LoadConfig loads the config from a toml file.
 func LoadConfig(file string) (Config, error) {
 	c := Config{
-		ListenAddr: ":8000",
+		ListenAddr: ":9600",
 	}
 
 	f, err := os.Open(file)

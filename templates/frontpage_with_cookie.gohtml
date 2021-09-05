@@ -1,8 +1,0 @@
-{{template "main.gohtml"}}
-
-{{define "content"}}
-<p>Hallo {{or .Name}}</p>
-<p>Deine Adresse ist: {{or .Adresse "<nicht gesetzt>"}}</p>
-<p>Deine IBAN ist: {{or .IBAN "<nicht gesetzt>"}}</p>
-<div><a href="/update">Bearbeiten</a></div>
-{{end}}

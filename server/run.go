@@ -3,14 +3,22 @@ package server
 import (
 	"context"
 	"fmt"
+	"io/fs"
 	"log"
 	"net/http"
 
 	"github.com/gorilla/mux"
 )
 
+// DefaultFiles that are used, when the folders do not exist in the file system.
+type DefaultFiles struct {
+	Index  []byte
+	Elm    []byte
+	Static fs.FS
+}
+
 // Run starts the server until the context is canceled.
-func Run(ctx context.Context, configFile, dbFile string) error {
+func Run(ctx context.Context, configFile, dbFile string, defaultFiles DefaultFiles) error {
 	config, err := LoadConfig(configFile)
 	if err != nil {
 		return fmt.Errorf("reading config: %w", err)
@@ -22,7 +30,7 @@ func Run(ctx context.Context, configFile, dbFile string) error {
 	}
 
 	router := mux.NewRouter()
-	registerHandlers(router, config, db)
+	registerHandlers(router, config, db, defaultFiles)
 
 	srv := &http.Server{Addr: config.ListenAddr, Handler: router}
 

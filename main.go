@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"embed"
 	"log"
 	"math/rand"
 	"os"
@@ -18,12 +19,27 @@ const (
 	configFile = "config.toml"
 )
 
+//go:embed client/index.html
+var defaultIndex []byte
+
+//go:embed client/elm.js
+var defaultElm []byte
+
+//go:embed static/*
+var defaultStatic embed.FS
+
 func main() {
 	rand.Seed(time.Now().Unix())
 	ctx, cancel := withShutdown(context.Background())
 	defer cancel()
 
-	if err := server.Run(ctx, configFile, dbFile); err != nil {
+	defaultFiles := server.DefaultFiles{
+		Index:  defaultIndex,
+		Elm:    defaultElm,
+		Static: defaultStatic,
+	}
+
+	if err := server.Run(ctx, configFile, dbFile, defaultFiles); err != nil {
 		log.Fatalf("Error: %v", err)
 	}
 }
