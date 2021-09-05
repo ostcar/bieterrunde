@@ -210,7 +210,7 @@ viewLogin model =
             , div []
                 [ button
                     [ onClick LoginFormSubmit ]
-                    [ text "Speichern" ]
+                    [ text "Absenden" ]
                 , button
                     [ onClick LoginFormGoBack ]
                     [ text "Zurück" ]

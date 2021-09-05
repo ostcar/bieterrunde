@@ -39,7 +39,6 @@ tasks:
 
     deps: 
       - build
-      - config
 
     cmds:
     - ./bieterrunde
