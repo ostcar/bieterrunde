@@ -1,19 +1,33 @@
 # Bieterrunde
 
-Programm für eine Bieterrunde
+Programm für eine Bieterrunde.
 
 
 ## Installieren
 
-Zum Starten muss [go](https://golang.org/) installiert sein.
+### Fertige Binaries
 
-Anschließend kann es mit folgenden Befehlen gebaut und gestartet werden.
+Die einfachste möglichkeit das Tool zu installieren ist mittels der fertigen
+binaries. Diese können von
+[github](https://github.com/ostcar/bieterrunde/releases/latest) runtergeladen
+werden.
+
+
+### Mit Go
+
+Wenn go installiert ist, kann es auch mit go installiert werden:
 
 ```
 go install  github.com/ostcar/bieterrunde@latest
 ```
 
-Anschließend kann http://localhost:9600 im browser aufgerufen werden.
+
+## Starten
+
+Das installierte Programm ist ein einzelnes Binary. Dieses kann direkt gestartet
+werden. Weitere zwingende Abhängigkeiten gibt es nicht. 
+
+Nach dem starten kann die Anwendung im Browser aufgerufen werde: http://localhost:9600
 
 
 ## Entwicklung
