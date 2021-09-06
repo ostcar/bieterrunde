@@ -40,6 +40,7 @@ tasks:
 
     deps: 
       - build
+      - config
 
     cmds:
     - ./bieterrunde
@@ -54,24 +55,10 @@ tasks:
 
   config:
     desc: |
-      Creates the config file
-
-        Example: task config admin_password="my password"
-
-        Variables:
-        - admin_password   (default: admin)
-        - listen_addr      (default: :9600)
-
-    vars:
-      DEFAULT_ADMIN_PASS: admin
-      DEFAULT_LISTEN_ADDR: :9600
+      Creates the config file with default values.
 
     cmds:
-      - |
-        cat << EOF > config.toml
-        admin_password = "{{or .admin_password .DEFAULT_ADMIN_PASS}}"
-        listen_addr = "{{or .listen_addr .DEFAULT_LISTEN_ADDR}}"
-        EOF
+      - go run tools/config/main.go > config.toml
 
     sources:
     - Taskfile.yml
