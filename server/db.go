@@ -7,7 +7,9 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math/rand"
 	"os"
+	"strconv"
 	"sync"
 	"time"
 )
@@ -17,8 +19,9 @@ type Database struct {
 	sync.RWMutex
 	file string
 
-	users map[string]UserData
-	state int
+	bieter map[string]json.RawMessage
+	gebote map[string]int
+	state  int
 }
 
 // NewDB load the db from file.
@@ -51,7 +54,8 @@ func openDB(file string) (*Database, error) {
 
 func emptyDatabase() *Database {
 	return &Database{
-		users: make(map[string]UserData),
+		bieter: make(map[string]json.RawMessage),
+		gebote: make(map[string]int),
 	}
 }
 
@@ -75,8 +79,6 @@ func loadDatabase(r io.Reader) (*Database, error) {
 
 		var event Event
 		switch typer.Type {
-		case "create":
-			event = &createEvent{}
 		case "update":
 			event = &updateEvent{}
 		default:
@@ -145,47 +147,47 @@ func (db *Database) writeEvent(e Event) (err error) {
 	return nil
 }
 
-// User returns the user data for a userid.
-func (db *Database) User(id string) (UserData, bool) {
+// Bieter returns the user data for a bieterID.
+func (db *Database) Bieter(id string) (json.RawMessage, bool) {
 	db.RLock()
 	defer db.RUnlock()
 
-	user, ok := db.users[id]
+	user, ok := db.bieter[id]
 	return user, ok
 }
 
-// NewUser returns the user data for a userid.
-func (db *Database) NewUser(name string) (string, error) {
-	var e createEvent
+// BieterList return all bieters.
+func (db *Database) BieterList() map[string]json.RawMessage {
+	db.RLock()
+	defer db.RUnlock()
+
+	// Make a copy of the data so
+	c := make(map[string]json.RawMessage, len(db.bieter))
+	for k, v := range db.bieter {
+		c[k] = v
+	}
+
+	return c
+}
+
+// NewBieter creates a new bieter and returns its id.
+func (db *Database) NewBieter(payload json.RawMessage) (string, error) {
+	var id string
 	for {
-		e = newCreateEvent(name)
-		err := db.writeEvent(e)
+		id = strconv.Itoa(rand.Intn(100_000_000))
+		e, err := newUpdateEvent(id, payload)
 		if err != nil {
-			if errors.Is(err, errValidate) {
+			return "", fmt.Errorf("invalid event: %w", err)
+		}
+
+		if err := db.writeEvent(e); err != nil {
+			if errors.Is(err, errIDExists) {
 				continue
 			}
-			return "", fmt.Errorf("creating create event: %w", err)
+			return "", fmt.Errorf("creating event: %w", err)
 		}
 		break
 	}
 
-	return e.UserID, nil
-}
-
-// Users return all data for reading.
-func (db *Database) Users() map[string]UserData {
-	db.RLock()
-	defer db.RUnlock()
-
-	// TODO: Make a copy
-
-	return db.users
-}
-
-// UserData are the data for a user in the database.
-type UserData struct {
-	Gebot   int    `json:"gebot"`
-	Name    string `json:"name"`
-	Adresse string `json:"adresse"`
-	IBAN    string `json:"iban"`
+	return id, nil
 }

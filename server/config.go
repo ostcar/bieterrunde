@@ -15,11 +15,15 @@ type Config struct {
 	ListenAddr string `toml:"listen_addr"`
 }
 
-// LoadConfig loads the config from a toml file.
-func LoadConfig(file string) (Config, error) {
-	c := Config{
+func defaultConfig() Config {
+	return Config{
 		ListenAddr: ":9600",
 	}
+}
+
+// LoadConfig loads the config from a toml file.
+func LoadConfig(file string) (Config, error) {
+	c := defaultConfig()
 
 	f, err := os.Open(file)
 	if err != nil {

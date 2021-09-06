@@ -1,12 +1,8 @@
 package server
 
 import (
-	"errors"
+	"encoding/json"
 	"fmt"
-	"math/rand"
-	"strconv"
-
-	"github.com/jbub/banking/iban"
 )
 
 // Event is one change of the database.
@@ -17,37 +13,29 @@ type Event interface {
 }
 
 type updateEvent struct {
-	UserID  string `json:"user_id"`
-	Name    string `json:"name"`
-	Adresse string `json:"adresse"`
-	IBAN    string `json:"iban"`
+	ID      string          `json:"id"`
+	Payload json.RawMessage `json:"payload"`
 }
 
-func newUpdateEvent(userID, name, adresse, IBAN string) (updateEvent, error) {
+func newUpdateEvent(id string, payload json.RawMessage) (updateEvent, error) {
+	if payload == nil {
+		return updateEvent{}, validationError{"Keine Daten übergeben"}
+	}
+
+	if !json.Valid(payload) {
+		return updateEvent{}, validationError{"Ungültige Daten übergeben"}
+	}
+
 	e := updateEvent{
-		UserID:  userID,
-		Name:    name,
-		Adresse: adresse,
-		IBAN:    IBAN,
-	}
-
-	if e.Name == "" {
-		return e, fmt.Errorf("Kein Name angegeben")
-	}
-
-	if e.Adresse == "" {
-		return e, fmt.Errorf("Keine Adresse angegeben")
-	}
-
-	if err := iban.Validate(IBAN); err != nil {
-		return e, fmt.Errorf("Ungültige iban: %w", err)
+		ID:      id,
+		Payload: payload,
 	}
 
 	return e, nil
 }
 
 func (e updateEvent) String() string {
-	return fmt.Sprintf("Updating user %q to name %q, adress %q and iban %q", e.UserID, e.Name, e.Adresse, e.IBAN)
+	return fmt.Sprintf("Updating bieter %q to payload %q", e.ID, e.Payload)
 }
 
 func (e updateEvent) EventName() string {
@@ -55,58 +43,24 @@ func (e updateEvent) EventName() string {
 }
 
 func (e updateEvent) validate(db *Database) error {
-	_, exist := db.users[e.UserID]
+	_, exist := db.bieter[e.ID]
 	if !exist {
-		return fmt.Errorf("User %q does not exist", e.UserID)
+		return fmt.Errorf("Bieter %q does not exist", e.ID)
 	}
 	return nil
 }
 
 func (e updateEvent) execute(db *Database) error {
-	newUserData := UserData{
-		Name:    e.Name,
-		Adresse: e.Adresse,
-		IBAN:    e.IBAN,
-	}
-	db.users[e.UserID] = newUserData
+	db.bieter[e.ID] = e.Payload
 	return nil
 }
 
-type createEvent struct {
-	UserID string `json:"user_id"`
-	Name   string `json:"name"`
+type validationError struct {
+	msg string
 }
 
-func newCreateEvent(name string) createEvent {
-	return createEvent{
-		UserID: strconv.Itoa(rand.Intn(100_000_000)),
-		Name:   name,
-	}
+func (e validationError) Error() string {
+	return e.msg
 }
 
-func (e createEvent) String() string {
-	return fmt.Sprintf("Creating user %q with name %q", e.UserID, e.Name)
-}
-
-func (e createEvent) EventName() string {
-	return "create"
-}
-
-func (e createEvent) validate(db *Database) error {
-	_, exist := db.users[e.UserID]
-	if exist {
-		return errValidate
-	}
-
-	if e.Name == "" {
-		return fmt.Errorf("Name is leer")
-	}
-	return nil
-}
-
-func (e createEvent) execute(db *Database) error {
-	db.users[e.UserID] = UserData{Name: e.Name}
-	return nil
-}
-
-var errValidate = errors.New("error validating event")
+var errIDExists = validationError{"Bieter ID existiert bereits"}
