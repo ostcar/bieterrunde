@@ -20,8 +20,8 @@ type Database struct {
 	file string
 
 	bieter map[string]json.RawMessage
-	gebote map[string]int
-	state  serviceState
+	offer  map[string]int
+	state  ServiceState
 }
 
 // NewDB load the db from file.
@@ -55,7 +55,7 @@ func openDB(file string) (*Database, error) {
 func emptyDatabase() *Database {
 	return &Database{
 		bieter: make(map[string]json.RawMessage),
-		gebote: make(map[string]int),
+		offer:  make(map[string]int),
 		state:  stateRegistration,
 	}
 }
@@ -145,16 +145,17 @@ func (db *Database) writeEvent(e Event) (err error) {
 	return nil
 }
 
-type serviceState int
+// ServiceState is the state of the service.
+type ServiceState int
 
 const (
-	stateInvalid serviceState = iota
+	stateInvalid ServiceState = iota
 	stateRegistration
 	stateValidation
 	stateOffer
 )
 
-func (s serviceState) String() string {
+func (s ServiceState) String() string {
 	return [...]string{"Ungültig", "Registrierung", "Überprüfung", "Gebote"}[s]
 }
 
@@ -237,9 +238,27 @@ func (db *Database) DeleteBieter(id string, asAdmin bool) error {
 	return nil
 }
 
+// State returns the current state.
+func (db *Database) State() ServiceState {
+	db.RLock()
+	defer db.RUnlock()
+
+	return db.state
+}
+
 // SetState updates the db state.
-func (db *Database) SetState(id string, asAdmin bool) error {
-	event := newEventDelete(id, asAdmin)
+func (db *Database) SetState(r io.Reader) error {
+	var decoded struct {
+		State int `json:"state"`
+	}
+	if err := json.NewDecoder(r).Decode(&decoded); err != nil {
+		return fmt.Errorf("decoding state id: %w", err)
+	}
+
+	event, err := newEventStatus(ServiceState(decoded.State))
+	if err != nil {
+		return fmt.Errorf("create state event: %w", err)
+	}
 
 	if err := db.writeEvent(event); err != nil {
 		return fmt.Errorf("writing state event: %w", err)
@@ -248,11 +267,26 @@ func (db *Database) SetState(id string, asAdmin bool) error {
 	return nil
 }
 
+// Offer returns the offer to a user.
+func (db *Database) Offer(id string) int {
+	db.RLock()
+	defer db.RUnlock()
+
+	return db.offer[id]
+}
+
 // UpdateOffer sets the offer of a bieter.
 //
 // The offer is in cent. So 100 € would be 10_000
-func (db *Database) UpdateOffer(id string, offer int, asAdmin bool) error {
-	event, err := newEventOffer(id, offer, asAdmin)
+func (db *Database) UpdateOffer(id string, r io.Reader, asAdmin bool) error {
+	var offer struct {
+		Offer int `json:"offer"`
+	}
+	if err := json.NewDecoder(r).Decode(&offer); err != nil {
+		return fmt.Errorf("decoding offer: %w", err)
+	}
+
+	event, err := newEventOffer(id, offer.Offer, asAdmin)
 	if err != nil {
 		return fmt.Errorf("creating offer event: %w", err)
 	}

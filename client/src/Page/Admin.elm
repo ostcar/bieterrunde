@@ -84,7 +84,7 @@ fetchBieter password =
     Http.request
         { method = "GET"
         , headers = [ Http.header "Auth" password ]
-        , url = "/api/user"
+        , url = "/api/bieter"
         , body = Http.emptyBody
         , expect =
             Bieter.bieterListDecoder

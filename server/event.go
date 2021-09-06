@@ -12,16 +12,16 @@ const (
 func getEvent(eventType string) Event {
 	switch eventType {
 	case "update":
-		return eventUpdate{}
+		return &eventUpdate{}
 
 	case "delete":
-		return eventDelete{}
+		return &eventDelete{}
 
 	case "state":
-		return eventServiceState{}
+		return &eventServiceState{}
 
 	case "offer":
-		return eventOffer{}
+		return &eventOffer{}
 
 	default:
 		return nil
@@ -129,10 +129,10 @@ func (e eventDelete) execute(db *Database) error {
 }
 
 type eventServiceState struct {
-	NewState serviceState `json:"state"`
+	NewState ServiceState `json:"state"`
 }
 
-func newEventStatus(newState serviceState) (eventServiceState, error) {
+func newEventStatus(newState ServiceState) (eventServiceState, error) {
 	if int(newState) < 1 || int(newState) > 3 {
 		return eventServiceState{}, validationError{fmt.Sprintf("Ungültiger State mit nummer %q", newState)}
 	}
@@ -188,7 +188,7 @@ func (e eventOffer) validate(db *Database) error {
 }
 
 func (e eventOffer) execute(db *Database) error {
-	db.gebote[e.ID] = e.Offer
+	db.offer[e.ID] = e.Offer
 	return nil
 }
 

@@ -22,12 +22,15 @@ const (
 func registerHandlers(router *mux.Router, config Config, db *Database, defaultFiles DefaultFiles) {
 	router.Use(loggingMiddleware)
 
-	handleIndex(router, defaultFiles.Index)
 	handleElmJS(router, defaultFiles.Elm)
+	handleIndex(router, defaultFiles.Index)
 
 	handleBieter(router, db, config)
-	handleCreateBieter(router, db, config)
-	handleGetBieterList(router, db, config)
+	handleBieterCreate(router, db, config)
+	handleBieterList(router, db, config)
+
+	handleStatus(router, db, config)
+	handleSetOffer(router, db, config)
 
 	handleStatic(router, defaultFiles.Static)
 }
@@ -36,6 +39,7 @@ func registerHandlers(router *mux.Router, config Config, db *Database, defaultFi
 type ViewBieter struct {
 	ID      string          `json:"id"`
 	Payload json.RawMessage `json:"payload"`
+	Offer   int             `json:"offer"`
 }
 
 // handleIndex returns the index.html. It is returned from all urls exept /api
@@ -108,6 +112,8 @@ func handleBieter(router *mux.Router, db *Database, config Config) {
 			return
 		}
 
+		offer := db.Offer(bieterID)
+
 		if r.Method == "PUT" {
 			p, err := db.UpdateBieter(bieterID, r.Body, isAdmin(r, config))
 			if err != nil {
@@ -120,6 +126,7 @@ func handleBieter(router *mux.Router, db *Database, config Config) {
 		bieter := ViewBieter{
 			bieterID,
 			payload,
+			offer,
 		}
 
 		if err := json.NewEncoder(w).Encode(bieter); err != nil {
@@ -129,7 +136,7 @@ func handleBieter(router *mux.Router, db *Database, config Config) {
 	})
 }
 
-func handleCreateBieter(router *mux.Router, db *Database, config Config) {
+func handleBieterCreate(router *mux.Router, db *Database, config Config) {
 	router.Path(pathPrefixAPI + "/bieter").Methods("POST").HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
 			body, err := io.ReadAll(r.Body)
@@ -147,6 +154,7 @@ func handleCreateBieter(router *mux.Router, db *Database, config Config) {
 			bieter := ViewBieter{
 				bieterID,
 				body,
+				0,
 			}
 
 			if err := json.NewEncoder(w).Encode(bieter); err != nil {
@@ -157,7 +165,7 @@ func handleCreateBieter(router *mux.Router, db *Database, config Config) {
 	)
 }
 
-func handleGetBieterList(router *mux.Router, db *Database, config Config) {
+func handleBieterList(router *mux.Router, db *Database, config Config) {
 	if config.AdminPW == "" {
 		return
 	}
@@ -182,6 +190,45 @@ func handleGetBieterList(router *mux.Router, db *Database, config Config) {
 			handleError(w, fmt.Errorf("encoding bieter: %w", err))
 		}
 	})
+}
+
+// handleStatus gets or sets the service status.
+func handleStatus(router *mux.Router, db *Database, config Config) {
+	router.Path(pathPrefixAPI + "/status").Methods("GET").
+		HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			s := db.State()
+			response := struct {
+				State int    `json:"state"`
+				Name  string `json:"state_name"`
+			}{
+				int(s),
+				s.String(),
+			}
+
+			if err := json.NewEncoder(w).Encode(response); err != nil {
+				handleError(w, fmt.Errorf("encoding state: %w", err))
+				return
+			}
+		})
+
+	router.Path(pathPrefixAPI + "/status").Methods("PUT").
+		HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if err := db.SetState(r.Body); err != nil {
+				handleError(w, fmt.Errorf("set state: %w", err))
+			}
+		})
+}
+
+func handleSetOffer(router *mux.Router, db *Database, config Config) {
+	router.Path(pathPrefixAPI + "/offer/{id}").Methods("PUT").
+		HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			bieterID := mux.Vars(r)["id"]
+
+			if err := db.UpdateOffer(bieterID, r.Body, isAdmin(r, config)); err != nil {
+				handleError(w, fmt.Errorf("save offer: %w", err))
+				return
+			}
+		})
 }
 
 // handleStatic returns static files.
@@ -236,7 +283,7 @@ func handleError(w http.ResponseWriter, err error) {
 	if errors.As(err, &forClient) {
 		msg = forClient.forClient()
 		status = 400
-		skipLog = true
+		//skipLog = true
 	}
 
 	var httpStatus interface {

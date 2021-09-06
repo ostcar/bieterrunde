@@ -219,7 +219,7 @@ updateEditPage model editMsg editData =
 fetchBieter : String -> Cmd Msg
 fetchBieter id =
     Http.get
-        { url = "/api/user/" ++ id
+        { url = "/api/bieter/" ++ id
         , expect =
             Bieter.bieterDecoder
                 |> Http.expectJson ReceivedLogin
@@ -229,20 +229,28 @@ fetchBieter id =
 
 createBieter : String -> Cmd Msg
 createBieter name =
-    Http.post
-        { url = "/api/user"
+    Http.request
+        { method = "POST"
+        , headers = []
+        , url = "/api/bieter"
         , body = Http.jsonBody (bieterNameEncoder name)
         , expect = Http.expectJson ReceivedCreate Bieter.bieterDecoder
+        , timeout = Nothing
+        , tracker = Nothing
         }
         |> Cmd.map LoginPage
 
 
 updateBieter : Bieter.Bieter -> Cmd Msg
 updateBieter bieter =
-    Http.post
-        { url = "/api/user/" ++ Bieter.idToString bieter.id
+    Http.request
+        { method = "PUT"
+        , headers = []
+        , url = "/api/bieter/" ++ Bieter.idToString bieter.id
         , body = Http.jsonBody (Bieter.bieterEncoder bieter)
         , expect = Http.expectJson FormReceived Bieter.bieterDecoder
+        , timeout = Nothing
+        , tracker = Nothing
         }
         |> Cmd.map EditPage
 
