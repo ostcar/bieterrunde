@@ -25,8 +25,8 @@ func registerHandlers(router *mux.Router, config Config, db *Database, defaultFi
 	handleIndex(router, defaultFiles.Index)
 	handleElmJS(router, defaultFiles.Elm)
 
-	handleBieter(router, db)
-	handleCreateBieter(router, db)
+	handleBieter(router, db, config)
+	handleCreateBieter(router, db, config)
 	handleGetBieterList(router, db, config)
 
 	handleStatic(router, defaultFiles.Static)
@@ -82,12 +82,25 @@ func handleElmJS(router *mux.Router, defaultContent []byte) {
 	router.Path("/elm.js").HandlerFunc(handler)
 }
 
-// handleBieter handles request to /bieter/id. Get returns the bieter, post
-// updates it.
-func handleBieter(router *mux.Router, db *Database) {
+// handleBieter handles request to /bieter/id. Get returns the bieter, put
+// updates it and delete deletes it
+func handleBieter(router *mux.Router, db *Database, config Config) {
 	path := pathPrefixAPI + "/bieter/{id}"
 
-	router.Path(path).HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	router.Path(path).Methods("DELETE").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		bieterID := mux.Vars(r)["id"]
+		_, exist := db.Bieter(bieterID)
+		if !exist {
+			handleError(w, clientError{msg: "Bieter existiert nicht", status: 404})
+			return
+		}
+
+		if err := db.DeleteBieter(bieterID, isAdmin(r, config)); err != nil {
+			handleError(w, fmt.Errorf("deleting bieter %q: %w", bieterID, err))
+		}
+	})
+
+	router.Path(path).Methods("GET", "PUT").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		bieterID := mux.Vars(r)["id"]
 		payload, exist := db.Bieter(bieterID)
 		if !exist {
@@ -95,8 +108,8 @@ func handleBieter(router *mux.Router, db *Database) {
 			return
 		}
 
-		if r.Method == "POST" {
-			p, err := db.UpdateBieter(bieterID, r.Body, false)
+		if r.Method == "PUT" {
+			p, err := db.UpdateBieter(bieterID, r.Body, isAdmin(r, config))
 			if err != nil {
 				handleError(w, fmt.Errorf("update bieter: %w", err))
 				return
@@ -116,7 +129,7 @@ func handleBieter(router *mux.Router, db *Database) {
 	})
 }
 
-func handleCreateBieter(router *mux.Router, db *Database) {
+func handleCreateBieter(router *mux.Router, db *Database, config Config) {
 	router.Path(pathPrefixAPI + "/bieter").Methods("POST").HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
 			body, err := io.ReadAll(r.Body)
@@ -125,7 +138,7 @@ func handleCreateBieter(router *mux.Router, db *Database) {
 				return
 			}
 
-			bieterID, err := db.NewBieter(body, false)
+			bieterID, err := db.NewBieter(body, isAdmin(r, config))
 			if err != nil {
 				handleError(w, fmt.Errorf("creating new bieter: %w", err))
 				return
@@ -144,19 +157,14 @@ func handleCreateBieter(router *mux.Router, db *Database) {
 	)
 }
 
-func handleGetBieterList(router *mux.Router, db *Database, c Config) {
-	if c.AdminPW == "" {
+func handleGetBieterList(router *mux.Router, db *Database, config Config) {
+	if config.AdminPW == "" {
 		return
 	}
 
 	router.Path(pathPrefixAPI + "/bieter").Methods("GET").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		adminPW := r.Header.Get("Auth")
-		if adminPW == "" {
-			handleError(w, clientError{msg: "Hier gibts nichts", status: 403})
-			return
-		}
-
-		if adminPW != c.AdminPW {
+		admin := isAdmin(r, config)
+		if !admin {
 			handleError(w, clientError{msg: "Passwort ist falsch", status: 401})
 			return
 		}
@@ -264,4 +272,13 @@ func (err clientError) httpStatus() int {
 		return 400
 	}
 	return err.status
+}
+
+func isAdmin(r *http.Request, c Config) bool {
+	if c.AdminPW == "" {
+		return false
+	}
+
+	adminPW := r.Header.Get("Auth")
+	return adminPW == c.AdminPW
 }
