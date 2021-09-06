@@ -9,6 +9,25 @@ const (
 	lowestOffer = 4000
 )
 
+func getEvent(eventType string) Event {
+	switch eventType {
+	case "update":
+		return eventUpdate{}
+
+	case "delete":
+		return eventDelete{}
+
+	case "state":
+		return eventServiceState{}
+
+	case "offer":
+		return eventOffer{}
+
+	default:
+		return nil
+	}
+}
+
 // Event is one change of the database.
 type Event interface {
 	validate(db *Database) error
@@ -81,11 +100,12 @@ func (e eventUpdate) execute(db *Database) error {
 }
 
 type eventDelete struct {
-	ID string `json:"id"`
+	ID      string `json:"id"`
+	asAdmin bool
 }
 
-func newEventDelete(id string) eventDelete {
-	return eventDelete{id}
+func newEventDelete(id string, asAdmin bool) eventDelete {
+	return eventDelete{id, asAdmin}
 }
 
 func (e eventDelete) String() string {
@@ -97,6 +117,9 @@ func (e eventDelete) Name() string {
 }
 
 func (e eventDelete) validate(db *Database) error {
+	if !e.asAdmin && db.state != stateRegistration {
+		return validationError{"invalid state"}
+	}
 	return nil
 }
 

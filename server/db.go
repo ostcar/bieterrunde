@@ -56,6 +56,7 @@ func emptyDatabase() *Database {
 	return &Database{
 		bieter: make(map[string]json.RawMessage),
 		gebote: make(map[string]int),
+		state:  stateRegistration,
 	}
 }
 
@@ -77,12 +78,9 @@ func loadDatabase(r io.Reader) (*Database, error) {
 			return nil, fmt.Errorf("decoding event: %w", err)
 		}
 
-		var event Event
-		switch typer.Type {
-		case "update":
-			event = &eventUpdate{}
-		default:
-			return nil, fmt.Errorf("unknown event %q", typer.Type)
+		event := getEvent(typer.Type)
+		if event == nil {
+			return nil, fmt.Errorf("Unknown event %q, payload %q", typer.Type, typer.Payload)
 		}
 
 		if err := json.Unmarshal(typer.Payload, &event); err != nil {
@@ -188,12 +186,12 @@ func (db *Database) NewBieter(payload json.RawMessage, asAdmin bool) (string, er
 	var id string
 	for {
 		id = strconv.Itoa(rand.Intn(100_000_000))
-		e, err := newEventCreate(id, payload, asAdmin)
+		event, err := newEventCreate(id, payload, asAdmin)
 		if err != nil {
 			return "", fmt.Errorf("invalid event: %w", err)
 		}
 
-		if err := db.writeEvent(e); err != nil {
+		if err := db.writeEvent(event); err != nil {
 			if errors.Is(err, errIDExists) {
 				continue
 			}
@@ -203,4 +201,65 @@ func (db *Database) NewBieter(payload json.RawMessage, asAdmin bool) (string, er
 	}
 
 	return id, nil
+}
+
+// UpdateBieter updates an existing bieter. The new payload is read from r and
+// is returned (on success).
+func (db *Database) UpdateBieter(id string, r io.Reader, asAdmin bool) (json.RawMessage, error) {
+	payload, err := io.ReadAll(r)
+	if err != nil {
+		return nil, fmt.Errorf("reading body for update: %w", err)
+	}
+
+	event, err := newEventUpdate(
+		id,
+		payload,
+		asAdmin,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("creating update event: %w", err)
+	}
+
+	if err := db.writeEvent(event); err != nil {
+		return nil, fmt.Errorf("writing update event: %w", err)
+	}
+	return payload, nil
+}
+
+// DeleteBieter removes a bieter.
+func (db *Database) DeleteBieter(id string, asAdmin bool) error {
+	event := newEventDelete(id, asAdmin)
+
+	if err := db.writeEvent(event); err != nil {
+		return fmt.Errorf("writing delete event: %w", err)
+	}
+
+	return nil
+}
+
+// SetState updates the db state.
+func (db *Database) SetState(id string, asAdmin bool) error {
+	event := newEventDelete(id, asAdmin)
+
+	if err := db.writeEvent(event); err != nil {
+		return fmt.Errorf("writing state event: %w", err)
+	}
+
+	return nil
+}
+
+// UpdateOffer sets the offer of a bieter.
+//
+// The offer is in cent. So 100 € would be 10_000
+func (db *Database) UpdateOffer(id string, offer int, asAdmin bool) error {
+	event, err := newEventOffer(id, offer, asAdmin)
+	if err != nil {
+		return fmt.Errorf("creating offer event: %w", err)
+	}
+
+	if err := db.writeEvent(event); err != nil {
+		return fmt.Errorf("writing offer event: %w", err)
+	}
+
+	return nil
 }

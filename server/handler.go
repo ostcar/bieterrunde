@@ -96,7 +96,7 @@ func handleBieter(router *mux.Router, db *Database) {
 		}
 
 		if r.Method == "POST" {
-			p, err := updateBieter(r, bieterID, db)
+			p, err := db.UpdateBieter(bieterID, r.Body, false)
 			if err != nil {
 				handleError(w, fmt.Errorf("update bieter: %w", err))
 				return
@@ -114,28 +114,6 @@ func handleBieter(router *mux.Router, db *Database) {
 			return
 		}
 	})
-}
-
-func updateBieter(r *http.Request, bieterID string, db *Database) (json.RawMessage, error) {
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		return nil, fmt.Errorf("reading body for update: %w", err)
-	}
-
-	event, err := newEventUpdate(
-		bieterID,
-		body,
-		false,
-	)
-	if err != nil {
-		return nil, fmt.Errorf("creating update event: %w", err)
-	}
-
-	if err := db.writeEvent(event); err != nil {
-		return nil, fmt.Errorf("writing update event: %w", err)
-	}
-
-	return body, nil
 }
 
 func handleCreateBieter(router *mux.Router, db *Database) {
