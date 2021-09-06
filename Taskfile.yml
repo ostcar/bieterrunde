@@ -14,6 +14,7 @@ tasks:
       - src/**/*.elm
     generates:
       - elm.js
+      - index.html
   
   server:
     cmds:

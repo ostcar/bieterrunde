@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"io/fs"
 	"log"
 	"net/http"
@@ -14,8 +15,6 @@ import (
 )
 
 const (
-	cookieUserID     = "bieteruser"
-	cookieAdminPW    = "bieteradmin"
 	pathPrefixAPI    = "/api"
 	pathPrefixStatic = "/static"
 )
@@ -23,21 +22,30 @@ const (
 func registerHandlers(router *mux.Router, config Config, db *Database, defaultFiles DefaultFiles) {
 	router.Use(loggingMiddleware)
 
-	handleStatic(router, defaultFiles.Static)
 	handleElmJS(router, defaultFiles.Elm)
 	handleIndex(router, defaultFiles.Index)
-	handleGetUser(router, db)
-	handleCreateUser(router, db)
-	handleUpdateUser(router, db)
-	handleGetUsers(router, db, config)
+
+	handleBieter(router, db, config)
+	handleBieterCreate(router, db, config)
+	handleBieterList(router, db, config)
+
+	handleStatus(router, db, config)
+	handleSetOffer(router, db, config)
+
+	handleStatic(router, defaultFiles.Static)
 }
 
-// ViewUser is the user returned to the client
-type ViewUser struct {
-	ID string `json:"id"`
-	UserData
+// ViewBieter is the bieter data returned to the client
+type ViewBieter struct {
+	ID      string          `json:"id"`
+	Payload json.RawMessage `json:"payload"`
+	Offer   int             `json:"offer"`
 }
 
+// handleIndex returns the index.html. It is returned from all urls exept /api
+// and /static.
+//
+// If the file exists in client/index.html, it is used. In other case the default index.html, is used.
 func handleIndex(router *mux.Router, defaultContent []byte) {
 	handler := func(w http.ResponseWriter, r *http.Request) {
 		bs, err := os.ReadFile("client/index.html")
@@ -58,6 +66,10 @@ func handleIndex(router *mux.Router, defaultContent []byte) {
 	}).HandlerFunc(handler)
 }
 
+// handleElmJS returns the elm-js file.
+//
+// If the file exists in client/elm.js, it is used. In other case the default
+// file, bundeled with the executable is used.
 func handleElmJS(router *mux.Router, defaultContent []byte) {
 	handler := func(w http.ResponseWriter, r *http.Request) {
 		bs, err := os.ReadFile("client/elm.js")
@@ -74,151 +86,156 @@ func handleElmJS(router *mux.Router, defaultContent []byte) {
 	router.Path("/elm.js").HandlerFunc(handler)
 }
 
-func handleGetUser(router *mux.Router, db *Database) {
-	router.Path(pathPrefixAPI + "/user/{id}").Methods("GET").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		userID := mux.Vars(r)["id"]
-		user, exist := db.User(userID)
+// handleBieter handles request to /bieter/id. Get returns the bieter, put
+// updates it and delete deletes it
+func handleBieter(router *mux.Router, db *Database, config Config) {
+	path := pathPrefixAPI + "/bieter/{id}"
+
+	router.Path(path).Methods("DELETE").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		bieterID := mux.Vars(r)["id"]
+		_, exist := db.Bieter(bieterID)
 		if !exist {
-			http.Error(w, "Nutzer existiert nicht", 404)
+			handleError(w, clientError{msg: "Bieter existiert nicht", status: 404})
 			return
 		}
 
-		vuser := ViewUser{
-			userID,
-			user,
+		if err := db.DeleteBieter(bieterID, isAdmin(r, config)); err != nil {
+			handleError(w, fmt.Errorf("deleting bieter %q: %w", bieterID, err))
+		}
+	})
+
+	router.Path(path).Methods("GET", "PUT").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		bieterID := mux.Vars(r)["id"]
+		payload, exist := db.Bieter(bieterID)
+		if !exist {
+			handleError(w, clientError{msg: "Bieter existiert nicht", status: 404})
+			return
 		}
 
-		if err := json.NewEncoder(w).Encode(vuser); err != nil {
-			log.Println(err)
-			http.Error(w, "Fehler", 500)
+		offer := db.Offer(bieterID)
+
+		if r.Method == "PUT" {
+			p, err := db.UpdateBieter(bieterID, r.Body, isAdmin(r, config))
+			if err != nil {
+				handleError(w, fmt.Errorf("update bieter: %w", err))
+				return
+			}
+			payload = p
+		}
+
+		bieter := ViewBieter{
+			bieterID,
+			payload,
+			offer,
+		}
+
+		if err := json.NewEncoder(w).Encode(bieter); err != nil {
+			handleError(w, fmt.Errorf("encoding bieter: %w", err))
 			return
 		}
 	})
 }
 
-func handleCreateUser(router *mux.Router, db *Database) {
-	router.Path(pathPrefixAPI + "/user").Methods("POST").HandlerFunc(
+func handleBieterCreate(router *mux.Router, db *Database, config Config) {
+	router.Path(pathPrefixAPI + "/bieter").Methods("POST").HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
-			var userName struct {
-				Name string `json:"name"`
-			}
-
-			if err := json.NewDecoder(r.Body).Decode(&userName); err != nil {
-				log.Printf("Error: %v", err)
-				http.Error(w, "Internal", 500)
-				return
-			}
-
-			userID, err := db.NewUser(userName.Name)
+			body, err := io.ReadAll(r.Body)
 			if err != nil {
-				log.Printf("Error: %v", err)
-				http.Error(w, "Internal", 500)
+				handleError(w, fmt.Errorf("reading body for create: %w", err))
 				return
 			}
 
-			vuser := ViewUser{
-				ID: userID,
-				UserData: UserData{
-					Name: userName.Name,
-				},
+			bieterID, err := db.NewBieter(body, isAdmin(r, config))
+			if err != nil {
+				handleError(w, fmt.Errorf("creating new bieter: %w", err))
+				return
 			}
 
-			if err := json.NewEncoder(w).Encode(vuser); err != nil {
-				log.Println(err)
-				http.Error(w, "Fehler", 500)
+			bieter := ViewBieter{
+				bieterID,
+				body,
+				0,
+			}
+
+			if err := json.NewEncoder(w).Encode(bieter); err != nil {
+				handleError(w, fmt.Errorf("encoding bieter: %w", err))
 				return
 			}
 		},
 	)
 }
 
-func handleUpdateUser(router *mux.Router, db *Database) {
-	router.Path(pathPrefixAPI + "/user/{id}").Methods("POST").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		userID := mux.Vars(r)["id"]
-		_, exist := db.User(userID)
-		if !exist {
-			http.Error(w, "Nutzer existiert nicht", 404)
-			return
-		}
-
-		var user UserData
-		if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
-			http.Error(w, "ungültige Daten", 400)
-			return
-		}
-
-		event, err := newUpdateEvent(
-			userID,
-			user.Name,
-			user.Adresse,
-			user.IBAN,
-		)
-		if err != nil {
-			log.Println(err)
-			http.Error(w, "Fehler", 500)
-			return
-		}
-
-		if err := db.writeEvent(event); err != nil {
-			log.Printf("Error: %v", err)
-			http.Error(w, "Interner Fehler", 500)
-		}
-
-		vuser := ViewUser{
-			userID,
-			user,
-		}
-
-		if err := json.NewEncoder(w).Encode(vuser); err != nil {
-			log.Println(err)
-			http.Error(w, "Fehler", 500)
-			return
-		}
-	})
-}
-
-func handleGetUsers(router *mux.Router, db *Database, c Config) {
-	if c.AdminPW == "" {
+func handleBieterList(router *mux.Router, db *Database, config Config) {
+	if config.AdminPW == "" {
 		return
 	}
 
-	router.Path(pathPrefixAPI + "/user").Methods("GET").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		adminPW := r.Header.Get("Auth")
-		if adminPW == "" {
-			http.Error(w, "Hier gibts nichts", 403)
+	router.Path(pathPrefixAPI + "/bieter").Methods("GET").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		admin := isAdmin(r, config)
+		if !admin {
+			handleError(w, clientError{msg: "Passwort ist falsch", status: 401})
 			return
 		}
 
-		if adminPW != c.AdminPW {
-			http.Error(w, "Password ist falsch", 401)
-			return
-		}
+		var bieter []ViewBieter
 
-		var users []ViewUser
-
-		for id, user := range db.Users() {
-			users = append(users, ViewUser{
-				ID:       id,
-				UserData: user,
+		for id, payload := range db.BieterList() {
+			bieter = append(bieter, ViewBieter{
+				ID:      id,
+				Payload: payload,
 			})
 		}
 
-		if err := json.NewEncoder(w).Encode(users); err != nil {
-			log.Println(err)
-			http.Error(w, "Error", 500)
+		if err := json.NewEncoder(w).Encode(bieter); err != nil {
+			handleError(w, fmt.Errorf("encoding bieter: %w", err))
 		}
 	})
 }
 
-func loggingMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Println(r.RequestURI)
-		next.ServeHTTP(w, r)
-	})
+// handleStatus gets or sets the service status.
+func handleStatus(router *mux.Router, db *Database, config Config) {
+	router.Path(pathPrefixAPI + "/status").Methods("GET").
+		HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			s := db.State()
+			response := struct {
+				State int    `json:"state"`
+				Name  string `json:"state_name"`
+			}{
+				int(s),
+				s.String(),
+			}
+
+			if err := json.NewEncoder(w).Encode(response); err != nil {
+				handleError(w, fmt.Errorf("encoding state: %w", err))
+				return
+			}
+		})
+
+	router.Path(pathPrefixAPI + "/status").Methods("PUT").
+		HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if err := db.SetState(r.Body); err != nil {
+				handleError(w, fmt.Errorf("set state: %w", err))
+			}
+		})
 }
 
-func handleStatic(router *mux.Router, defaultContent fs.FS) {
+func handleSetOffer(router *mux.Router, db *Database, config Config) {
+	router.Path(pathPrefixAPI + "/offer/{id}").Methods("PUT").
+		HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			bieterID := mux.Vars(r)["id"]
 
+			if err := db.UpdateOffer(bieterID, r.Body, isAdmin(r, config)); err != nil {
+				handleError(w, fmt.Errorf("save offer: %w", err))
+				return
+			}
+		})
+}
+
+// handleStatic returns static files.
+//
+// It looks for each file in a directory "static/". It the file does not exist
+// there, it looks in the default static files, the binary was creaded with.
+func handleStatic(router *mux.Router, defaultContent fs.FS) {
 	fileSystem := MultiFS{
 		fs: []fs.FS{
 			os.DirFS("./static"),
@@ -246,4 +263,69 @@ func (fs MultiFS) Open(name string) (fs.File, error) {
 		return f, nil
 	}
 	return nil, os.ErrNotExist
+}
+
+func loggingMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log.Println(r.RequestURI)
+		next.ServeHTTP(w, r)
+	})
+}
+
+func handleError(w http.ResponseWriter, err error) {
+	msg := "Interner Fehler"
+	status := 500
+	var skipLog bool
+
+	var forClient interface {
+		forClient() string
+	}
+	if errors.As(err, &forClient) {
+		msg = forClient.forClient()
+		status = 400
+		//skipLog = true
+	}
+
+	var httpStatus interface {
+		httpStatus() int
+	}
+	if errors.As(err, &httpStatus) {
+		status = httpStatus.httpStatus()
+	}
+
+	if !skipLog {
+		log.Printf("Error: %v", err)
+	}
+
+	http.Error(w, msg, status)
+	return
+}
+
+type clientError struct {
+	msg    string
+	status int
+}
+
+func (err clientError) Error() string {
+	return fmt.Sprintf("client error: %v", err.msg)
+}
+
+func (err clientError) forClient() string {
+	return err.msg
+}
+
+func (err clientError) httpStatus() int {
+	if err.status == 0 {
+		return 400
+	}
+	return err.status
+}
+
+func isAdmin(r *http.Request, c Config) bool {
+	if c.AdminPW == "" {
+		return false
+	}
+
+	adminPW := r.Header.Get("Auth")
+	return adminPW == c.AdminPW
 }

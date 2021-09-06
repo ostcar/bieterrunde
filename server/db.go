@@ -7,7 +7,9 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math/rand"
 	"os"
+	"strconv"
 	"sync"
 	"time"
 )
@@ -17,8 +19,9 @@ type Database struct {
 	sync.RWMutex
 	file string
 
-	users map[string]UserData
-	state int
+	bieter map[string]json.RawMessage
+	offer  map[string]int
+	state  ServiceState
 }
 
 // NewDB load the db from file.
@@ -51,7 +54,9 @@ func openDB(file string) (*Database, error) {
 
 func emptyDatabase() *Database {
 	return &Database{
-		users: make(map[string]UserData),
+		bieter: make(map[string]json.RawMessage),
+		offer:  make(map[string]int),
+		state:  stateRegistration,
 	}
 }
 
@@ -73,14 +78,9 @@ func loadDatabase(r io.Reader) (*Database, error) {
 			return nil, fmt.Errorf("decoding event: %w", err)
 		}
 
-		var event Event
-		switch typer.Type {
-		case "create":
-			event = &createEvent{}
-		case "update":
-			event = &updateEvent{}
-		default:
-			return nil, fmt.Errorf("unknown event %q", typer.Type)
+		event := getEvent(typer.Type)
+		if event == nil {
+			return nil, fmt.Errorf("Unknown event %q, payload %q", typer.Type, typer.Payload)
 		}
 
 		if err := json.Unmarshal(typer.Payload, &event); err != nil {
@@ -122,7 +122,7 @@ func (db *Database) writeEvent(e Event) (err error) {
 		Time    string `json:"time"`
 		Payload Event  `json:"payload"`
 	}{
-		e.EventName(),
+		e.Name(),
 		time.Now().Format("2006-01-02 15:04:05"),
 		e,
 	}
@@ -145,47 +145,155 @@ func (db *Database) writeEvent(e Event) (err error) {
 	return nil
 }
 
-// User returns the user data for a userid.
-func (db *Database) User(id string) (UserData, bool) {
+// ServiceState is the state of the service.
+type ServiceState int
+
+const (
+	stateInvalid ServiceState = iota
+	stateRegistration
+	stateValidation
+	stateOffer
+)
+
+func (s ServiceState) String() string {
+	return [...]string{"Ungültig", "Registrierung", "Überprüfung", "Gebote"}[s]
+}
+
+// Bieter returns the user data for a bieterID.
+func (db *Database) Bieter(id string) (json.RawMessage, bool) {
 	db.RLock()
 	defer db.RUnlock()
 
-	user, ok := db.users[id]
+	user, ok := db.bieter[id]
 	return user, ok
 }
 
-// NewUser returns the user data for a userid.
-func (db *Database) NewUser(name string) (string, error) {
-	var e createEvent
+// BieterList return all bieters.
+func (db *Database) BieterList() map[string]json.RawMessage {
+	db.RLock()
+	defer db.RUnlock()
+
+	// Make a copy of the data so
+	c := make(map[string]json.RawMessage, len(db.bieter))
+	for k, v := range db.bieter {
+		c[k] = v
+	}
+
+	return c
+}
+
+// NewBieter creates a new bieter and returns its id.
+func (db *Database) NewBieter(payload json.RawMessage, asAdmin bool) (string, error) {
+	var id string
 	for {
-		e = newCreateEvent(name)
-		err := db.writeEvent(e)
+		id = strconv.Itoa(rand.Intn(100_000_000))
+		event, err := newEventCreate(id, payload, asAdmin)
 		if err != nil {
-			if errors.Is(err, errValidate) {
+			return "", fmt.Errorf("invalid event: %w", err)
+		}
+
+		if err := db.writeEvent(event); err != nil {
+			if errors.Is(err, errIDExists) {
 				continue
 			}
-			return "", fmt.Errorf("creating create event: %w", err)
+			return "", fmt.Errorf("creating event: %w", err)
 		}
 		break
 	}
 
-	return e.UserID, nil
+	return id, nil
 }
 
-// Users return all data for reading.
-func (db *Database) Users() map[string]UserData {
+// UpdateBieter updates an existing bieter. The new payload is read from r and
+// is returned (on success).
+func (db *Database) UpdateBieter(id string, r io.Reader, asAdmin bool) (json.RawMessage, error) {
+	payload, err := io.ReadAll(r)
+	if err != nil {
+		return nil, fmt.Errorf("reading body for update: %w", err)
+	}
+
+	event, err := newEventUpdate(
+		id,
+		payload,
+		asAdmin,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("creating update event: %w", err)
+	}
+
+	if err := db.writeEvent(event); err != nil {
+		return nil, fmt.Errorf("writing update event: %w", err)
+	}
+	return payload, nil
+}
+
+// DeleteBieter removes a bieter.
+func (db *Database) DeleteBieter(id string, asAdmin bool) error {
+	event := newEventDelete(id, asAdmin)
+
+	if err := db.writeEvent(event); err != nil {
+		return fmt.Errorf("writing delete event: %w", err)
+	}
+
+	return nil
+}
+
+// State returns the current state.
+func (db *Database) State() ServiceState {
 	db.RLock()
 	defer db.RUnlock()
 
-	// TODO: Make a copy
-
-	return db.users
+	return db.state
 }
 
-// UserData are the data for a user in the database.
-type UserData struct {
-	Gebot   int    `json:"gebot"`
-	Name    string `json:"name"`
-	Adresse string `json:"adresse"`
-	IBAN    string `json:"iban"`
+// SetState updates the db state.
+func (db *Database) SetState(r io.Reader) error {
+	var decoded struct {
+		State int `json:"state"`
+	}
+	if err := json.NewDecoder(r).Decode(&decoded); err != nil {
+		return fmt.Errorf("decoding state id: %w", err)
+	}
+
+	event, err := newEventStatus(ServiceState(decoded.State))
+	if err != nil {
+		return fmt.Errorf("create state event: %w", err)
+	}
+
+	if err := db.writeEvent(event); err != nil {
+		return fmt.Errorf("writing state event: %w", err)
+	}
+
+	return nil
+}
+
+// Offer returns the offer to a user.
+func (db *Database) Offer(id string) int {
+	db.RLock()
+	defer db.RUnlock()
+
+	return db.offer[id]
+}
+
+// UpdateOffer sets the offer of a bieter.
+//
+// The offer is in cent. So 100 € would be 10_000
+func (db *Database) UpdateOffer(id string, r io.Reader, asAdmin bool) error {
+	var offer struct {
+		Offer int `json:"offer"`
+	}
+	if err := json.NewDecoder(r).Decode(&offer); err != nil {
+		return fmt.Errorf("decoding offer: %w", err)
+	}
+
+	event, err := newEventOffer(id, offer.Offer, asAdmin)
+	if err != nil {
+		return fmt.Errorf("creating offer event: %w", err)
+	}
+
+	if err := db.writeEvent(event); err != nil {
+		return fmt.Errorf("writing offer event: %w", err)
+	}
+
+	return nil
 }
