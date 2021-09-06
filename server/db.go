@@ -21,7 +21,7 @@ type Database struct {
 
 	bieter map[string]json.RawMessage
 	gebote map[string]int
-	state  int
+	state  serviceState
 }
 
 // NewDB load the db from file.
@@ -80,7 +80,7 @@ func loadDatabase(r io.Reader) (*Database, error) {
 		var event Event
 		switch typer.Type {
 		case "update":
-			event = &updateEvent{}
+			event = &eventUpdate{}
 		default:
 			return nil, fmt.Errorf("unknown event %q", typer.Type)
 		}
@@ -124,7 +124,7 @@ func (db *Database) writeEvent(e Event) (err error) {
 		Time    string `json:"time"`
 		Payload Event  `json:"payload"`
 	}{
-		e.EventName(),
+		e.Name(),
 		time.Now().Format("2006-01-02 15:04:05"),
 		e,
 	}
@@ -145,6 +145,19 @@ func (db *Database) writeEvent(e Event) (err error) {
 	}
 
 	return nil
+}
+
+type serviceState int
+
+const (
+	stateInvalid serviceState = iota
+	stateRegistration
+	stateValidation
+	stateOffer
+)
+
+func (s serviceState) String() string {
+	return [...]string{"Ungültig", "Registrierung", "Überprüfung", "Gebote"}[s]
 }
 
 // Bieter returns the user data for a bieterID.
@@ -171,11 +184,11 @@ func (db *Database) BieterList() map[string]json.RawMessage {
 }
 
 // NewBieter creates a new bieter and returns its id.
-func (db *Database) NewBieter(payload json.RawMessage) (string, error) {
+func (db *Database) NewBieter(payload json.RawMessage, asAdmin bool) (string, error) {
 	var id string
 	for {
 		id = strconv.Itoa(rand.Intn(100_000_000))
-		e, err := newUpdateEvent(id, payload)
+		e, err := newEventCreate(id, payload, asAdmin)
 		if err != nil {
 			return "", fmt.Errorf("invalid event: %w", err)
 		}

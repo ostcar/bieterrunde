@@ -122,9 +122,10 @@ func updateBieter(r *http.Request, bieterID string, db *Database) (json.RawMessa
 		return nil, fmt.Errorf("reading body for update: %w", err)
 	}
 
-	event, err := newUpdateEvent(
+	event, err := newEventUpdate(
 		bieterID,
 		body,
+		false,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("creating update event: %w", err)
@@ -146,7 +147,7 @@ func handleCreateBieter(router *mux.Router, db *Database) {
 				return
 			}
 
-			bieterID, err := db.NewBieter(body)
+			bieterID, err := db.NewBieter(body, false)
 			if err != nil {
 				handleError(w, fmt.Errorf("creating new bieter: %w", err))
 				return
