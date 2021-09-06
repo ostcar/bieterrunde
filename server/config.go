@@ -15,7 +15,8 @@ type Config struct {
 	ListenAddr string `toml:"listen_addr"`
 }
 
-func defaultConfig() Config {
+// DefaultConfig returns a config object with default values.
+func DefaultConfig() Config {
 	return Config{
 		ListenAddr: ":9600",
 	}
@@ -23,7 +24,7 @@ func defaultConfig() Config {
 
 // LoadConfig loads the config from a toml file.
 func LoadConfig(file string) (Config, error) {
-	c := defaultConfig()
+	c := DefaultConfig()
 
 	f, err := os.Open(file)
 	if err != nil {
