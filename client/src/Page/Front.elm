@@ -1,13 +1,19 @@
-module Page.Front exposing (Model, Msg, init, subscriptions, update, view)
+module Page.Front exposing (Model, Msg, init, subscriptions, toSession, update, view)
 
 import Bieter
-import Browser.Navigation as Nav
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Http
 import Json.Encode as Encode
 import Ports
+import Session exposing (Session)
+
+
+type alias Model =
+    { session : Session
+    , page : Page
+    }
 
 
 type alias LoginPageData =
@@ -40,12 +46,6 @@ type Page
     | Edit EditPageData
 
 
-type alias Model =
-    { navKey : Nav.Key
-    , page : Page
-    }
-
-
 type LoginPageMsg
     = RequestLogin
     | ReceivedLogin (Result Http.Error Bieter.Bieter)
@@ -66,21 +66,21 @@ type EditPageMsg
 
 
 type Msg
-    = LoginPage LoginPageMsg
-    | Logout
-    | EditPage EditPageMsg
-    | ToEdit Bieter.Bieter
+    = GotLoginPageMsg LoginPageMsg
+    | GotLogoutMsg
+    | GotEditPageMsg EditPageMsg
+    | GotoEditMsg Bieter.Bieter
 
 
-init : Nav.Key -> ( Model, Cmd Msg )
-init navKey =
-    ( Model navKey (Login emptyLoginData), Ports.send Ports.RequestBieterID )
+init : Session -> ( Model, Cmd Msg )
+init session =
+    ( Model session (Login emptyLoginData), Ports.send Ports.RequestBieterID )
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        LoginPage loginMsg ->
+        GotLoginPageMsg loginMsg ->
             case model.page of
                 Login loginData ->
                     updateLoginPage model loginMsg loginData
@@ -89,7 +89,7 @@ update msg model =
                     -- Received a loginpage msg on a none loginpage.
                     ( model, Cmd.none )
 
-        EditPage editMsg ->
+        GotEditPageMsg editMsg ->
             case model.page of
                 Edit editData ->
                     updateEditPage model editMsg editData
@@ -98,12 +98,12 @@ update msg model =
                     -- Received a editpage msg on a none edit page.
                     ( model, Cmd.none )
 
-        Logout ->
+        GotLogoutMsg ->
             ( { model | page = Login emptyLoginData }
             , Ports.send Ports.RemoveBieterID
             )
 
-        ToEdit bieter ->
+        GotoEditMsg bieter ->
             ( { model | page = Edit (createEditPageData bieter) }
             , Cmd.none
             )
@@ -224,7 +224,7 @@ fetchBieter id =
             Bieter.bieterDecoder
                 |> Http.expectJson ReceivedLogin
         }
-        |> Cmd.map LoginPage
+        |> Cmd.map GotLoginPageMsg
 
 
 createBieter : String -> Cmd Msg
@@ -238,7 +238,7 @@ createBieter name =
         , timeout = Nothing
         , tracker = Nothing
         }
-        |> Cmd.map LoginPage
+        |> Cmd.map GotLoginPageMsg
 
 
 updateBieter : Bieter.Bieter -> Cmd Msg
@@ -252,7 +252,7 @@ updateBieter bieter =
         , timeout = Nothing
         , tracker = Nothing
         }
-        |> Cmd.map EditPage
+        |> Cmd.map GotEditPageMsg
 
 
 bieterNameEncoder : String -> Encode.Value
@@ -288,65 +288,78 @@ buildErrorMessage httpError =
 subscriptions : Model -> Sub Msg
 subscriptions _ =
     Ports.toElm ReceivedLocalStoreBieter
-        |> Sub.map LoginPage
+        |> Sub.map GotLoginPageMsg
 
 
-view : Model -> Html Msg
+view : Model -> { title : String, content : Html Msg }
 view model =
     case model.page of
         Login data ->
-            viewLogin data
-                |> Html.map LoginPage
+            let
+                { title, content } =
+                    viewLogin data
+            in
+            { title = title
+            , content = Html.map GotLoginPageMsg content
+            }
 
         Show bieter ->
             viewBieter bieter
 
         Edit editData ->
-            viewEdit editData
-                |> Html.map EditPage
+            let
+                { title, content } =
+                    viewEdit editData
+            in
+            { title = title
+            , content = Html.map GotEditPageMsg content
+            }
 
 
-viewLogin : LoginPageData -> Html LoginPageMsg
+viewLogin : LoginPageData -> { title : String, content : Html LoginPageMsg }
 viewLogin loginData =
-    div []
-        [ h1 [] [ text "Mit Bieternummer anmelden" ]
-        , maybeError loginData.errorMsg
-        , Html.form [ onSubmit RequestLogin ]
-            [ div []
-                [ text "Bieternummer"
-                , input
-                    [ id "nummer"
-                    , type_ "text"
-                    , value loginData.formUserNr
-                    , onInput SaveNumber
+    { title = "Login title"
+    , content =
+        div []
+            [ h1 [] [ text "Mit Bieternummer anmelden" ]
+            , maybeError loginData.errorMsg
+            , Html.form [ onSubmit RequestLogin ]
+                [ div []
+                    [ text "Bieternummer"
+                    , input
+                        [ id "nummer"
+                        , type_ "text"
+                        , value loginData.formUserNr
+                        , onInput SaveNumber
+                        ]
+                        []
                     ]
-                    []
+                , div []
+                    [ button
+                        [ type_ "submit" ]
+                        [ text "Anmelden" ]
+                    ]
                 ]
-            , div []
-                [ button
-                    [ type_ "submit" ]
-                    [ text "Anmelden" ]
+            , h1 [] [ text "Neue Bieternummer anlegen" ]
+            , Html.form [ onSubmit RequestCreate ]
+                [ div []
+                    [ text "Bieternummer"
+                    , input
+                        [ id "name"
+                        , type_ "text"
+                        , value loginData.formUserName
+                        , onInput SaveName
+                        ]
+                        []
+                    ]
+                , div []
+                    [ button
+                        [ type_ "submit" ]
+                        [ text "Anlegen" ]
+                    ]
                 ]
             ]
-        , h1 [] [ text "Neue Bieternummer anlegen" ]
-        , Html.form [ onSubmit RequestCreate ]
-            [ div []
-                [ text "Bieternummer"
-                , input
-                    [ id "name"
-                    , type_ "text"
-                    , value loginData.formUserName
-                    , onInput SaveName
-                    ]
-                    []
-                ]
-            , div []
-                [ button
-                    [ type_ "submit" ]
-                    [ text "Anlegen" ]
-                ]
-            ]
-        ]
+    }
 
 
 maybeError : Maybe String -> Html msg
@@ -359,59 +372,70 @@ maybeError errorMsg =
             text ""
 
 
-viewBieter : Bieter.Bieter -> Html Msg
+viewBieter : Bieter.Bieter -> { title : String, content : Html Msg }
 viewBieter bieter =
-    div []
-        [ h1 [] [ text ("Hallo " ++ bieter.name) ]
-        , div []
-            [ text "Deine Bieternummer ist "
-            , strong [] [ text (Bieter.idToString bieter.id) ]
-            , text ". Merke sie dir gut. Du brauchst sie für die nächste anmeldung"
+    { title = "Bieter"
+    , content =
+        div []
+            [ h1 [] [ text ("Hallo " ++ bieter.name) ]
+            , div []
+                [ text "Deine Bieternummer ist "
+                , strong [] [ text (Bieter.idToString bieter.id) ]
+                , text ". Merke sie dir gut. Du brauchst sie für die nächste anmeldung"
+                ]
+            , div [] [ text ("Adresse: " ++ bieter.adresse) ]
+            , div [] [ text ("IBAN: " ++ bieter.iban) ]
+            , div [] [ button [ onClick GotLogoutMsg ] [ text "logout" ] ]
+            , div [] [ button [ onClick (GotoEditMsg bieter) ] [ text "Bearbeiten" ] ]
             ]
-        , div [] [ text ("Adresse: " ++ bieter.adresse) ]
-        , div [] [ text ("IBAN: " ++ bieter.iban) ]
-        , div [] [ button [ onClick Logout ] [ text "logout" ] ]
-        , div [] [ button [ onClick (ToEdit bieter) ] [ text "Bearbeiten" ] ]
-        ]
+    }
 
 
-viewEdit : EditPageData -> Html EditPageMsg
+viewEdit : EditPageData -> { title : String, content : Html EditPageMsg }
 viewEdit data =
-    div []
-        [ maybeError data.errorMsg
-        , div []
-            [ text "Name"
-            , input
-                [ type_ "text"
-                , value data.bieter.name
-                , onInput FormSaveName
+    { title = "Edit Bieter"
+    , content =
+        div []
+            [ maybeError data.errorMsg
+            , div []
+                [ text "Name"
+                , input
+                    [ type_ "text"
+                    , value data.bieter.name
+                    , onInput FormSaveName
+                    ]
+                    []
                 ]
-                []
-            ]
-        , div []
-            [ text "Adresse"
-            , input
-                [ type_ "text"
-                , value data.bieter.adresse
-                , onInput FormSaveAdresse
+            , div []
+                [ text "Adresse"
+                , input
+                    [ type_ "text"
+                    , value data.bieter.adresse
+                    , onInput FormSaveAdresse
+                    ]
+                    []
                 ]
-                []
-            ]
-        , div []
-            [ text "IBAN"
-            , input
-                [ type_ "text"
-                , value data.bieter.iban
-                , onInput FormSaveIBAN
+            , div []
+                [ text "IBAN"
+                , input
+                    [ type_ "text"
+                    , value data.bieter.iban
+                    , onInput FormSaveIBAN
+                    ]
+                    []
                 ]
-                []
+            , div []
+                [ button
+                    [ onClick FormSubmit ]
+                    [ text "Speichern" ]
+                , button
+                    [ onClick FormGoBack ]
+                    [ text "Zurück" ]
+                ]
             ]
-        , div []
-            [ button
-                [ onClick FormSubmit ]
-                [ text "Speichern" ]
-            , button
-                [ onClick FormGoBack ]
-                [ text "Zurück" ]
-            ]
-        ]
+    }
+
+
+toSession : Model -> Session
+toSession model =
+    model.session

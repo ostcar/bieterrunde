@@ -1,46 +1,56 @@
-module Route exposing (..)
+module Route exposing (Route(..), fromUrl, href, replaceUrl)
 
-import Url exposing (Url)
-import Url.Parser exposing (..)
 import Browser.Navigation as Nav
+import Html exposing (Attribute)
+import Html.Attributes as Attr
+import Url exposing (Url)
+import Url.Parser as Parser exposing (..)
+import Bieter
 
 
 type Route
-    = NotFound
-    | Front
+    = Front
     | Admin
+    | Bieter Bieter.ID
 
 
-parseUrl : Url -> Route
-parseUrl url =
-    case parse matchRoute url of
-        Just route ->
-            route
-
-        Nothing ->
-            NotFound
-
-
-matchRoute : Parser (Route -> a) a
-matchRoute =
+parser : Parser (Route -> a) a
+parser =
     oneOf
-        [ map Front top
-        , map Admin (s "admin")
+        [ Parser.map Front Parser.top
+        , Parser.map Admin (s "admin")
+        , Parser.map Bieter (s "bieter" </> Bieter.urlParser)
         ]
 
-pushUrl : Route -> Nav.Key -> Cmd msg
-pushUrl route navKey =
-    routeToString route
-        |> Nav.pushUrl navKey
+
+fromUrl : Url -> Maybe Route
+fromUrl url =
+    Parser.parse parser url
+
+
+replaceUrl : Nav.Key -> Route -> Cmd msg
+replaceUrl key route =
+    Nav.replaceUrl key (routeToString route)
+
+
+href : Route -> Attribute msg
+href targetRoute =
+    Attr.href (routeToString targetRoute)
+
 
 routeToString : Route -> String
-routeToString route =
-    case route of
-        NotFound ->
-            "/not-found"
+routeToString page =
+    String.join "/" (routeToPieces page)
 
+
+routeToPieces : Route -> List String
+routeToPieces page =
+    case page of
         Front ->
-            "/"
-        
+            []
+
         Admin ->
-            "/admin"
+            [ "admin" ]
+
+        Bieter id ->
+            [ "bieter", Bieter.idToString id]

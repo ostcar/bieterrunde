@@ -5342,36 +5342,51 @@ var $elm$core$Task$perform = F2(
 				A2($elm$core$Task$map, toMessage, task)));
 	});
 var $elm$browser$Browser$application = _Browser_application;
-var $author$project$Main$NotFoundPage = {$: 'NotFoundPage'};
+var $author$project$Main$Redirect = function (a) {
+	return {$: 'Redirect', a: a};
+};
+var $author$project$Session$Guest = {$: 'Guest'};
+var $author$project$Session$NoAdmin = {$: 'NoAdmin'};
+var $author$project$Session$Session = F3(
+	function (navKey, viewer, admin) {
+		return {admin: admin, navKey: navKey, viewer: viewer};
+	});
+var $author$project$Session$anonymous = function (key) {
+	return A3($author$project$Session$Session, key, $author$project$Session$Guest, $author$project$Session$NoAdmin);
+};
 var $author$project$Main$Admin = function (a) {
 	return {$: 'Admin', a: a};
-};
-var $author$project$Main$AdminMsg = function (a) {
-	return {$: 'AdminMsg', a: a};
 };
 var $author$project$Main$Front = function (a) {
 	return {$: 'Front', a: a};
 };
-var $author$project$Main$FrontMsg = function (a) {
-	return {$: 'FrontMsg', a: a};
+var $author$project$Route$Front = {$: 'Front'};
+var $author$project$Main$GotAdminMsg = function (a) {
+	return {$: 'GotAdminMsg', a: a};
 };
-var $elm$core$Platform$Cmd$batch = _Platform_batch;
+var $author$project$Main$GotFrontMsg = function (a) {
+	return {$: 'GotFrontMsg', a: a};
+};
+var $author$project$Main$NotFound = function (a) {
+	return {$: 'NotFound', a: a};
+};
 var $author$project$Page$Admin$Model = F5(
-	function (navKey, bieter, password, formPassword, fetchErrorMsg) {
-		return {bieter: bieter, fetchErrorMsg: fetchErrorMsg, formPassword: formPassword, navKey: navKey, password: password};
+	function (session, bieter, password, formPassword, fetchErrorMsg) {
+		return {bieter: bieter, fetchErrorMsg: fetchErrorMsg, formPassword: formPassword, password: password, session: session};
 	});
+var $elm$core$Platform$Cmd$batch = _Platform_batch;
 var $elm$core$Platform$Cmd$none = $elm$core$Platform$Cmd$batch(_List_Nil);
-var $author$project$Page$Admin$init = function (navKey) {
+var $author$project$Page$Admin$init = function (session) {
 	return _Utils_Tuple2(
-		A5($author$project$Page$Admin$Model, navKey, $elm$core$Maybe$Nothing, $elm$core$Maybe$Nothing, '', $elm$core$Maybe$Nothing),
+		A5($author$project$Page$Admin$Model, session, $elm$core$Maybe$Nothing, $elm$core$Maybe$Nothing, '', $elm$core$Maybe$Nothing),
 		$elm$core$Platform$Cmd$none);
 };
 var $author$project$Page$Front$Login = function (a) {
 	return {$: 'Login', a: a};
 };
 var $author$project$Page$Front$Model = F2(
-	function (navKey, page) {
-		return {navKey: navKey, page: page};
+	function (session, page) {
+		return {page: page, session: session};
 	});
 var $author$project$Ports$RequestBieterID = {$: 'RequestBieterID'};
 var $author$project$Page$Front$LoginPageData = F3(
@@ -5432,159 +5447,118 @@ var $author$project$Ports$send = function (msg) {
 				A2($author$project$Ports$SendData, 'get-id', ''));
 	}
 };
-var $author$project$Page$Front$init = function (navKey) {
+var $author$project$Page$Front$init = function (session) {
 	return _Utils_Tuple2(
 		A2(
 			$author$project$Page$Front$Model,
-			navKey,
+			session,
 			$author$project$Page$Front$Login($author$project$Page$Front$emptyLoginData)),
 		$author$project$Ports$send($author$project$Ports$RequestBieterID));
 };
+var $author$project$Session$navKey = function (s) {
+	return s.navKey;
+};
+var $elm$browser$Browser$Navigation$replaceUrl = _Browser_replaceUrl;
+var $author$project$Route$routeToPieces = function (page) {
+	switch (page.$) {
+		case 'Front':
+			return _List_Nil;
+		case 'Admin':
+			return _List_fromArray(
+				['admin']);
+		default:
+			var id = page.a;
+			return _List_fromArray(
+				[
+					'bieter',
+					$author$project$Bieter$idToString(id)
+				]);
+	}
+};
+var $author$project$Route$routeToString = function (page) {
+	return A2(
+		$elm$core$String$join,
+		'/',
+		$author$project$Route$routeToPieces(page));
+};
+var $author$project$Route$replaceUrl = F2(
+	function (key, route) {
+		return A2(
+			$elm$browser$Browser$Navigation$replaceUrl,
+			key,
+			$author$project$Route$routeToString(route));
+	});
+var $author$project$Page$Admin$toSession = function (model) {
+	return model.session;
+};
+var $author$project$Page$Front$toSession = function (model) {
+	return model.session;
+};
+var $author$project$Main$toSession = function (page) {
+	switch (page.$) {
+		case 'NotFound':
+			var session = page.a;
+			return session;
+		case 'Redirect':
+			var session = page.a;
+			return session;
+		case 'Front':
+			var front = page.a;
+			return $author$project$Page$Front$toSession(front);
+		default:
+			var admin = page.a;
+			return $author$project$Page$Admin$toSession(admin);
+	}
+};
 var $elm$core$Platform$Cmd$map = _Platform_map;
-var $author$project$Main$initCurrentPage = function (_v0) {
-	var model = _v0.a;
-	var existingCmds = _v0.b;
-	var _v1 = function () {
-		var _v2 = model.route;
-		switch (_v2.$) {
-			case 'NotFound':
-				return _Utils_Tuple2($author$project$Main$NotFoundPage, $elm$core$Platform$Cmd$none);
-			case 'Front':
-				var _v3 = $author$project$Page$Front$init(model.navKey);
-				var pageModel = _v3.a;
-				var pageCmds = _v3.b;
-				return _Utils_Tuple2(
-					$author$project$Main$Front(pageModel),
-					A2($elm$core$Platform$Cmd$map, $author$project$Main$FrontMsg, pageCmds));
-			default:
-				var _v4 = $author$project$Page$Admin$init(model.navKey);
-				var pageModel = _v4.a;
-				var pageCmds = _v4.b;
-				return _Utils_Tuple2(
-					$author$project$Main$Admin(pageModel),
-					A2($elm$core$Platform$Cmd$map, $author$project$Main$AdminMsg, pageCmds));
+var $author$project$Main$updateWith = F4(
+	function (toModel, toMsg, _v0, _v1) {
+		var subModel = _v1.a;
+		var subCmd = _v1.b;
+		return _Utils_Tuple2(
+			toModel(subModel),
+			A2($elm$core$Platform$Cmd$map, toMsg, subCmd));
+	});
+var $author$project$Main$changeRouteTo = F2(
+	function (maybeRoute, model) {
+		var session = $author$project$Main$toSession(model);
+		if (maybeRoute.$ === 'Nothing') {
+			return _Utils_Tuple2(
+				$author$project$Main$NotFound(session),
+				$elm$core$Platform$Cmd$none);
+		} else {
+			switch (maybeRoute.a.$) {
+				case 'Admin':
+					var _v1 = maybeRoute.a;
+					return A4(
+						$author$project$Main$updateWith,
+						$author$project$Main$Admin,
+						$author$project$Main$GotAdminMsg,
+						model,
+						$author$project$Page$Admin$init(session));
+				case 'Front':
+					var _v2 = maybeRoute.a;
+					return A4(
+						$author$project$Main$updateWith,
+						$author$project$Main$Front,
+						$author$project$Main$GotFrontMsg,
+						model,
+						$author$project$Page$Front$init(session));
+				default:
+					var id = maybeRoute.a.a;
+					return _Utils_Tuple2(
+						model,
+						A2(
+							$author$project$Route$replaceUrl,
+							$author$project$Session$navKey(session),
+							$author$project$Route$Front));
+			}
 		}
-	}();
-	var currentPage = _v1.a;
-	var mappedPageCmds = _v1.b;
-	return _Utils_Tuple2(
-		_Utils_update(
-			model,
-			{page: currentPage}),
-		$elm$core$Platform$Cmd$batch(
-			_List_fromArray(
-				[existingCmds, mappedPageCmds])));
-};
-var $author$project$Route$NotFound = {$: 'NotFound'};
-var $author$project$Route$Admin = {$: 'Admin'};
-var $author$project$Route$Front = {$: 'Front'};
-var $elm$url$Url$Parser$Parser = function (a) {
-	return {$: 'Parser', a: a};
-};
+	});
 var $elm$url$Url$Parser$State = F5(
 	function (visited, unvisited, params, frag, value) {
 		return {frag: frag, params: params, unvisited: unvisited, value: value, visited: visited};
 	});
-var $elm$url$Url$Parser$mapState = F2(
-	function (func, _v0) {
-		var visited = _v0.visited;
-		var unvisited = _v0.unvisited;
-		var params = _v0.params;
-		var frag = _v0.frag;
-		var value = _v0.value;
-		return A5(
-			$elm$url$Url$Parser$State,
-			visited,
-			unvisited,
-			params,
-			frag,
-			func(value));
-	});
-var $elm$url$Url$Parser$map = F2(
-	function (subValue, _v0) {
-		var parseArg = _v0.a;
-		return $elm$url$Url$Parser$Parser(
-			function (_v1) {
-				var visited = _v1.visited;
-				var unvisited = _v1.unvisited;
-				var params = _v1.params;
-				var frag = _v1.frag;
-				var value = _v1.value;
-				return A2(
-					$elm$core$List$map,
-					$elm$url$Url$Parser$mapState(value),
-					parseArg(
-						A5($elm$url$Url$Parser$State, visited, unvisited, params, frag, subValue)));
-			});
-	});
-var $elm$core$List$append = F2(
-	function (xs, ys) {
-		if (!ys.b) {
-			return xs;
-		} else {
-			return A3($elm$core$List$foldr, $elm$core$List$cons, ys, xs);
-		}
-	});
-var $elm$core$List$concat = function (lists) {
-	return A3($elm$core$List$foldr, $elm$core$List$append, _List_Nil, lists);
-};
-var $elm$core$List$concatMap = F2(
-	function (f, list) {
-		return $elm$core$List$concat(
-			A2($elm$core$List$map, f, list));
-	});
-var $elm$url$Url$Parser$oneOf = function (parsers) {
-	return $elm$url$Url$Parser$Parser(
-		function (state) {
-			return A2(
-				$elm$core$List$concatMap,
-				function (_v0) {
-					var parser = _v0.a;
-					return parser(state);
-				},
-				parsers);
-		});
-};
-var $elm$url$Url$Parser$s = function (str) {
-	return $elm$url$Url$Parser$Parser(
-		function (_v0) {
-			var visited = _v0.visited;
-			var unvisited = _v0.unvisited;
-			var params = _v0.params;
-			var frag = _v0.frag;
-			var value = _v0.value;
-			if (!unvisited.b) {
-				return _List_Nil;
-			} else {
-				var next = unvisited.a;
-				var rest = unvisited.b;
-				return _Utils_eq(next, str) ? _List_fromArray(
-					[
-						A5(
-						$elm$url$Url$Parser$State,
-						A2($elm$core$List$cons, next, visited),
-						rest,
-						params,
-						frag,
-						value)
-					]) : _List_Nil;
-			}
-		});
-};
-var $elm$url$Url$Parser$top = $elm$url$Url$Parser$Parser(
-	function (state) {
-		return _List_fromArray(
-			[state]);
-	});
-var $author$project$Route$matchRoute = $elm$url$Url$Parser$oneOf(
-	_List_fromArray(
-		[
-			A2($elm$url$Url$Parser$map, $author$project$Route$Front, $elm$url$Url$Parser$top),
-			A2(
-			$elm$url$Url$Parser$map,
-			$author$project$Route$Admin,
-			$elm$url$Url$Parser$s('admin'))
-		]));
 var $elm$url$Url$Parser$getFirstMatch = function (states) {
 	getFirstMatch:
 	while (true) {
@@ -6215,30 +6189,196 @@ var $elm$url$Url$Parser$parse = F2(
 					url.fragment,
 					$elm$core$Basics$identity)));
 	});
-var $author$project$Route$parseUrl = function (url) {
-	var _v0 = A2($elm$url$Url$Parser$parse, $author$project$Route$matchRoute, url);
-	if (_v0.$ === 'Just') {
-		var route = _v0.a;
-		return route;
-	} else {
-		return $author$project$Route$NotFound;
-	}
+var $author$project$Route$Admin = {$: 'Admin'};
+var $author$project$Route$Bieter = function (a) {
+	return {$: 'Bieter', a: a};
+};
+var $elm$url$Url$Parser$Parser = function (a) {
+	return {$: 'Parser', a: a};
+};
+var $elm$url$Url$Parser$mapState = F2(
+	function (func, _v0) {
+		var visited = _v0.visited;
+		var unvisited = _v0.unvisited;
+		var params = _v0.params;
+		var frag = _v0.frag;
+		var value = _v0.value;
+		return A5(
+			$elm$url$Url$Parser$State,
+			visited,
+			unvisited,
+			params,
+			frag,
+			func(value));
+	});
+var $elm$url$Url$Parser$map = F2(
+	function (subValue, _v0) {
+		var parseArg = _v0.a;
+		return $elm$url$Url$Parser$Parser(
+			function (_v1) {
+				var visited = _v1.visited;
+				var unvisited = _v1.unvisited;
+				var params = _v1.params;
+				var frag = _v1.frag;
+				var value = _v1.value;
+				return A2(
+					$elm$core$List$map,
+					$elm$url$Url$Parser$mapState(value),
+					parseArg(
+						A5($elm$url$Url$Parser$State, visited, unvisited, params, frag, subValue)));
+			});
+	});
+var $elm$core$List$append = F2(
+	function (xs, ys) {
+		if (!ys.b) {
+			return xs;
+		} else {
+			return A3($elm$core$List$foldr, $elm$core$List$cons, ys, xs);
+		}
+	});
+var $elm$core$List$concat = function (lists) {
+	return A3($elm$core$List$foldr, $elm$core$List$append, _List_Nil, lists);
+};
+var $elm$core$List$concatMap = F2(
+	function (f, list) {
+		return $elm$core$List$concat(
+			A2($elm$core$List$map, f, list));
+	});
+var $elm$url$Url$Parser$oneOf = function (parsers) {
+	return $elm$url$Url$Parser$Parser(
+		function (state) {
+			return A2(
+				$elm$core$List$concatMap,
+				function (_v0) {
+					var parser = _v0.a;
+					return parser(state);
+				},
+				parsers);
+		});
+};
+var $elm$url$Url$Parser$s = function (str) {
+	return $elm$url$Url$Parser$Parser(
+		function (_v0) {
+			var visited = _v0.visited;
+			var unvisited = _v0.unvisited;
+			var params = _v0.params;
+			var frag = _v0.frag;
+			var value = _v0.value;
+			if (!unvisited.b) {
+				return _List_Nil;
+			} else {
+				var next = unvisited.a;
+				var rest = unvisited.b;
+				return _Utils_eq(next, str) ? _List_fromArray(
+					[
+						A5(
+						$elm$url$Url$Parser$State,
+						A2($elm$core$List$cons, next, visited),
+						rest,
+						params,
+						frag,
+						value)
+					]) : _List_Nil;
+			}
+		});
+};
+var $elm$url$Url$Parser$slash = F2(
+	function (_v0, _v1) {
+		var parseBefore = _v0.a;
+		var parseAfter = _v1.a;
+		return $elm$url$Url$Parser$Parser(
+			function (state) {
+				return A2(
+					$elm$core$List$concatMap,
+					parseAfter,
+					parseBefore(state));
+			});
+	});
+var $elm$url$Url$Parser$top = $elm$url$Url$Parser$Parser(
+	function (state) {
+		return _List_fromArray(
+			[state]);
+	});
+var $elm$core$Basics$composeR = F3(
+	function (f, g, x) {
+		return g(
+			f(x));
+	});
+var $elm$url$Url$Parser$custom = F2(
+	function (tipe, stringToSomething) {
+		return $elm$url$Url$Parser$Parser(
+			function (_v0) {
+				var visited = _v0.visited;
+				var unvisited = _v0.unvisited;
+				var params = _v0.params;
+				var frag = _v0.frag;
+				var value = _v0.value;
+				if (!unvisited.b) {
+					return _List_Nil;
+				} else {
+					var next = unvisited.a;
+					var rest = unvisited.b;
+					var _v2 = stringToSomething(next);
+					if (_v2.$ === 'Just') {
+						var nextValue = _v2.a;
+						return _List_fromArray(
+							[
+								A5(
+								$elm$url$Url$Parser$State,
+								A2($elm$core$List$cons, next, visited),
+								rest,
+								params,
+								frag,
+								value(nextValue))
+							]);
+					} else {
+						return _List_Nil;
+					}
+				}
+			});
+	});
+var $author$project$Bieter$ID = function (a) {
+	return {$: 'ID', a: a};
+};
+var $author$project$Bieter$idFromString = function (sid) {
+	return $author$project$Bieter$ID(sid);
+};
+var $author$project$Bieter$urlParser = A2(
+	$elm$url$Url$Parser$custom,
+	'BIETER',
+	A2($elm$core$Basics$composeR, $author$project$Bieter$idFromString, $elm$core$Maybe$Just));
+var $author$project$Route$parser = $elm$url$Url$Parser$oneOf(
+	_List_fromArray(
+		[
+			A2($elm$url$Url$Parser$map, $author$project$Route$Front, $elm$url$Url$Parser$top),
+			A2(
+			$elm$url$Url$Parser$map,
+			$author$project$Route$Admin,
+			$elm$url$Url$Parser$s('admin')),
+			A2(
+			$elm$url$Url$Parser$map,
+			$author$project$Route$Bieter,
+			A2(
+				$elm$url$Url$Parser$slash,
+				$elm$url$Url$Parser$s('bieter'),
+				$author$project$Bieter$urlParser))
+		]));
+var $author$project$Route$fromUrl = function (url) {
+	return A2($elm$url$Url$Parser$parse, $author$project$Route$parser, url);
 };
 var $author$project$Main$init = F3(
 	function (_v0, url, navKey) {
-		var model = {
-			navKey: navKey,
-			page: $author$project$Main$NotFoundPage,
-			route: $author$project$Route$parseUrl(url)
-		};
-		return $author$project$Main$initCurrentPage(
-			_Utils_Tuple2(model, $elm$core$Platform$Cmd$none));
+		return A2(
+			$author$project$Main$changeRouteTo,
+			$author$project$Route$fromUrl(url),
+			$author$project$Main$Redirect(
+				$author$project$Session$anonymous(navKey)));
 	});
 var $elm$core$Platform$Sub$map = _Platform_map;
 var $elm$core$Platform$Sub$batch = _Platform_batch;
 var $elm$core$Platform$Sub$none = $elm$core$Platform$Sub$batch(_List_Nil);
-var $author$project$Page$Front$LoginPage = function (a) {
-	return {$: 'LoginPage', a: a};
+var $author$project$Page$Front$GotLoginPageMsg = function (a) {
+	return {$: 'GotLoginPageMsg', a: a};
 };
 var $author$project$Page$Front$ReceivedLocalStoreBieter = function (a) {
 	return {$: 'ReceivedLocalStoreBieter', a: a};
@@ -6257,16 +6397,15 @@ var $author$project$Ports$toElm = _Platform_incomingPort(
 var $author$project$Page$Front$subscriptions = function (_v0) {
 	return A2(
 		$elm$core$Platform$Sub$map,
-		$author$project$Page$Front$LoginPage,
+		$author$project$Page$Front$GotLoginPageMsg,
 		$author$project$Ports$toElm($author$project$Page$Front$ReceivedLocalStoreBieter));
 };
 var $author$project$Main$subscriptions = function (model) {
-	var _v0 = model.page;
-	if (_v0.$ === 'Front') {
-		var pageModel = _v0.a;
+	if (model.$ === 'Front') {
+		var pageModel = model.a;
 		return A2(
 			$elm$core$Platform$Sub$map,
-			$author$project$Main$FrontMsg,
+			$author$project$Main$GotFrontMsg,
 			$author$project$Page$Front$subscriptions(pageModel));
 	} else {
 		return $elm$core$Platform$Sub$none;
@@ -6325,9 +6464,6 @@ var $author$project$Bieter$Bieter = F4(
 	function (id, name, adresse, iban) {
 		return {adresse: adresse, iban: iban, id: id, name: name};
 	});
-var $author$project$Bieter$ID = function (a) {
-	return {$: 'ID', a: a};
-};
 var $author$project$Bieter$idDecoder = A2($elm$json$Json$Decode$map, $author$project$Bieter$ID, $elm$json$Json$Decode$string);
 var $elm$json$Json$Decode$field = _Json_decodeField;
 var $elm$json$Json$Decode$at = F2(
@@ -6443,11 +6579,6 @@ var $elm$core$Maybe$isJust = function (maybe) {
 var $elm$core$Platform$sendToSelf = _Platform_sendToSelf;
 var $elm$http$Http$emptyBody = _Http_emptyBody;
 var $elm$json$Json$Decode$decodeString = _Json_runOnString;
-var $elm$core$Basics$composeR = F3(
-	function (f, g, x) {
-		return g(
-			f(x));
-	});
 var $elm$http$Http$expectStringResponse = F2(
 	function (toMsg, toResult) {
 		return A3(
@@ -6758,23 +6889,6 @@ var $author$project$Page$Admin$fetchBieterResponse = F2(
 			}
 		}
 	});
-var $author$project$Route$routeToString = function (route) {
-	switch (route.$) {
-		case 'NotFound':
-			return '/not-found';
-		case 'Front':
-			return '/';
-		default:
-			return '/admin';
-	}
-};
-var $author$project$Route$pushUrl = F2(
-	function (route, navKey) {
-		return A2(
-			$elm$browser$Browser$Navigation$pushUrl,
-			navKey,
-			$author$project$Route$routeToString(route));
-	});
 var $author$project$Page$Admin$update = F2(
 	function (msg, model) {
 		switch (msg.$) {
@@ -6816,7 +6930,10 @@ var $author$project$Page$Admin$update = F2(
 			default:
 				return _Utils_Tuple2(
 					model,
-					A2($author$project$Route$pushUrl, $author$project$Route$Front, model.navKey));
+					A2(
+						$author$project$Route$replaceUrl,
+						$author$project$Session$navKey(model.session),
+						$author$project$Route$Front));
 		}
 	});
 var $author$project$Page$Front$Edit = function (a) {
@@ -6854,11 +6971,11 @@ var $author$project$Page$Front$buildErrorMessage = function (httpError) {
 			return message;
 	}
 };
-var $author$project$Page$Front$EditPage = function (a) {
-	return {$: 'EditPage', a: a};
-};
 var $author$project$Page$Front$FormReceived = function (a) {
 	return {$: 'FormReceived', a: a};
+};
+var $author$project$Page$Front$GotEditPageMsg = function (a) {
+	return {$: 'GotEditPageMsg', a: a};
 };
 var $author$project$Bieter$bieterEncoder = function (bieter) {
 	return $elm$json$Json$Encode$object(
@@ -6884,7 +7001,7 @@ var $elm$http$Http$jsonBody = function (value) {
 var $author$project$Page$Front$updateBieter = function (bieter) {
 	return A2(
 		$elm$core$Platform$Cmd$map,
-		$author$project$Page$Front$EditPage,
+		$author$project$Page$Front$GotEditPageMsg,
 		$elm$http$Http$request(
 			{
 				body: $elm$http$Http$jsonBody(
@@ -7007,7 +7124,7 @@ var $author$project$Page$Front$bieterNameEncoder = function (name) {
 var $author$project$Page$Front$createBieter = function (name) {
 	return A2(
 		$elm$core$Platform$Cmd$map,
-		$author$project$Page$Front$LoginPage,
+		$author$project$Page$Front$GotLoginPageMsg,
 		$elm$http$Http$request(
 			{
 				body: $elm$http$Http$jsonBody(
@@ -7030,7 +7147,7 @@ var $elm$http$Http$get = function (r) {
 var $author$project$Page$Front$fetchBieter = function (id) {
 	return A2(
 		$elm$core$Platform$Cmd$map,
-		$author$project$Page$Front$LoginPage,
+		$author$project$Page$Front$GotLoginPageMsg,
 		$elm$http$Http$get(
 			{
 				expect: A2($elm$http$Http$expectJson, $author$project$Page$Front$ReceivedLogin, $author$project$Bieter$bieterDecoder),
@@ -7150,7 +7267,7 @@ var $author$project$Page$Front$updateLoginPage = F3(
 var $author$project$Page$Front$update = F2(
 	function (msg, model) {
 		switch (msg.$) {
-			case 'LoginPage':
+			case 'GotLoginPageMsg':
 				var loginMsg = msg.a;
 				var _v1 = model.page;
 				if (_v1.$ === 'Login') {
@@ -7159,7 +7276,7 @@ var $author$project$Page$Front$update = F2(
 				} else {
 					return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 				}
-			case 'EditPage':
+			case 'GotEditPageMsg':
 				var editMsg = msg.a;
 				var _v2 = model.page;
 				if (_v2.$ === 'Edit') {
@@ -7168,7 +7285,7 @@ var $author$project$Page$Front$update = F2(
 				} else {
 					return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 				}
-			case 'Logout':
+			case 'GotLogoutMsg':
 				return _Utils_Tuple2(
 					_Utils_update(
 						model,
@@ -7190,44 +7307,10 @@ var $author$project$Page$Front$update = F2(
 	});
 var $author$project$Main$update = F2(
 	function (msg, model) {
-		var _v0 = _Utils_Tuple2(msg, model.page);
+		var _v0 = _Utils_Tuple2(msg, model);
 		_v0$4:
 		while (true) {
 			switch (_v0.a.$) {
-				case 'FrontMsg':
-					if (_v0.b.$ === 'Front') {
-						var subMsg = _v0.a.a;
-						var pageModel = _v0.b.a;
-						var _v1 = A2($author$project$Page$Front$update, subMsg, pageModel);
-						var updatedPageModel = _v1.a;
-						var updatedCmd = _v1.b;
-						return _Utils_Tuple2(
-							_Utils_update(
-								model,
-								{
-									page: $author$project$Main$Front(updatedPageModel)
-								}),
-							A2($elm$core$Platform$Cmd$map, $author$project$Main$FrontMsg, updatedCmd));
-					} else {
-						break _v0$4;
-					}
-				case 'AdminMsg':
-					if (_v0.b.$ === 'Admin') {
-						var subMsg = _v0.a.a;
-						var pageModel = _v0.b.a;
-						var _v2 = A2($author$project$Page$Admin$update, subMsg, pageModel);
-						var updatedPageModel = _v2.a;
-						var updatedCmd = _v2.b;
-						return _Utils_Tuple2(
-							_Utils_update(
-								model,
-								{
-									page: $author$project$Main$Admin(updatedPageModel)
-								}),
-							A2($elm$core$Platform$Cmd$map, $author$project$Main$AdminMsg, updatedCmd));
-					} else {
-						break _v0$4;
-					}
 				case 'LinkClicked':
 					var urlRequest = _v0.a.a;
 					if (urlRequest.$ === 'Internal') {
@@ -7236,7 +7319,8 @@ var $author$project$Main$update = F2(
 							model,
 							A2(
 								$elm$browser$Browser$Navigation$pushUrl,
-								model.navKey,
+								$author$project$Session$navKey(
+									$author$project$Main$toSession(model)),
 								$elm$url$Url$toString(url)));
 					} else {
 						if (urlRequest.a === '') {
@@ -7248,33 +7332,132 @@ var $author$project$Main$update = F2(
 								$elm$browser$Browser$Navigation$load(url));
 						}
 					}
-				default:
+				case 'UrlChanged':
 					var url = _v0.a.a;
-					var newRoute = $author$project$Route$parseUrl(url);
-					return $author$project$Main$initCurrentPage(
-						_Utils_Tuple2(
-							_Utils_update(
-								model,
-								{route: newRoute}),
-							$elm$core$Platform$Cmd$none));
+					return A2(
+						$author$project$Main$changeRouteTo,
+						$author$project$Route$fromUrl(url),
+						model);
+				case 'GotFrontMsg':
+					if (_v0.b.$ === 'Front') {
+						var subMsg = _v0.a.a;
+						var pageModel = _v0.b.a;
+						return A4(
+							$author$project$Main$updateWith,
+							$author$project$Main$Front,
+							$author$project$Main$GotFrontMsg,
+							model,
+							A2($author$project$Page$Front$update, subMsg, pageModel));
+					} else {
+						break _v0$4;
+					}
+				default:
+					if (_v0.b.$ === 'Admin') {
+						var subMsg = _v0.a.a;
+						var pageModel = _v0.b.a;
+						return A4(
+							$author$project$Main$updateWith,
+							$author$project$Main$Admin,
+							$author$project$Main$GotAdminMsg,
+							model,
+							A2($author$project$Page$Admin$update, subMsg, pageModel));
+					} else {
+						break _v0$4;
+					}
 			}
 		}
 		return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 	});
 var $elm$virtual_dom$VirtualDom$map = _VirtualDom_map;
 var $elm$html$Html$map = $elm$virtual_dom$VirtualDom$map;
-var $elm$html$Html$h3 = _VirtualDom_node('h3');
 var $elm$virtual_dom$VirtualDom$text = _VirtualDom_text;
 var $elm$html$Html$text = $elm$virtual_dom$VirtualDom$text;
-var $author$project$Main$notFoundView = A2(
-	$elm$html$Html$h3,
+var $elm$html$Html$a = _VirtualDom_node('a');
+var $elm$html$Html$div = _VirtualDom_node('div');
+var $elm$html$Html$Attributes$stringProperty = F2(
+	function (key, string) {
+		return A2(
+			_VirtualDom_property,
+			key,
+			$elm$json$Json$Encode$string(string));
+	});
+var $elm$html$Html$Attributes$href = function (url) {
+	return A2(
+		$elm$html$Html$Attributes$stringProperty,
+		'href',
+		_VirtualDom_noJavaScriptUri(url));
+};
+var $author$project$Route$href = function (targetRoute) {
+	return $elm$html$Html$Attributes$href(
+		$author$project$Route$routeToString(targetRoute));
+};
+var $author$project$Page$viewFooter = A2(
+	$elm$html$Html$div,
 	_List_Nil,
 	_List_fromArray(
 		[
-			$elm$html$Html$text('Oops! The page you requested was not found!')
+			$elm$html$Html$text('footer content'),
+			A2(
+			$elm$html$Html$a,
+			_List_fromArray(
+				[
+					$author$project$Route$href($author$project$Route$Admin)
+				]),
+			_List_fromArray(
+				[
+					$elm$html$Html$text('Admin')
+				]))
 		]));
-var $elm$html$Html$div = _VirtualDom_node('div');
 var $elm$html$Html$h1 = _VirtualDom_node('h1');
+var $elm$html$Html$header = _VirtualDom_node('header');
+var $author$project$Session$toBieter = function (s) {
+	var _v0 = s.viewer;
+	if (_v0.$ === 'LoggedIn') {
+		var b = _v0.a;
+		return $elm$core$Maybe$Just(b);
+	} else {
+		return $elm$core$Maybe$Nothing;
+	}
+};
+var $author$project$Page$viewLoginLogout = function (session) {
+	var _v0 = $author$project$Session$toBieter(session);
+	if (_v0.$ === 'Nothing') {
+		return $elm$html$Html$text('foobar');
+	} else {
+		var bieter = _v0.a;
+		return $elm$html$Html$text('logout');
+	}
+};
+var $author$project$Page$viewHeader = function (session) {
+	return A2(
+		$elm$html$Html$header,
+		_List_Nil,
+		_List_fromArray(
+			[
+				A2(
+				$elm$html$Html$h1,
+				_List_Nil,
+				_List_fromArray(
+					[
+						$elm$html$Html$text('Bieterrunde')
+					])),
+				$author$project$Page$viewLoginLogout(session)
+			]));
+};
+var $author$project$Page$view = F2(
+	function (session, _v0) {
+		var title = _v0.title;
+		var content = _v0.content;
+		return {
+			body: _List_fromArray(
+				[
+					$author$project$Page$viewHeader(session),
+					content,
+					$author$project$Page$viewFooter
+				]),
+			title: title + ' - Conduit'
+		};
+	});
 var $elm$html$Html$table = _VirtualDom_node('table');
 var $elm$html$Html$td = _VirtualDom_node('td');
 var $elm$html$Html$tr = _VirtualDom_node('tr');
@@ -7448,13 +7631,6 @@ var $elm$html$Html$Events$onInput = function (tagger) {
 			$elm$html$Html$Events$alwaysStop,
 			A2($elm$json$Json$Decode$map, tagger, $elm$html$Html$Events$targetValue)));
 };
-var $elm$html$Html$Attributes$stringProperty = F2(
-	function (key, string) {
-		return A2(
-			_VirtualDom_property,
-			key,
-			$elm$json$Json$Encode$string(string));
-	});
 var $elm$html$Html$Attributes$type_ = $elm$html$Html$Attributes$stringProperty('type');
 var $elm$html$Html$Attributes$value = $elm$html$Html$Attributes$stringProperty('value');
 var $author$project$Page$Admin$viewLogin = function (model) {
@@ -7516,100 +7692,106 @@ var $author$project$Page$Admin$viewLogin = function (model) {
 			]));
 };
 var $author$project$Page$Admin$view = function (model) {
-	var _v0 = model.password;
-	if (_v0.$ === 'Nothing') {
-		return $author$project$Page$Admin$viewLogin(model);
-	} else {
-		var _v1 = model.bieter;
-		if (_v1.$ === 'Just') {
-			var bieter = _v1.a;
-			return $author$project$Page$Admin$viewList(bieter);
+	var content = function () {
+		var _v0 = model.password;
+		if (_v0.$ === 'Nothing') {
+			return $author$project$Page$Admin$viewLogin(model);
 		} else {
-			return $elm$html$Html$text('todo no bieter');
+			var _v1 = model.bieter;
+			if (_v1.$ === 'Just') {
+				var bieter = _v1.a;
+				return $author$project$Page$Admin$viewList(bieter);
+			} else {
+				return $elm$html$Html$text('Keine Bieter vorhanden');
+			}
 		}
-	}
+	}();
+	return {content: content, title: 'Admin'};
 };
-var $author$project$Page$Front$Logout = {$: 'Logout'};
-var $author$project$Page$Front$ToEdit = function (a) {
-	return {$: 'ToEdit', a: a};
+var $author$project$Page$Front$GotLogoutMsg = {$: 'GotLogoutMsg'};
+var $author$project$Page$Front$GotoEditMsg = function (a) {
+	return {$: 'GotoEditMsg', a: a};
 };
 var $author$project$Page$Front$viewBieter = function (bieter) {
-	return A2(
-		$elm$html$Html$div,
-		_List_Nil,
-		_List_fromArray(
-			[
-				A2(
-				$elm$html$Html$h1,
-				_List_Nil,
-				_List_fromArray(
-					[
-						$elm$html$Html$text('Hallo ' + bieter.name)
-					])),
-				A2(
-				$elm$html$Html$div,
-				_List_Nil,
-				_List_fromArray(
-					[
-						$elm$html$Html$text('Deine Bieternummer ist '),
-						A2(
-						$elm$html$Html$strong,
-						_List_Nil,
-						_List_fromArray(
-							[
-								$elm$html$Html$text(
-								$author$project$Bieter$idToString(bieter.id))
-							])),
-						$elm$html$Html$text('. Merke sie dir gut. Du brauchst sie für die nächste anmeldung')
-					])),
-				A2(
-				$elm$html$Html$div,
-				_List_Nil,
-				_List_fromArray(
-					[
-						$elm$html$Html$text('Adresse: ' + bieter.adresse)
-					])),
-				A2(
-				$elm$html$Html$div,
-				_List_Nil,
-				_List_fromArray(
-					[
-						$elm$html$Html$text('IBAN: ' + bieter.iban)
-					])),
-				A2(
-				$elm$html$Html$div,
-				_List_Nil,
-				_List_fromArray(
-					[
-						A2(
-						$elm$html$Html$button,
-						_List_fromArray(
-							[
-								$elm$html$Html$Events$onClick($author$project$Page$Front$Logout)
-							]),
-						_List_fromArray(
-							[
-								$elm$html$Html$text('logout')
-							]))
-					])),
-				A2(
-				$elm$html$Html$div,
-				_List_Nil,
-				_List_fromArray(
-					[
-						A2(
-						$elm$html$Html$button,
-						_List_fromArray(
-							[
-								$elm$html$Html$Events$onClick(
-								$author$project$Page$Front$ToEdit(bieter))
-							]),
-						_List_fromArray(
-							[
-								$elm$html$Html$text('Bearbeiten')
-							]))
-					]))
-			]));
+	return {
+		content: A2(
+			$elm$html$Html$div,
+			_List_Nil,
+			_List_fromArray(
+				[
+					A2(
+					$elm$html$Html$h1,
+					_List_Nil,
+					_List_fromArray(
+						[
+							$elm$html$Html$text('Hallo ' + bieter.name)
+						])),
+					A2(
+					$elm$html$Html$div,
+					_List_Nil,
+					_List_fromArray(
+						[
+							$elm$html$Html$text('Deine Bieternummer ist '),
+							A2(
+							$elm$html$Html$strong,
+							_List_Nil,
+							_List_fromArray(
+								[
+									$elm$html$Html$text(
+									$author$project$Bieter$idToString(bieter.id))
+								])),
+							$elm$html$Html$text('. Merke sie dir gut. Du brauchst sie für die nächste anmeldung')
+						])),
+					A2(
+					$elm$html$Html$div,
+					_List_Nil,
+					_List_fromArray(
+						[
+							$elm$html$Html$text('Adresse: ' + bieter.adresse)
+						])),
+					A2(
+					$elm$html$Html$div,
+					_List_Nil,
+					_List_fromArray(
+						[
+							$elm$html$Html$text('IBAN: ' + bieter.iban)
+						])),
+					A2(
+					$elm$html$Html$div,
+					_List_Nil,
+					_List_fromArray(
+						[
+							A2(
+							$elm$html$Html$button,
+							_List_fromArray(
+								[
+									$elm$html$Html$Events$onClick($author$project$Page$Front$GotLogoutMsg)
+								]),
+							_List_fromArray(
+								[
+									$elm$html$Html$text('logout')
+								]))
+						])),
+					A2(
+					$elm$html$Html$div,
+					_List_Nil,
+					_List_fromArray(
+						[
+							A2(
+							$elm$html$Html$button,
+							_List_fromArray(
+								[
+									$elm$html$Html$Events$onClick(
+									$author$project$Page$Front$GotoEditMsg(bieter))
+								]),
+							_List_fromArray(
+								[
+									$elm$html$Html$text('Bearbeiten')
+								]))
+						]))
+				])),
+		title: 'Bieter'
+	};
 };
 var $author$project$Page$Front$FormGoBack = {$: 'FormGoBack'};
 var $author$project$Page$Front$FormSaveAdresse = function (a) {
@@ -7644,87 +7826,90 @@ var $author$project$Page$Front$maybeError = function (errorMsg) {
 	}
 };
 var $author$project$Page$Front$viewEdit = function (data) {
-	return A2(
-		$elm$html$Html$div,
-		_List_Nil,
-		_List_fromArray(
-			[
-				$author$project$Page$Front$maybeError(data.errorMsg),
-				A2(
-				$elm$html$Html$div,
-				_List_Nil,
-				_List_fromArray(
-					[
-						$elm$html$Html$text('Name'),
-						A2(
-						$elm$html$Html$input,
-						_List_fromArray(
-							[
-								$elm$html$Html$Attributes$type_('text'),
-								$elm$html$Html$Attributes$value(data.bieter.name),
-								$elm$html$Html$Events$onInput($author$project$Page$Front$FormSaveName)
-							]),
-						_List_Nil)
-					])),
-				A2(
-				$elm$html$Html$div,
-				_List_Nil,
-				_List_fromArray(
-					[
-						$elm$html$Html$text('Adresse'),
-						A2(
-						$elm$html$Html$input,
-						_List_fromArray(
-							[
-								$elm$html$Html$Attributes$type_('text'),
-								$elm$html$Html$Attributes$value(data.bieter.adresse),
-								$elm$html$Html$Events$onInput($author$project$Page$Front$FormSaveAdresse)
-							]),
-						_List_Nil)
-					])),
-				A2(
-				$elm$html$Html$div,
-				_List_Nil,
-				_List_fromArray(
-					[
-						$elm$html$Html$text('IBAN'),
-						A2(
-						$elm$html$Html$input,
-						_List_fromArray(
-							[
-								$elm$html$Html$Attributes$type_('text'),
-								$elm$html$Html$Attributes$value(data.bieter.iban),
-								$elm$html$Html$Events$onInput($author$project$Page$Front$FormSaveIBAN)
-							]),
-						_List_Nil)
-					])),
-				A2(
-				$elm$html$Html$div,
-				_List_Nil,
-				_List_fromArray(
-					[
-						A2(
-						$elm$html$Html$button,
-						_List_fromArray(
-							[
-								$elm$html$Html$Events$onClick($author$project$Page$Front$FormSubmit)
-							]),
-						_List_fromArray(
-							[
-								$elm$html$Html$text('Speichern')
-							])),
-						A2(
-						$elm$html$Html$button,
-						_List_fromArray(
-							[
-								$elm$html$Html$Events$onClick($author$project$Page$Front$FormGoBack)
-							]),
-						_List_fromArray(
-							[
-								$elm$html$Html$text('Zurück')
-							]))
-					]))
-			]));
+	return {
+		content: A2(
+			$elm$html$Html$div,
+			_List_Nil,
+			_List_fromArray(
+				[
+					$author$project$Page$Front$maybeError(data.errorMsg),
+					A2(
+					$elm$html$Html$div,
+					_List_Nil,
+					_List_fromArray(
+						[
+							$elm$html$Html$text('Name'),
+							A2(
+							$elm$html$Html$input,
+							_List_fromArray(
+								[
+									$elm$html$Html$Attributes$type_('text'),
+									$elm$html$Html$Attributes$value(data.bieter.name),
+									$elm$html$Html$Events$onInput($author$project$Page$Front$FormSaveName)
+								]),
+							_List_Nil)
+						])),
+					A2(
+					$elm$html$Html$div,
+					_List_Nil,
+					_List_fromArray(
+						[
+							$elm$html$Html$text('Adresse'),
+							A2(
+							$elm$html$Html$input,
+							_List_fromArray(
+								[
+									$elm$html$Html$Attributes$type_('text'),
+									$elm$html$Html$Attributes$value(data.bieter.adresse),
+									$elm$html$Html$Events$onInput($author$project$Page$Front$FormSaveAdresse)
+								]),
+							_List_Nil)
+						])),
+					A2(
+					$elm$html$Html$div,
+					_List_Nil,
+					_List_fromArray(
+						[
+							$elm$html$Html$text('IBAN'),
+							A2(
+							$elm$html$Html$input,
+							_List_fromArray(
+								[
+									$elm$html$Html$Attributes$type_('text'),
+									$elm$html$Html$Attributes$value(data.bieter.iban),
+									$elm$html$Html$Events$onInput($author$project$Page$Front$FormSaveIBAN)
+								]),
+							_List_Nil)
+						])),
+					A2(
+					$elm$html$Html$div,
+					_List_Nil,
+					_List_fromArray(
+						[
+							A2(
+							$elm$html$Html$button,
+							_List_fromArray(
+								[
+									$elm$html$Html$Events$onClick($author$project$Page$Front$FormSubmit)
+								]),
+							_List_fromArray(
+								[
+									$elm$html$Html$text('Speichern')
+								])),
+							A2(
+							$elm$html$Html$button,
+							_List_fromArray(
+								[
+									$elm$html$Html$Events$onClick($author$project$Page$Front$FormGoBack)
+								]),
+							_List_fromArray(
+								[
+									$elm$html$Html$text('Zurück')
+								]))
+						]))
+				])),
+		title: 'Edit Bieter'
+	};
 };
 var $author$project$Page$Front$RequestCreate = {$: 'RequestCreate'};
 var $author$project$Page$Front$RequestLogin = {$: 'RequestLogin'};
@@ -7759,211 +7944,180 @@ var $elm$html$Html$Events$onSubmit = function (msg) {
 			$elm$json$Json$Decode$succeed(msg)));
 };
 var $author$project$Page$Front$viewLogin = function (loginData) {
-	return A2(
-		$elm$html$Html$div,
-		_List_Nil,
-		_List_fromArray(
-			[
-				A2(
-				$elm$html$Html$h1,
-				_List_Nil,
-				_List_fromArray(
-					[
-						$elm$html$Html$text('Mit Bieternummer anmelden')
-					])),
-				$author$project$Page$Front$maybeError(loginData.errorMsg),
-				A2(
-				$elm$html$Html$form,
-				_List_fromArray(
-					[
-						$elm$html$Html$Events$onSubmit($author$project$Page$Front$RequestLogin)
-					]),
-				_List_fromArray(
-					[
-						A2(
-						$elm$html$Html$div,
-						_List_Nil,
-						_List_fromArray(
-							[
-								$elm$html$Html$text('Bieternummer'),
-								A2(
-								$elm$html$Html$input,
-								_List_fromArray(
-									[
-										$elm$html$Html$Attributes$id('nummer'),
-										$elm$html$Html$Attributes$type_('text'),
-										$elm$html$Html$Attributes$value(loginData.formUserNr),
-										$elm$html$Html$Events$onInput($author$project$Page$Front$SaveNumber)
-									]),
-								_List_Nil)
-							])),
-						A2(
-						$elm$html$Html$div,
-						_List_Nil,
-						_List_fromArray(
-							[
-								A2(
-								$elm$html$Html$button,
-								_List_fromArray(
-									[
-										$elm$html$Html$Attributes$type_('submit')
-									]),
-								_List_fromArray(
-									[
-										$elm$html$Html$text('Anmelden')
-									]))
-							]))
-					])),
-				A2(
-				$elm$html$Html$h1,
-				_List_Nil,
-				_List_fromArray(
-					[
-						$elm$html$Html$text('Neue Bieternummer anlegen')
-					])),
-				A2(
-				$elm$html$Html$form,
-				_List_fromArray(
-					[
-						$elm$html$Html$Events$onSubmit($author$project$Page$Front$RequestCreate)
-					]),
-				_List_fromArray(
-					[
-						A2(
-						$elm$html$Html$div,
-						_List_Nil,
-						_List_fromArray(
-							[
-								$elm$html$Html$text('Bieternummer'),
-								A2(
-								$elm$html$Html$input,
-								_List_fromArray(
-									[
-										$elm$html$Html$Attributes$id('name'),
-										$elm$html$Html$Attributes$type_('text'),
-										$elm$html$Html$Attributes$value(loginData.formUserName),
-										$elm$html$Html$Events$onInput($author$project$Page$Front$SaveName)
-									]),
-								_List_Nil)
-							])),
-						A2(
-						$elm$html$Html$div,
-						_List_Nil,
-						_List_fromArray(
-							[
-								A2(
-								$elm$html$Html$button,
-								_List_fromArray(
-									[
-										$elm$html$Html$Attributes$type_('submit')
-									]),
-								_List_fromArray(
-									[
-										$elm$html$Html$text('Anlegen')
-									]))
-							]))
-					]))
-			]));
+	return {
+		content: A2(
+			$elm$html$Html$div,
+			_List_Nil,
+			_List_fromArray(
+				[
+					A2(
+					$elm$html$Html$h1,
+					_List_Nil,
+					_List_fromArray(
+						[
+							$elm$html$Html$text('Mit Bieternummer anmelden')
+						])),
+					$author$project$Page$Front$maybeError(loginData.errorMsg),
+					A2(
+					$elm$html$Html$form,
+					_List_fromArray(
+						[
+							$elm$html$Html$Events$onSubmit($author$project$Page$Front$RequestLogin)
+						]),
+					_List_fromArray(
+						[
+							A2(
+							$elm$html$Html$div,
+							_List_Nil,
+							_List_fromArray(
+								[
+									$elm$html$Html$text('Bieternummer'),
+									A2(
+									$elm$html$Html$input,
+									_List_fromArray(
+										[
+											$elm$html$Html$Attributes$id('nummer'),
+											$elm$html$Html$Attributes$type_('text'),
+											$elm$html$Html$Attributes$value(loginData.formUserNr),
+											$elm$html$Html$Events$onInput($author$project$Page$Front$SaveNumber)
+										]),
+									_List_Nil)
+								])),
+							A2(
+							$elm$html$Html$div,
+							_List_Nil,
+							_List_fromArray(
+								[
+									A2(
+									$elm$html$Html$button,
+									_List_fromArray(
+										[
+											$elm$html$Html$Attributes$type_('submit')
+										]),
+									_List_fromArray(
+										[
+											$elm$html$Html$text('Anmelden')
+										]))
+								]))
+						])),
+					A2(
+					$elm$html$Html$h1,
+					_List_Nil,
+					_List_fromArray(
+						[
+							$elm$html$Html$text('Neue Bieternummer anlegen')
+						])),
+					A2(
+					$elm$html$Html$form,
+					_List_fromArray(
+						[
+							$elm$html$Html$Events$onSubmit($author$project$Page$Front$RequestCreate)
+						]),
+					_List_fromArray(
+						[
+							A2(
+							$elm$html$Html$div,
+							_List_Nil,
+							_List_fromArray(
+								[
+									$elm$html$Html$text('Bieternummer'),
+									A2(
+									$elm$html$Html$input,
+									_List_fromArray(
+										[
+											$elm$html$Html$Attributes$id('name'),
+											$elm$html$Html$Attributes$type_('text'),
+											$elm$html$Html$Attributes$value(loginData.formUserName),
+											$elm$html$Html$Events$onInput($author$project$Page$Front$SaveName)
+										]),
+									_List_Nil)
+								])),
+							A2(
+							$elm$html$Html$div,
+							_List_Nil,
+							_List_fromArray(
+								[
+									A2(
+									$elm$html$Html$button,
+									_List_fromArray(
+										[
+											$elm$html$Html$Attributes$type_('submit')
+										]),
+									_List_fromArray(
+										[
+											$elm$html$Html$text('Anlegen')
+										]))
+								]))
+						]))
+				])),
+		title: 'Login title'
+	};
 };
 var $author$project$Page$Front$view = function (model) {
 	var _v0 = model.page;
 	switch (_v0.$) {
 		case 'Login':
 			var data = _v0.a;
-			return A2(
-				$elm$html$Html$map,
-				$author$project$Page$Front$LoginPage,
-				$author$project$Page$Front$viewLogin(data));
+			var _v1 = $author$project$Page$Front$viewLogin(data);
+			var title = _v1.title;
+			var content = _v1.content;
+			return {
+				content: A2($elm$html$Html$map, $author$project$Page$Front$GotLoginPageMsg, content),
+				title: title
+			};
 		case 'Show':
 			var bieter = _v0.a;
 			return $author$project$Page$Front$viewBieter(bieter);
 		default:
 			var editData = _v0.a;
-			return A2(
-				$elm$html$Html$map,
-				$author$project$Page$Front$EditPage,
-				$author$project$Page$Front$viewEdit(editData));
+			var _v2 = $author$project$Page$Front$viewEdit(editData);
+			var title = _v2.title;
+			var content = _v2.content;
+			return {
+				content: A2($elm$html$Html$map, $author$project$Page$Front$GotEditPageMsg, content),
+				title: title
+			};
 	}
 };
-var $author$project$Main$currentView = function (model) {
-	var _v0 = model.page;
-	switch (_v0.$) {
-		case 'NotFoundPage':
-			return $author$project$Main$notFoundView;
-		case 'Front':
-			var pageModel = _v0.a;
-			return A2(
-				$elm$html$Html$map,
-				$author$project$Main$FrontMsg,
-				$author$project$Page$Front$view(pageModel));
-		default:
-			var pageModel = _v0.a;
-			return A2(
-				$elm$html$Html$map,
-				$author$project$Main$AdminMsg,
-				$author$project$Page$Admin$view(pageModel));
-	}
-};
-var $elm$html$Html$a = _VirtualDom_node('a');
-var $elm$html$Html$Attributes$href = function (url) {
-	return A2(
-		$elm$html$Html$Attributes$stringProperty,
-		'href',
-		_VirtualDom_noJavaScriptUri(url));
-};
-var $author$project$Main$viewFooter = A2(
-	$elm$html$Html$div,
-	_List_Nil,
-	_List_fromArray(
-		[
-			A2(
-			$elm$html$Html$div,
-			_List_Nil,
-			_List_fromArray(
-				[
-					$elm$html$Html$text('Logout')
-				])),
-			A2(
-			$elm$html$Html$div,
-			_List_Nil,
-			_List_fromArray(
-				[
-					A2(
-					$elm$html$Html$a,
-					_List_fromArray(
-						[
-							$elm$html$Html$Attributes$href(
-							$author$project$Route$routeToString($author$project$Route$Admin))
-						]),
-					_List_fromArray(
-						[
-							$elm$html$Html$text('Admin')
-						]))
-				]))
-		]));
-var $author$project$Main$viewHeader = A2(
-	$elm$html$Html$div,
-	_List_Nil,
-	_List_fromArray(
-		[
-			A2(
-			$elm$html$Html$h1,
-			_List_Nil,
-			_List_fromArray(
-				[
-					$elm$html$Html$text('Bieterrunde')
-				]))
-		]));
 var $author$project$Main$view = function (model) {
-	return {
-		body: _List_fromArray(
-			[
-				$author$project$Main$viewHeader,
-				$author$project$Main$currentView(model),
-				$author$project$Main$viewFooter
-			]),
-		title: 'Bieterrunde'
-	};
+	var viewPage = F2(
+		function (toMsg, config) {
+			var _v1 = A2(
+				$author$project$Page$view,
+				$author$project$Main$toSession(model),
+				config);
+			var title = _v1.title;
+			var body = _v1.body;
+			return {
+				body: A2(
+					$elm$core$List$map,
+					$elm$html$Html$map(toMsg),
+					body),
+				title: title
+			};
+		});
+	switch (model.$) {
+		case 'Front':
+			var front = model.a;
+			return A2(
+				viewPage,
+				$author$project$Main$GotFrontMsg,
+				$author$project$Page$Front$view(front));
+		case 'Admin':
+			var admin = model.a;
+			return A2(
+				viewPage,
+				$author$project$Main$GotAdminMsg,
+				$author$project$Page$Admin$view(admin));
+		default:
+			return {
+				body: _List_fromArray(
+					[
+						$elm$html$Html$text('todo other')
+					]),
+				title: 'todo'
+			};
+	}
 };
 var $author$project$Main$main = $elm$browser$Browser$application(
 	{init: $author$project$Main$init, onUrlChange: $author$project$Main$UrlChanged, onUrlRequest: $author$project$Main$LinkClicked, subscriptions: $author$project$Main$subscriptions, update: $author$project$Main$update, view: $author$project$Main$view});

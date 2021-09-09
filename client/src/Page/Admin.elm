@@ -1,16 +1,16 @@
-module Page.Admin exposing (Model, Msg, init, subscriptions, update, view)
+module Page.Admin exposing (Model, Msg, init, subscriptions, toSession, update, view)
 
 import Bieter
-import Browser.Navigation as Nav
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onClick, onInput)
 import Http
 import Route
+import Session exposing (Session)
 
 
 type alias Model =
-    { navKey : Nav.Key
+    { session : Session
     , bieter : Maybe (List Bieter.Bieter)
     , password : Maybe String
     , formPassword : String
@@ -26,9 +26,9 @@ type Msg
     | LoginFormGoBack
 
 
-init : Nav.Key -> ( Model, Cmd Msg )
-init navKey =
-    ( Model navKey Nothing Nothing "" Nothing
+init : Session -> ( Model, Cmd Msg )
+init session =
+    ( Model session Nothing Nothing "" Nothing
     , Cmd.none
     )
 
@@ -75,7 +75,7 @@ update msg model =
 
         LoginFormGoBack ->
             ( model
-            , Route.pushUrl Route.Front model.navKey
+            , Route.replaceUrl (Session.navKey model.session) Route.Front
             )
 
 
@@ -149,19 +149,25 @@ subscriptions _ =
     Sub.none
 
 
-view : Model -> Html Msg
+view : Model -> { title : String, content : Html Msg }
 view model =
-    case model.password of
-        Nothing ->
-            viewLogin model
-
-        Just _ ->
-            case model.bieter of
-                Just bieter ->
-                    viewList bieter
-
+    let
+        content =
+            case model.password of
                 Nothing ->
-                    text "todo no bieter"
+                    viewLogin model
+
+                Just _ ->
+                    case model.bieter of
+                        Just bieter ->
+                            viewList bieter
+
+                        Nothing ->
+                            text "Keine Bieter vorhanden"
+    in
+    { title = "Admin"
+    , content = content
+    }
 
 
 viewList : List Bieter.Bieter -> Html Msg
@@ -227,3 +233,8 @@ maybeError maybeStr =
 
         Nothing ->
             text ""
+
+
+toSession : Model -> Session
+toSession model =
+    model.session

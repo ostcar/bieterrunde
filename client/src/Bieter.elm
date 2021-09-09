@@ -1,8 +1,9 @@
-module Bieter exposing (Bieter, ID, bieterDecoder, bieterEncoder, bieterListDecoder, idDecoder, idFromString, idToString)
+module Bieter exposing (Bieter, ID, bieterDecoder, bieterEncoder, bieterListDecoder, idDecoder, idFromString, idToString, urlParser)
 
 import Json.Decode as Decode exposing (Decoder, list, string)
 import Json.Decode.Pipeline exposing (optionalAt, required)
 import Json.Encode as Encode
+import Url.Parser
 
 
 type alias Bieter =
@@ -53,3 +54,7 @@ idToString (ID id) =
 idFromString : String -> ID
 idFromString sid =
     ID sid
+
+urlParser : Url.Parser.Parser (ID -> a) a
+urlParser =
+    Url.Parser.custom "BIETER" (idFromString >> Just)
