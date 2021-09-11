@@ -1,10 +1,14 @@
 <!DOCTYPE html>
 <html>
+<head>
+	<link rel="shortcut icon" type="image/x-icon" href="/static/images/favicon.png">
+</head>
 
 <body>
 	<script src="/elm.js"></script>
 	<script>
-		var app = Elm.Main.init({ });
+		var  bieter_id = localStorage.getItem('bieter_id')
+		var app = Elm.Main.init({flags:bieter_id });
 
 		app.ports.fromElm.subscribe(function (msg) {
 			if (msg.tag == "store-id") {

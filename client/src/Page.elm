@@ -4,7 +4,6 @@ import Browser exposing (Document)
 import Html exposing (..)
 import Route
 import Session exposing (Session)
-import Route exposing (Route(..))
 
 
 view : Session -> { title : String, content : Html msg } -> Document msg
@@ -17,17 +16,20 @@ view session { title, content } =
 viewHeader : Session -> Html msg
 viewHeader session =
     header []
-        [h1 [] [text "Bieterrunde"] 
-        , viewLoginLogout session
+        [ h1 [] [ text "Bieterrunde" ]
+        , viewMaybeLogout session
         ]
 
-viewLoginLogout : Session -> Html msg
-viewLoginLogout session =
-    case Session.toBieter session of 
+
+viewMaybeLogout : Session -> Html msg
+viewMaybeLogout session =
+    case Session.toBieter session of
         Nothing ->
-            text "foobar"
-        Just bieter ->
-            text "logout"
+            text ""
+
+        Just _ ->
+            a [ Route.href Route.Logout ] [ text "logout" ]
+
 
 viewFooter : Html msg
 viewFooter =

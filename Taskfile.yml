@@ -14,7 +14,6 @@ tasks:
       - src/**/*.elm
     generates:
       - elm.js
-      - index.html
   
   server:
     cmds:
@@ -47,6 +46,7 @@ tasks:
 
     sources:
       - config.toml
+      - client/index.html
 
     method: none
 

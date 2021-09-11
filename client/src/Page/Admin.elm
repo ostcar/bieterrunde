@@ -1,4 +1,4 @@
-module Page.Admin exposing (Model, Msg, init, subscriptions, toSession, update, view)
+module Page.Admin exposing (Model, Msg, init, subscriptions, toSession, update, updateSession, view)
 
 import Bieter
 import Html exposing (..)
@@ -238,3 +238,8 @@ maybeError maybeStr =
 toSession : Model -> Session
 toSession model =
     model.session
+
+
+updateSession : Model -> Session -> Model
+updateSession model session =
+    { model | session = session }

@@ -18,18 +18,18 @@ func TestDatabaseLoad(t *testing.T) {
 	}
 
 	if len(db.bieter) != 2 {
-		t.Errorf("loaded %d users, expected 2", len(db.bieter))
+		t.Errorf("loaded %d bieters, expected 2", len(db.bieter))
 	}
 
 	u1 := db.bieter["1234"]
 	expectU1 := `{"name":"hugo","adresse":"beim wald"}`
 	if string(u1) != expectU1 {
-		t.Errorf("user 1234 is %q, expected %q", u1, expectU1)
+		t.Errorf("bieter 1234 is %q, expected %q", u1, expectU1)
 	}
 
 	u2 := db.bieter["4321"]
 	expectU2 := `{"name":"erik","adresse":"nachbarhaus"}`
 	if string(u2) != expectU2 {
-		t.Errorf("user 4321 is %q, expected %q", u2, expectU2)
+		t.Errorf("bieter 4321 is %q, expected %q", u2, expectU2)
 	}
 }

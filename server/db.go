@@ -159,13 +159,13 @@ func (s ServiceState) String() string {
 	return [...]string{"Ungültig", "Registrierung", "Überprüfung", "Gebote"}[s]
 }
 
-// Bieter returns the user data for a bieterID.
+// Bieter returns the  data for a bieterID.
 func (db *Database) Bieter(id string) (json.RawMessage, bool) {
 	db.RLock()
 	defer db.RUnlock()
 
-	user, ok := db.bieter[id]
-	return user, ok
+	bieter, ok := db.bieter[id]
+	return bieter, ok
 }
 
 // BieterList return all bieters.
@@ -267,7 +267,7 @@ func (db *Database) SetState(r io.Reader) error {
 	return nil
 }
 
-// Offer returns the offer to a user.
+// Offer returns the offer form a bieter.
 func (db *Database) Offer(id string) int {
 	db.RLock()
 	defer db.RUnlock()

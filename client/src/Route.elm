@@ -1,17 +1,18 @@
-module Route exposing (Route(..), fromUrl, href, replaceUrl)
+module Route exposing (Route(..), fromUrl, href, replaceUrl, routeToString)
 
+import Bieter
 import Browser.Navigation as Nav
 import Html exposing (Attribute)
 import Html.Attributes as Attr
 import Url exposing (Url)
 import Url.Parser as Parser exposing (..)
-import Bieter
 
 
 type Route
     = Front
     | Admin
     | Bieter Bieter.ID
+    | Logout
 
 
 parser : Parser (Route -> a) a
@@ -20,6 +21,7 @@ parser =
         [ Parser.map Front Parser.top
         , Parser.map Admin (s "admin")
         , Parser.map Bieter (s "bieter" </> Bieter.urlParser)
+        , Parser.map Logout (s "logout")
         ]
 
 
@@ -53,4 +55,7 @@ routeToPieces page =
             [ "admin" ]
 
         Bieter id ->
-            [ "bieter", Bieter.idToString id]
+            [ "bieter", Bieter.idToString id ]
+
+        Logout ->
+            [ "logout" ]

@@ -1,4 +1,4 @@
-module Page.Front exposing (Model, Msg, init, subscriptions, toSession, update, view)
+module Page.Front exposing (Model, Msg, init, toSession, update, updateSession, view)
 
 import Bieter
 import Html exposing (..)
@@ -6,54 +6,23 @@ import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Http
 import Json.Encode as Encode
-import Ports
 import Session exposing (Session)
 
 
 type alias Model =
     { session : Session
     , page : Page
+    , loginErrorMsg : Maybe String
+    , loginFormBieterNr : String
+    , loginFormBieterName : String
+    , editErrorMsg : Maybe String
+    , draftBieter : Maybe Bieter.Bieter
     }
-
-
-type alias LoginPageData =
-    { errorMsg : Maybe String
-    , formUserNr : String
-    , formUserName : String
-    }
-
-
-emptyLoginData : LoginPageData
-emptyLoginData =
-    LoginPageData Nothing "" ""
-
-
-type alias EditPageData =
-    { errorMsg : Maybe String
-    , bieter : Bieter.Bieter
-    , origBieter : Bieter.Bieter
-    }
-
-
-createEditPageData : Bieter.Bieter -> EditPageData
-createEditPageData bieter =
-    EditPageData Nothing bieter bieter
 
 
 type Page
-    = Login LoginPageData
-    | Show Bieter.Bieter
-    | Edit EditPageData
-
-
-type LoginPageMsg
-    = RequestLogin
-    | ReceivedLogin (Result Http.Error Bieter.Bieter)
-    | RequestCreate
-    | ReceivedCreate (Result Http.Error Bieter.Bieter)
-    | SaveNumber String
-    | SaveName String
-    | ReceivedLocalStoreBieter (Maybe String)
+    = Show
+    | Edit
 
 
 type EditPageMsg
@@ -66,70 +35,67 @@ type EditPageMsg
 
 
 type Msg
-    = GotLoginPageMsg LoginPageMsg
-    | GotLogoutMsg
-    | GotEditPageMsg EditPageMsg
-    | GotoEditMsg Bieter.Bieter
+    = GotEditPageMsg EditPageMsg
+    | GotoEditPage
+    | RequestLogin
+    | ReceivedLogin (Result Http.Error Bieter.Bieter)
+    | RequestCreate
+    | ReceivedCreate (Result Http.Error Bieter.Bieter)
+    | SaveNumber String
+    | SaveName String
 
 
 init : Session -> ( Model, Cmd Msg )
 init session =
-    ( Model session (Login emptyLoginData), Ports.send Ports.RequestBieterID )
+    let
+        bieterID =
+            case Session.toBieterID session of
+                Nothing ->
+                    ""
+
+                Just id ->
+                    Bieter.idToString id
+    in
+    ( Model session Show Nothing bieterID "" Nothing Nothing, Cmd.none )
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        GotLoginPageMsg loginMsg ->
-            case model.page of
-                Login loginData ->
-                    updateLoginPage model loginMsg loginData
-
-                _ ->
-                    -- Received a loginpage msg on a none loginpage.
-                    ( model, Cmd.none )
-
         GotEditPageMsg editMsg ->
-            case model.page of
-                Edit editData ->
-                    updateEditPage model editMsg editData
+            updateEditPage model editMsg
 
-                _ ->
-                    -- Received a editpage msg on a none edit page.
-                    ( model, Cmd.none )
-
-        GotLogoutMsg ->
-            ( { model | page = Login emptyLoginData }
-            , Ports.send Ports.RemoveBieterID
-            )
-
-        GotoEditMsg bieter ->
-            ( { model | page = Edit (createEditPageData bieter) }
+        GotoEditPage ->
+            ( { model | page = Edit }
             , Cmd.none
             )
 
-
-updateLoginPage : Model -> LoginPageMsg -> LoginPageData -> ( Model, Cmd Msg )
-updateLoginPage model loginMsg loginData =
-    case loginMsg of
         SaveNumber nr ->
-            ( { model | page = Login { loginData | formUserNr = nr } }
+            ( { model | loginFormBieterNr = nr }
             , Cmd.none
             )
 
         SaveName name ->
-            ( { model | page = Login { loginData | formUserName = name } }
+            ( { model | loginFormBieterName = name }
             , Cmd.none
             )
 
         RequestLogin ->
-            ( model, fetchBieter loginData.formUserNr )
+            let
+                ( newSession, cmd ) =
+                    Session.loadBieter model.session ReceivedLogin (Bieter.idFromString model.loginFormBieterNr)
+            in
+            ( { model | session = newSession }, cmd )
 
         ReceivedLogin response ->
             case response of
                 Ok bieter ->
-                    ( { model | page = Show bieter }
-                    , Ports.send (Ports.StoreBieterID bieter.id)
+                    let
+                        ( newSession, cmd ) =
+                            Session.loggedIn model.session bieter
+                    in
+                    ( { model | page = Show, session = newSession }
+                    , cmd
                     )
 
                 Err e ->
@@ -137,18 +103,22 @@ updateLoginPage model loginMsg loginData =
                         errMsg =
                             buildErrorMessage e
                     in
-                    ( { model | page = Login { loginData | errorMsg = Just errMsg } }
+                    ( { model | loginErrorMsg = Just errMsg }
                     , Cmd.none
                     )
 
         RequestCreate ->
-            ( model, createBieter loginData.formUserName )
+            ( model, createBieter model.loginFormBieterName )
 
         ReceivedCreate response ->
             case response of
                 Ok bieter ->
-                    ( { model | page = Show bieter }
-                    , Ports.send (Ports.StoreBieterID bieter.id)
+                    let
+                        ( newSession, cmd ) =
+                            Session.loggedIn model.session bieter
+                    in
+                    ( { model | page = Show, session = newSession }
+                    , cmd
                     )
 
                 Err e ->
@@ -156,75 +126,59 @@ updateLoginPage model loginMsg loginData =
                         errMsg =
                             buildErrorMessage e
                     in
-                    ( { model | page = Login { loginData | errorMsg = Just errMsg } }
+                    ( { model | loginErrorMsg = Just errMsg }
                     , Cmd.none
                     )
 
-        ReceivedLocalStoreBieter loadedData ->
-            case loadedData of
-                Just bieterNr ->
-                    ( { model | page = Login { emptyLoginData | formUserNr = bieterNr } }
-                    , fetchBieter bieterNr
-                    )
 
-                Nothing ->
-                    ( model, Cmd.none )
+updateEditPage : Model -> EditPageMsg -> ( Model, Cmd Msg )
+updateEditPage model editMsg =
+    case model.draftBieter of
+        Nothing ->
+            ( model, Cmd.none )
 
-
-updateEditPage : Model -> EditPageMsg -> EditPageData -> ( Model, Cmd Msg )
-updateEditPage model editMsg editData =
-    let
-        oldBieter =
-            editData.bieter
-    in
-    case editMsg of
-        FormSaveAdresse addr ->
-            ( { model | page = Edit { editData | bieter = { oldBieter | adresse = addr } } }
-            , Cmd.none
-            )
-
-        FormSaveName name ->
-            ( { model | page = Edit { editData | bieter = { oldBieter | name = name } } }
-            , Cmd.none
-            )
-
-        FormSaveIBAN iban ->
-            ( { model | page = Edit { editData | bieter = { oldBieter | iban = iban } } }
-            , Cmd.none
-            )
-
-        FormSubmit ->
-            ( model
-            , updateBieter editData.bieter
-            )
-
-        FormReceived response ->
-            case response of
-                Ok _ ->
-                    ( { model | page = Show editData.bieter }
+        Just bieter ->
+            case editMsg of
+                FormSaveName name ->
+                    ( { model | draftBieter = Just { bieter | name = name } }
                     , Cmd.none
                     )
 
-                Err e ->
-                    ( { model | page = Edit { editData | errorMsg = Just (buildErrorMessage e) } }
+                FormSaveAdresse addr ->
+                    ( { model | draftBieter = Just { bieter | adresse = addr } }
                     , Cmd.none
                     )
 
-        FormGoBack ->
-            ( { model | page = Show editData.origBieter }
-            , Cmd.none
-            )
+                FormSaveIBAN iban ->
+                    ( { model | draftBieter = Just { bieter | iban = iban } }
+                    , Cmd.none
+                    )
 
+                FormSubmit ->
+                    ( model
+                    , updateBieter bieter
+                    )
 
-fetchBieter : String -> Cmd Msg
-fetchBieter id =
-    Http.get
-        { url = "/api/bieter/" ++ id
-        , expect =
-            Bieter.bieterDecoder
-                |> Http.expectJson ReceivedLogin
-        }
-        |> Cmd.map GotLoginPageMsg
+                FormReceived response ->
+                    case response of
+                        Ok _ ->
+                            let
+                                ( newSession, cmd ) =
+                                    Session.loggedIn model.session bieter
+                            in
+                            ( { model | page = Show, session = newSession }
+                            , cmd
+                            )
+
+                        Err e ->
+                            ( { model | editErrorMsg = Just (buildErrorMessage e) }
+                            , Cmd.none
+                            )
+
+                FormGoBack ->
+                    ( { model | page = Show }
+                    , Cmd.none
+                    )
 
 
 createBieter : String -> Cmd Msg
@@ -238,7 +192,6 @@ createBieter name =
         , timeout = Nothing
         , tracker = Nothing
         }
-        |> Cmd.map GotLoginPageMsg
 
 
 updateBieter : Bieter.Bieter -> Cmd Msg
@@ -285,51 +238,45 @@ buildErrorMessage httpError =
             message
 
 
-subscriptions : Model -> Sub Msg
-subscriptions _ =
-    Ports.toElm ReceivedLocalStoreBieter
-        |> Sub.map GotLoginPageMsg
-
-
 view : Model -> { title : String, content : Html Msg }
 view model =
-    case model.page of
-        Login data ->
-            let
-                { title, content } =
-                    viewLogin data
-            in
-            { title = title
-            , content = Html.map GotLoginPageMsg content
-            }
+    let
+        maybeBieter =
+            Session.toBieter model.session
+    in
+    case maybeBieter of
+        Nothing ->
+            viewLogin model
 
-        Show bieter ->
-            viewBieter bieter
+        Just bieter ->
+            case model.page of
+                Show ->
+                    viewBieter bieter
 
-        Edit editData ->
-            let
-                { title, content } =
-                    viewEdit editData
-            in
-            { title = title
-            , content = Html.map GotEditPageMsg content
-            }
+                Edit ->
+                    let
+                        { title, content } =
+                            viewEdit model
+                    in
+                    { title = title
+                    , content = Html.map GotEditPageMsg content
+                    }
 
 
-viewLogin : LoginPageData -> { title : String, content : Html LoginPageMsg }
+viewLogin : Model -> { title : String, content : Html Msg }
 viewLogin loginData =
     { title = "Login title"
     , content =
         div []
             [ h1 [] [ text "Mit Bieternummer anmelden" ]
-            , maybeError loginData.errorMsg
+            , maybeError loginData.loginErrorMsg
             , Html.form [ onSubmit RequestLogin ]
                 [ div []
                     [ text "Bieternummer"
                     , input
                         [ id "nummer"
                         , type_ "text"
-                        , value loginData.formUserNr
+                        , value loginData.loginFormBieterNr
                         , onInput SaveNumber
                         ]
                         []
@@ -347,7 +294,7 @@ viewLogin loginData =
                     , input
                         [ id "name"
                         , type_ "text"
-                        , value loginData.formUserName
+                        , value loginData.loginFormBieterName
                         , onInput SaveName
                         ]
                         []
@@ -385,57 +332,66 @@ viewBieter bieter =
                 ]
             , div [] [ text ("Adresse: " ++ bieter.adresse) ]
             , div [] [ text ("IBAN: " ++ bieter.iban) ]
-            , div [] [ button [ onClick GotLogoutMsg ] [ text "logout" ] ]
-            , div [] [ button [ onClick (GotoEditMsg bieter) ] [ text "Bearbeiten" ] ]
+            , div [] [ button [ onClick GotoEditPage ] [ text "Bearbeiten" ] ]
             ]
     }
 
 
-viewEdit : EditPageData -> { title : String, content : Html EditPageMsg }
-viewEdit data =
-    { title = "Edit Bieter"
-    , content =
-        div []
-            [ maybeError data.errorMsg
-            , div []
-                [ text "Name"
-                , input
-                    [ type_ "text"
-                    , value data.bieter.name
-                    , onInput FormSaveName
+viewEdit : Model -> { title : String, content : Html EditPageMsg }
+viewEdit model =
+    case model.draftBieter of
+        Nothing ->
+            { title = "Error", content = text "TODO invalid state" }
+
+        Just bieter ->
+            { title = "Edit Bieter " ++ bieter.name
+            , content =
+                div []
+                    [ maybeError model.editErrorMsg
+                    , div []
+                        [ text "Name"
+                        , input
+                            [ type_ "text"
+                            , value bieter.name
+                            , onInput FormSaveName
+                            ]
+                            []
+                        ]
+                    , div []
+                        [ text "Adresse"
+                        , input
+                            [ type_ "text"
+                            , value bieter.adresse
+                            , onInput FormSaveAdresse
+                            ]
+                            []
+                        ]
+                    , div []
+                        [ text "IBAN"
+                        , input
+                            [ type_ "text"
+                            , value bieter.iban
+                            , onInput FormSaveIBAN
+                            ]
+                            []
+                        ]
+                    , div []
+                        [ button
+                            [ onClick FormSubmit ]
+                            [ text "Speichern" ]
+                        , button
+                            [ onClick FormGoBack ]
+                            [ text "Zurück" ]
+                        ]
                     ]
-                    []
-                ]
-            , div []
-                [ text "Adresse"
-                , input
-                    [ type_ "text"
-                    , value data.bieter.adresse
-                    , onInput FormSaveAdresse
-                    ]
-                    []
-                ]
-            , div []
-                [ text "IBAN"
-                , input
-                    [ type_ "text"
-                    , value data.bieter.iban
-                    , onInput FormSaveIBAN
-                    ]
-                    []
-                ]
-            , div []
-                [ button
-                    [ onClick FormSubmit ]
-                    [ text "Speichern" ]
-                , button
-                    [ onClick FormGoBack ]
-                    [ text "Zurück" ]
-                ]
-            ]
-    }
+            }
 
 
 toSession : Model -> Session
 toSession model =
     model.session
+
+
+updateSession : Model -> Session -> Model
+updateSession model session =
+    { model | session = session }
