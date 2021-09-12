@@ -8,6 +8,7 @@ import Ports
 
 type alias Session =
     { navKey : Navigation.Key
+    , baseURL : String
     , viewer : Viewer
     , admin : Admin
     }
@@ -23,7 +24,8 @@ type Admin
     = IsAdmin String
     | NoAdmin
 
-
+{-| loadBieter requests a bieter and sets the session in the loading state.
+-}
 loadBieter : Session -> (Result Http.Error Bieter.Bieter -> msg) -> Bieter.ID -> ( Session, Cmd msg )
 loadBieter session m bieterID =
     ( { session | viewer = Loading bieterID }
@@ -41,9 +43,9 @@ fetchBieter m id =
         }
 
 
-anonymous : Navigation.Key -> Session
-anonymous key =
-    Session key Guest NoAdmin
+anonymous : Navigation.Key -> String -> Session
+anonymous key baseURL =
+    Session key baseURL Guest NoAdmin
 
 
 navKey : Session -> Navigation.Key

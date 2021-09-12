@@ -42,7 +42,7 @@ href targetRoute =
 
 routeToString : Route -> String
 routeToString page =
-    String.join "/" (routeToPieces page)
+    "/" ++ String.join "/" (routeToPieces page)
 
 
 routeToPieces : Route -> List String

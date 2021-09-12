@@ -4357,23 +4357,6 @@ function _Browser_load(url)
 }
 
 
-function _Url_percentEncode(string)
-{
-	return encodeURIComponent(string);
-}
-
-function _Url_percentDecode(string)
-{
-	try
-	{
-		return $elm$core$Maybe$Just(decodeURIComponent(string));
-	}
-	catch (e)
-	{
-		return $elm$core$Maybe$Nothing;
-	}
-}
-
 
 // SEND REQUEST
 
@@ -4547,7 +4530,340 @@ function _Http_track(router, xhr, tracker)
 			size: event.lengthComputable ? $elm$core$Maybe$Just(event.total) : $elm$core$Maybe$Nothing
 		}))));
 	});
-}var $elm$core$Maybe$Just = function (a) {
+}
+
+function _Url_percentEncode(string)
+{
+	return encodeURIComponent(string);
+}
+
+function _Url_percentDecode(string)
+{
+	try
+	{
+		return $elm$core$Maybe$Just(decodeURIComponent(string));
+	}
+	catch (e)
+	{
+		return $elm$core$Maybe$Nothing;
+	}
+}
+
+
+var _Bitwise_and = F2(function(a, b)
+{
+	return a & b;
+});
+
+var _Bitwise_or = F2(function(a, b)
+{
+	return a | b;
+});
+
+var _Bitwise_xor = F2(function(a, b)
+{
+	return a ^ b;
+});
+
+function _Bitwise_complement(a)
+{
+	return ~a;
+};
+
+var _Bitwise_shiftLeftBy = F2(function(offset, a)
+{
+	return a << offset;
+});
+
+var _Bitwise_shiftRightBy = F2(function(offset, a)
+{
+	return a >> offset;
+});
+
+var _Bitwise_shiftRightZfBy = F2(function(offset, a)
+{
+	return a >>> offset;
+});
+
+
+// BYTES
+
+function _Bytes_width(bytes)
+{
+	return bytes.byteLength;
+}
+
+var _Bytes_getHostEndianness = F2(function(le, be)
+{
+	return _Scheduler_binding(function(callback)
+	{
+		callback(_Scheduler_succeed(new Uint8Array(new Uint32Array([1]))[0] === 1 ? le : be));
+	});
+});
+
+
+// ENCODERS
+
+function _Bytes_encode(encoder)
+{
+	var mutableBytes = new DataView(new ArrayBuffer($elm$bytes$Bytes$Encode$getWidth(encoder)));
+	$elm$bytes$Bytes$Encode$write(encoder)(mutableBytes)(0);
+	return mutableBytes;
+}
+
+
+// SIGNED INTEGERS
+
+var _Bytes_write_i8  = F3(function(mb, i, n) { mb.setInt8(i, n); return i + 1; });
+var _Bytes_write_i16 = F4(function(mb, i, n, isLE) { mb.setInt16(i, n, isLE); return i + 2; });
+var _Bytes_write_i32 = F4(function(mb, i, n, isLE) { mb.setInt32(i, n, isLE); return i + 4; });
+
+
+// UNSIGNED INTEGERS
+
+var _Bytes_write_u8  = F3(function(mb, i, n) { mb.setUint8(i, n); return i + 1 ;});
+var _Bytes_write_u16 = F4(function(mb, i, n, isLE) { mb.setUint16(i, n, isLE); return i + 2; });
+var _Bytes_write_u32 = F4(function(mb, i, n, isLE) { mb.setUint32(i, n, isLE); return i + 4; });
+
+
+// FLOATS
+
+var _Bytes_write_f32 = F4(function(mb, i, n, isLE) { mb.setFloat32(i, n, isLE); return i + 4; });
+var _Bytes_write_f64 = F4(function(mb, i, n, isLE) { mb.setFloat64(i, n, isLE); return i + 8; });
+
+
+// BYTES
+
+var _Bytes_write_bytes = F3(function(mb, offset, bytes)
+{
+	for (var i = 0, len = bytes.byteLength, limit = len - 4; i <= limit; i += 4)
+	{
+		mb.setUint32(offset + i, bytes.getUint32(i));
+	}
+	for (; i < len; i++)
+	{
+		mb.setUint8(offset + i, bytes.getUint8(i));
+	}
+	return offset + len;
+});
+
+
+// STRINGS
+
+function _Bytes_getStringWidth(string)
+{
+	for (var width = 0, i = 0; i < string.length; i++)
+	{
+		var code = string.charCodeAt(i);
+		width +=
+			(code < 0x80) ? 1 :
+			(code < 0x800) ? 2 :
+			(code < 0xD800 || 0xDBFF < code) ? 3 : (i++, 4);
+	}
+	return width;
+}
+
+var _Bytes_write_string = F3(function(mb, offset, string)
+{
+	for (var i = 0; i < string.length; i++)
+	{
+		var code = string.charCodeAt(i);
+		offset +=
+			(code < 0x80)
+				? (mb.setUint8(offset, code)
+				, 1
+				)
+				:
+			(code < 0x800)
+				? (mb.setUint16(offset, 0xC080 /* 0b1100000010000000 */
+					| (code >>> 6 & 0x1F /* 0b00011111 */) << 8
+					| code & 0x3F /* 0b00111111 */)
+				, 2
+				)
+				:
+			(code < 0xD800 || 0xDBFF < code)
+				? (mb.setUint16(offset, 0xE080 /* 0b1110000010000000 */
+					| (code >>> 12 & 0xF /* 0b00001111 */) << 8
+					| code >>> 6 & 0x3F /* 0b00111111 */)
+				, mb.setUint8(offset + 2, 0x80 /* 0b10000000 */
+					| code & 0x3F /* 0b00111111 */)
+				, 3
+				)
+				:
+			(code = (code - 0xD800) * 0x400 + string.charCodeAt(++i) - 0xDC00 + 0x10000
+			, mb.setUint32(offset, 0xF0808080 /* 0b11110000100000001000000010000000 */
+				| (code >>> 18 & 0x7 /* 0b00000111 */) << 24
+				| (code >>> 12 & 0x3F /* 0b00111111 */) << 16
+				| (code >>> 6 & 0x3F /* 0b00111111 */) << 8
+				| code & 0x3F /* 0b00111111 */)
+			, 4
+			);
+	}
+	return offset;
+});
+
+
+// DECODER
+
+var _Bytes_decode = F2(function(decoder, bytes)
+{
+	try {
+		return $elm$core$Maybe$Just(A2(decoder, bytes, 0).b);
+	} catch(e) {
+		return $elm$core$Maybe$Nothing;
+	}
+});
+
+var _Bytes_read_i8  = F2(function(      bytes, offset) { return _Utils_Tuple2(offset + 1, bytes.getInt8(offset)); });
+var _Bytes_read_i16 = F3(function(isLE, bytes, offset) { return _Utils_Tuple2(offset + 2, bytes.getInt16(offset, isLE)); });
+var _Bytes_read_i32 = F3(function(isLE, bytes, offset) { return _Utils_Tuple2(offset + 4, bytes.getInt32(offset, isLE)); });
+var _Bytes_read_u8  = F2(function(      bytes, offset) { return _Utils_Tuple2(offset + 1, bytes.getUint8(offset)); });
+var _Bytes_read_u16 = F3(function(isLE, bytes, offset) { return _Utils_Tuple2(offset + 2, bytes.getUint16(offset, isLE)); });
+var _Bytes_read_u32 = F3(function(isLE, bytes, offset) { return _Utils_Tuple2(offset + 4, bytes.getUint32(offset, isLE)); });
+var _Bytes_read_f32 = F3(function(isLE, bytes, offset) { return _Utils_Tuple2(offset + 4, bytes.getFloat32(offset, isLE)); });
+var _Bytes_read_f64 = F3(function(isLE, bytes, offset) { return _Utils_Tuple2(offset + 8, bytes.getFloat64(offset, isLE)); });
+
+var _Bytes_read_bytes = F3(function(len, bytes, offset)
+{
+	return _Utils_Tuple2(offset + len, new DataView(bytes.buffer, bytes.byteOffset + offset, len));
+});
+
+var _Bytes_read_string = F3(function(len, bytes, offset)
+{
+	var string = '';
+	var end = offset + len;
+	for (; offset < end;)
+	{
+		var byte = bytes.getUint8(offset++);
+		string +=
+			(byte < 128)
+				? String.fromCharCode(byte)
+				:
+			((byte & 0xE0 /* 0b11100000 */) === 0xC0 /* 0b11000000 */)
+				? String.fromCharCode((byte & 0x1F /* 0b00011111 */) << 6 | bytes.getUint8(offset++) & 0x3F /* 0b00111111 */)
+				:
+			((byte & 0xF0 /* 0b11110000 */) === 0xE0 /* 0b11100000 */)
+				? String.fromCharCode(
+					(byte & 0xF /* 0b00001111 */) << 12
+					| (bytes.getUint8(offset++) & 0x3F /* 0b00111111 */) << 6
+					| bytes.getUint8(offset++) & 0x3F /* 0b00111111 */
+				)
+				:
+				(byte =
+					((byte & 0x7 /* 0b00000111 */) << 18
+						| (bytes.getUint8(offset++) & 0x3F /* 0b00111111 */) << 12
+						| (bytes.getUint8(offset++) & 0x3F /* 0b00111111 */) << 6
+						| bytes.getUint8(offset++) & 0x3F /* 0b00111111 */
+					) - 0x10000
+				, String.fromCharCode(Math.floor(byte / 0x400) + 0xD800, byte % 0x400 + 0xDC00)
+				);
+	}
+	return _Utils_Tuple2(offset, string);
+});
+
+var _Bytes_decodeFailure = F2(function() { throw 0; });
+
+
+// CREATE
+
+var _Regex_never = /.^/;
+
+var _Regex_fromStringWith = F2(function(options, string)
+{
+	var flags = 'g';
+	if (options.multiline) { flags += 'm'; }
+	if (options.caseInsensitive) { flags += 'i'; }
+
+	try
+	{
+		return $elm$core$Maybe$Just(new RegExp(string, flags));
+	}
+	catch(error)
+	{
+		return $elm$core$Maybe$Nothing;
+	}
+});
+
+
+// USE
+
+var _Regex_contains = F2(function(re, string)
+{
+	return string.match(re) !== null;
+});
+
+
+var _Regex_findAtMost = F3(function(n, re, str)
+{
+	var out = [];
+	var number = 0;
+	var string = str;
+	var lastIndex = re.lastIndex;
+	var prevLastIndex = -1;
+	var result;
+	while (number++ < n && (result = re.exec(string)))
+	{
+		if (prevLastIndex == re.lastIndex) break;
+		var i = result.length - 1;
+		var subs = new Array(i);
+		while (i > 0)
+		{
+			var submatch = result[i];
+			subs[--i] = submatch
+				? $elm$core$Maybe$Just(submatch)
+				: $elm$core$Maybe$Nothing;
+		}
+		out.push(A4($elm$regex$Regex$Match, result[0], result.index, number, _List_fromArray(subs)));
+		prevLastIndex = re.lastIndex;
+	}
+	re.lastIndex = lastIndex;
+	return _List_fromArray(out);
+});
+
+
+var _Regex_replaceAtMost = F4(function(n, re, replacer, string)
+{
+	var count = 0;
+	function jsReplacer(match)
+	{
+		if (count++ >= n)
+		{
+			return match;
+		}
+		var i = arguments.length - 3;
+		var submatches = new Array(i);
+		while (i > 0)
+		{
+			var submatch = arguments[i];
+			submatches[--i] = submatch
+				? $elm$core$Maybe$Just(submatch)
+				: $elm$core$Maybe$Nothing;
+		}
+		return replacer(A4($elm$regex$Regex$Match, match, arguments[arguments.length - 2], count, _List_fromArray(submatches)));
+	}
+	return string.replace(re, jsReplacer);
+});
+
+var _Regex_splitAtMost = F3(function(n, re, str)
+{
+	var string = str;
+	var out = [];
+	var start = re.lastIndex;
+	var restoreLastIndex = re.lastIndex;
+	while (n--)
+	{
+		var result = re.exec(string);
+		if (!result) break;
+		out.push(string.slice(start, result.index));
+		start = re.lastIndex;
+	}
+	out.push(string.slice(start));
+	re.lastIndex = restoreLastIndex;
+	return _List_fromArray(out);
+});
+
+var _Regex_infinity = Infinity;
+var $elm$core$Maybe$Just = function (a) {
 	return {$: 'Just', a: a};
 };
 var $author$project$Main$LinkClicked = function (a) {
@@ -5345,18 +5661,36 @@ var $elm$browser$Browser$application = _Browser_application;
 var $author$project$Main$ReceivedBieter = function (a) {
 	return {$: 'ReceivedBieter', a: a};
 };
-var $author$project$Main$Redirect = function (a) {
-	return {$: 'Redirect', a: a};
+var $author$project$Main$absUrl = function (url) {
+	var proto = function () {
+		var _v1 = url.protocol;
+		if (_v1.$ === 'Http') {
+			return 'http://';
+		} else {
+			return 'https://';
+		}
+	}();
+	var port_ = function () {
+		var _v0 = url.port_;
+		if (_v0.$ === 'Nothing') {
+			return '';
+		} else {
+			var i = _v0.a;
+			return ':' + $elm$core$String$fromInt(i);
+		}
+	}();
+	return proto + (url.host + (port_ + '/'));
 };
 var $author$project$Session$Guest = {$: 'Guest'};
 var $author$project$Session$NoAdmin = {$: 'NoAdmin'};
-var $author$project$Session$Session = F3(
-	function (navKey, viewer, admin) {
-		return {admin: admin, navKey: navKey, viewer: viewer};
+var $author$project$Session$Session = F4(
+	function (navKey, baseURL, viewer, admin) {
+		return {admin: admin, baseURL: baseURL, navKey: navKey, viewer: viewer};
 	});
-var $author$project$Session$anonymous = function (key) {
-	return A3($author$project$Session$Session, key, $author$project$Session$Guest, $author$project$Session$NoAdmin);
-};
+var $author$project$Session$anonymous = F2(
+	function (key, baseURL) {
+		return A4($author$project$Session$Session, key, baseURL, $author$project$Session$Guest, $author$project$Session$NoAdmin);
+	});
 var $elm$core$Platform$Cmd$batch = _Platform_batch;
 var $author$project$Main$Admin = function (a) {
 	return {$: 'Admin', a: a};
@@ -5373,6 +5707,9 @@ var $author$project$Main$GotFrontMsg = function (a) {
 };
 var $author$project$Main$NotFound = function (a) {
 	return {$: 'NotFound', a: a};
+};
+var $author$project$Main$Redirect = function (a) {
+	return {$: 'Redirect', a: a};
 };
 var $author$project$Page$Admin$Model = F5(
 	function (session, bieter, password, formPassword, fetchErrorMsg) {
@@ -5420,241 +5757,133 @@ var $author$project$Page$Front$init = function (session) {
 		A7($author$project$Page$Front$Model, session, $author$project$Page$Front$Show, $elm$core$Maybe$Nothing, bieterID, '', $elm$core$Maybe$Nothing, $elm$core$Maybe$Nothing),
 		$elm$core$Platform$Cmd$none);
 };
-var $author$project$Ports$RemoveBieterID = {$: 'RemoveBieterID'};
-var $author$project$Ports$SendData = F2(
-	function (tag, data) {
-		return {data: data, tag: tag};
+var $author$project$Session$Loading = function (a) {
+	return {$: 'Loading', a: a};
+};
+var $author$project$Bieter$Bieter = F4(
+	function (id, name, adresse, iban) {
+		return {adresse: adresse, iban: iban, id: id, name: name};
 	});
-var $elm$json$Json$Encode$object = function (pairs) {
-	return _Json_wrap(
-		A3(
-			$elm$core$List$foldl,
-			F2(
-				function (_v0, obj) {
-					var k = _v0.a;
-					var v = _v0.b;
-					return A3(_Json_addField, k, v, obj);
-				}),
-			_Json_emptyObject(_Utils_Tuple0),
-			pairs));
+var $author$project$Bieter$ID = function (a) {
+	return {$: 'ID', a: a};
 };
-var $elm$json$Json$Encode$string = _Json_wrap;
-var $author$project$Ports$fromElm = _Platform_outgoingPort(
-	'fromElm',
-	function ($) {
-		return $elm$json$Json$Encode$object(
-			_List_fromArray(
-				[
-					_Utils_Tuple2(
-					'data',
-					$elm$json$Json$Encode$string($.data)),
-					_Utils_Tuple2(
-					'tag',
-					$elm$json$Json$Encode$string($.tag))
-				]));
+var $elm$json$Json$Decode$string = _Json_decodeString;
+var $author$project$Bieter$idDecoder = A2($elm$json$Json$Decode$map, $author$project$Bieter$ID, $elm$json$Json$Decode$string);
+var $elm$json$Json$Decode$field = _Json_decodeField;
+var $elm$json$Json$Decode$at = F2(
+	function (fields, decoder) {
+		return A3($elm$core$List$foldr, $elm$json$Json$Decode$field, decoder, fields);
 	});
-var $author$project$Ports$send = function (msg) {
-	switch (msg.$) {
-		case 'StoreBieterID':
-			var id = msg.a;
-			return $author$project$Ports$fromElm(
-				A2(
-					$author$project$Ports$SendData,
-					'store-id',
-					$author$project$Bieter$idToString(id)));
-		case 'RemoveBieterID':
-			return $author$project$Ports$fromElm(
-				A2($author$project$Ports$SendData, 'remove-id', ''));
-		default:
-			return $author$project$Ports$fromElm(
-				A2($author$project$Ports$SendData, 'get-id', ''));
-	}
-};
-var $author$project$Session$loggedOut = function (session) {
-	return _Utils_Tuple2(
-		_Utils_update(
-			session,
-			{viewer: $author$project$Session$Guest}),
-		$author$project$Ports$send($author$project$Ports$RemoveBieterID));
-};
-var $author$project$Session$navKey = function (s) {
-	return s.navKey;
-};
-var $elm$browser$Browser$Navigation$replaceUrl = _Browser_replaceUrl;
-var $author$project$Route$routeToPieces = function (page) {
-	switch (page.$) {
-		case 'Front':
-			return _List_Nil;
-		case 'Admin':
-			return _List_fromArray(
-				['admin']);
-		case 'Bieter':
-			var id = page.a;
-			return _List_fromArray(
-				[
-					'bieter',
-					$author$project$Bieter$idToString(id)
-				]);
-		default:
-			return _List_fromArray(
-				['logout']);
-	}
-};
-var $author$project$Route$routeToString = function (page) {
-	return A2(
-		$elm$core$String$join,
-		'/',
-		$author$project$Route$routeToPieces(page));
-};
-var $author$project$Route$replaceUrl = F2(
-	function (key, route) {
-		return A2(
-			$elm$browser$Browser$Navigation$replaceUrl,
-			key,
-			$author$project$Route$routeToString(route));
-	});
-var $author$project$Page$Admin$toSession = function (model) {
-	return model.session;
-};
-var $author$project$Page$Front$toSession = function (model) {
-	return model.session;
-};
-var $author$project$Main$toSession = function (model) {
-	switch (model.$) {
-		case 'NotFound':
-			var session = model.a;
-			return session;
-		case 'Redirect':
-			var session = model.a;
-			return session;
-		case 'Front':
-			var front = model.a;
-			return $author$project$Page$Front$toSession(front);
-		default:
-			var admin = model.a;
-			return $author$project$Page$Admin$toSession(admin);
-	}
-};
-var $elm$core$Platform$Cmd$map = _Platform_map;
-var $author$project$Main$updateWith = F4(
-	function (toModel, toMsg, _v0, _v1) {
-		var subModel = _v1.a;
-		var subCmd = _v1.b;
-		return _Utils_Tuple2(
-			toModel(subModel),
-			A2($elm$core$Platform$Cmd$map, toMsg, subCmd));
-	});
-var $author$project$Main$changeRouteTo = F2(
-	function (maybeRoute, model) {
-		var session = $author$project$Main$toSession(model);
-		if (maybeRoute.$ === 'Nothing') {
-			return _Utils_Tuple2(
-				$author$project$Main$NotFound(session),
-				$elm$core$Platform$Cmd$none);
-		} else {
-			switch (maybeRoute.a.$) {
-				case 'Admin':
-					var _v1 = maybeRoute.a;
-					return A4(
-						$author$project$Main$updateWith,
-						$author$project$Main$Admin,
-						$author$project$Main$GotAdminMsg,
-						model,
-						$author$project$Page$Admin$init(session));
-				case 'Front':
-					var _v2 = maybeRoute.a;
-					return A4(
-						$author$project$Main$updateWith,
-						$author$project$Main$Front,
-						$author$project$Main$GotFrontMsg,
-						model,
-						$author$project$Page$Front$init(session));
-				case 'Bieter':
-					var id = maybeRoute.a.a;
-					return _Utils_Tuple2(
-						model,
-						A2(
-							$author$project$Route$replaceUrl,
-							$author$project$Session$navKey(session),
-							$author$project$Route$Front));
-				default:
-					var _v3 = maybeRoute.a;
-					var _v4 = $author$project$Session$loggedOut(
-						$author$project$Main$toSession(model));
-					var newSession = _v4.a;
-					var cmdLogout = _v4.b;
-					return _Utils_Tuple2(
-						$author$project$Main$Redirect(newSession),
-						cmdLogout);
-			}
-		}
-	});
-var $elm$url$Url$Parser$State = F5(
-	function (visited, unvisited, params, frag, value) {
-		return {frag: frag, params: params, unvisited: unvisited, value: value, visited: visited};
-	});
-var $elm$url$Url$Parser$getFirstMatch = function (states) {
-	getFirstMatch:
-	while (true) {
-		if (!states.b) {
-			return $elm$core$Maybe$Nothing;
-		} else {
-			var state = states.a;
-			var rest = states.b;
-			var _v1 = state.unvisited;
-			if (!_v1.b) {
-				return $elm$core$Maybe$Just(state.value);
-			} else {
-				if ((_v1.a === '') && (!_v1.b.b)) {
-					return $elm$core$Maybe$Just(state.value);
-				} else {
-					var $temp$states = rest;
-					states = $temp$states;
-					continue getFirstMatch;
-				}
-			}
-		}
-	}
-};
-var $elm$url$Url$Parser$removeFinalEmpty = function (segments) {
-	if (!segments.b) {
-		return _List_Nil;
-	} else {
-		if ((segments.a === '') && (!segments.b.b)) {
-			return _List_Nil;
-		} else {
-			var segment = segments.a;
-			var rest = segments.b;
-			return A2(
-				$elm$core$List$cons,
-				segment,
-				$elm$url$Url$Parser$removeFinalEmpty(rest));
-		}
-	}
-};
-var $elm$url$Url$Parser$preparePath = function (path) {
-	var _v0 = A2($elm$core$String$split, '/', path);
-	if (_v0.b && (_v0.a === '')) {
-		var segments = _v0.b;
-		return $elm$url$Url$Parser$removeFinalEmpty(segments);
-	} else {
-		var segments = _v0;
-		return $elm$url$Url$Parser$removeFinalEmpty(segments);
-	}
-};
-var $elm$url$Url$Parser$addToParametersHelp = F2(
-	function (value, maybeList) {
-		if (maybeList.$ === 'Nothing') {
-			return $elm$core$Maybe$Just(
+var $NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$custom = $elm$json$Json$Decode$map2($elm$core$Basics$apR);
+var $elm$json$Json$Decode$andThen = _Json_andThen;
+var $elm$json$Json$Decode$decodeValue = _Json_run;
+var $elm$json$Json$Decode$fail = _Json_fail;
+var $elm$json$Json$Decode$null = _Json_decodeNull;
+var $elm$json$Json$Decode$oneOf = _Json_oneOf;
+var $elm$json$Json$Decode$value = _Json_decodeValue;
+var $NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$optionalDecoder = F3(
+	function (pathDecoder, valDecoder, fallback) {
+		var nullOr = function (decoder) {
+			return $elm$json$Json$Decode$oneOf(
 				_List_fromArray(
-					[value]));
-		} else {
-			var list = maybeList.a;
-			return $elm$core$Maybe$Just(
-				A2($elm$core$List$cons, value, list));
-		}
+					[
+						decoder,
+						$elm$json$Json$Decode$null(fallback)
+					]));
+		};
+		var handleResult = function (input) {
+			var _v0 = A2($elm$json$Json$Decode$decodeValue, pathDecoder, input);
+			if (_v0.$ === 'Ok') {
+				var rawValue = _v0.a;
+				var _v1 = A2(
+					$elm$json$Json$Decode$decodeValue,
+					nullOr(valDecoder),
+					rawValue);
+				if (_v1.$ === 'Ok') {
+					var finalResult = _v1.a;
+					return $elm$json$Json$Decode$succeed(finalResult);
+				} else {
+					var finalErr = _v1.a;
+					return $elm$json$Json$Decode$fail(
+						$elm$json$Json$Decode$errorToString(finalErr));
+				}
+			} else {
+				return $elm$json$Json$Decode$succeed(fallback);
+			}
+		};
+		return A2($elm$json$Json$Decode$andThen, handleResult, $elm$json$Json$Decode$value);
 	});
-var $elm$url$Url$percentDecode = _Url_percentDecode;
+var $NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$optionalAt = F4(
+	function (path, valDecoder, fallback, decoder) {
+		return A2(
+			$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$custom,
+			A3(
+				$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$optionalDecoder,
+				A2($elm$json$Json$Decode$at, path, $elm$json$Json$Decode$value),
+				valDecoder,
+				fallback),
+			decoder);
+	});
+var $NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required = F3(
+	function (key, valDecoder, decoder) {
+		return A2(
+			$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$custom,
+			A2($elm$json$Json$Decode$field, key, valDecoder),
+			decoder);
+	});
+var $author$project$Bieter$bieterDecoder = A4(
+	$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$optionalAt,
+	_List_fromArray(
+		['payload', 'iban']),
+	$elm$json$Json$Decode$string,
+	'',
+	A4(
+		$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$optionalAt,
+		_List_fromArray(
+			['payload', 'adresse']),
+		$elm$json$Json$Decode$string,
+		'',
+		A4(
+			$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$optionalAt,
+			_List_fromArray(
+				['payload', 'name']),
+			$elm$json$Json$Decode$string,
+			'',
+			A3(
+				$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
+				'id',
+				$author$project$Bieter$idDecoder,
+				$elm$json$Json$Decode$succeed($author$project$Bieter$Bieter)))));
+var $elm$json$Json$Decode$decodeString = _Json_runOnString;
+var $elm$http$Http$BadStatus_ = F2(
+	function (a, b) {
+		return {$: 'BadStatus_', a: a, b: b};
+	});
+var $elm$http$Http$BadUrl_ = function (a) {
+	return {$: 'BadUrl_', a: a};
+};
+var $elm$http$Http$GoodStatus_ = F2(
+	function (a, b) {
+		return {$: 'GoodStatus_', a: a, b: b};
+	});
+var $elm$http$Http$NetworkError_ = {$: 'NetworkError_'};
+var $elm$http$Http$Receiving = function (a) {
+	return {$: 'Receiving', a: a};
+};
+var $elm$http$Http$Sending = function (a) {
+	return {$: 'Sending', a: a};
+};
+var $elm$http$Http$Timeout_ = {$: 'Timeout_'};
+var $elm$core$Dict$RBEmpty_elm_builtin = {$: 'RBEmpty_elm_builtin'};
+var $elm$core$Dict$empty = $elm$core$Dict$RBEmpty_elm_builtin;
+var $elm$core$Maybe$isJust = function (maybe) {
+	if (maybe.$ === 'Just') {
+		return true;
+	} else {
+		return false;
+	}
+};
+var $elm$core$Platform$sendToSelf = _Platform_sendToSelf;
 var $elm$core$Basics$compare = _Utils_compare;
 var $elm$core$Dict$get = F2(
 	function (targetKey, dict) {
@@ -5692,7 +5921,6 @@ var $elm$core$Dict$RBNode_elm_builtin = F5(
 	function (a, b, c, d, e) {
 		return {$: 'RBNode_elm_builtin', a: a, b: b, c: c, d: d, e: e};
 	});
-var $elm$core$Dict$RBEmpty_elm_builtin = {$: 'RBEmpty_elm_builtin'};
 var $elm$core$Dict$Red = {$: 'Red'};
 var $elm$core$Dict$balance = F5(
 	function (color, key, value, left, right) {
@@ -6169,364 +6397,11 @@ var $elm$core$Dict$update = F3(
 			return A2($elm$core$Dict$remove, targetKey, dictionary);
 		}
 	});
-var $elm$url$Url$Parser$addParam = F2(
-	function (segment, dict) {
-		var _v0 = A2($elm$core$String$split, '=', segment);
-		if ((_v0.b && _v0.b.b) && (!_v0.b.b.b)) {
-			var rawKey = _v0.a;
-			var _v1 = _v0.b;
-			var rawValue = _v1.a;
-			var _v2 = $elm$url$Url$percentDecode(rawKey);
-			if (_v2.$ === 'Nothing') {
-				return dict;
-			} else {
-				var key = _v2.a;
-				var _v3 = $elm$url$Url$percentDecode(rawValue);
-				if (_v3.$ === 'Nothing') {
-					return dict;
-				} else {
-					var value = _v3.a;
-					return A3(
-						$elm$core$Dict$update,
-						key,
-						$elm$url$Url$Parser$addToParametersHelp(value),
-						dict);
-				}
-			}
-		} else {
-			return dict;
-		}
-	});
-var $elm$core$Dict$empty = $elm$core$Dict$RBEmpty_elm_builtin;
-var $elm$url$Url$Parser$prepareQuery = function (maybeQuery) {
-	if (maybeQuery.$ === 'Nothing') {
-		return $elm$core$Dict$empty;
-	} else {
-		var qry = maybeQuery.a;
-		return A3(
-			$elm$core$List$foldr,
-			$elm$url$Url$Parser$addParam,
-			$elm$core$Dict$empty,
-			A2($elm$core$String$split, '&', qry));
-	}
-};
-var $elm$url$Url$Parser$parse = F2(
-	function (_v0, url) {
-		var parser = _v0.a;
-		return $elm$url$Url$Parser$getFirstMatch(
-			parser(
-				A5(
-					$elm$url$Url$Parser$State,
-					_List_Nil,
-					$elm$url$Url$Parser$preparePath(url.path),
-					$elm$url$Url$Parser$prepareQuery(url.query),
-					url.fragment,
-					$elm$core$Basics$identity)));
-	});
-var $author$project$Route$Admin = {$: 'Admin'};
-var $author$project$Route$Bieter = function (a) {
-	return {$: 'Bieter', a: a};
-};
-var $author$project$Route$Logout = {$: 'Logout'};
-var $elm$url$Url$Parser$Parser = function (a) {
-	return {$: 'Parser', a: a};
-};
-var $elm$url$Url$Parser$mapState = F2(
-	function (func, _v0) {
-		var visited = _v0.visited;
-		var unvisited = _v0.unvisited;
-		var params = _v0.params;
-		var frag = _v0.frag;
-		var value = _v0.value;
-		return A5(
-			$elm$url$Url$Parser$State,
-			visited,
-			unvisited,
-			params,
-			frag,
-			func(value));
-	});
-var $elm$url$Url$Parser$map = F2(
-	function (subValue, _v0) {
-		var parseArg = _v0.a;
-		return $elm$url$Url$Parser$Parser(
-			function (_v1) {
-				var visited = _v1.visited;
-				var unvisited = _v1.unvisited;
-				var params = _v1.params;
-				var frag = _v1.frag;
-				var value = _v1.value;
-				return A2(
-					$elm$core$List$map,
-					$elm$url$Url$Parser$mapState(value),
-					parseArg(
-						A5($elm$url$Url$Parser$State, visited, unvisited, params, frag, subValue)));
-			});
-	});
-var $elm$core$List$append = F2(
-	function (xs, ys) {
-		if (!ys.b) {
-			return xs;
-		} else {
-			return A3($elm$core$List$foldr, $elm$core$List$cons, ys, xs);
-		}
-	});
-var $elm$core$List$concat = function (lists) {
-	return A3($elm$core$List$foldr, $elm$core$List$append, _List_Nil, lists);
-};
-var $elm$core$List$concatMap = F2(
-	function (f, list) {
-		return $elm$core$List$concat(
-			A2($elm$core$List$map, f, list));
-	});
-var $elm$url$Url$Parser$oneOf = function (parsers) {
-	return $elm$url$Url$Parser$Parser(
-		function (state) {
-			return A2(
-				$elm$core$List$concatMap,
-				function (_v0) {
-					var parser = _v0.a;
-					return parser(state);
-				},
-				parsers);
-		});
-};
-var $elm$url$Url$Parser$s = function (str) {
-	return $elm$url$Url$Parser$Parser(
-		function (_v0) {
-			var visited = _v0.visited;
-			var unvisited = _v0.unvisited;
-			var params = _v0.params;
-			var frag = _v0.frag;
-			var value = _v0.value;
-			if (!unvisited.b) {
-				return _List_Nil;
-			} else {
-				var next = unvisited.a;
-				var rest = unvisited.b;
-				return _Utils_eq(next, str) ? _List_fromArray(
-					[
-						A5(
-						$elm$url$Url$Parser$State,
-						A2($elm$core$List$cons, next, visited),
-						rest,
-						params,
-						frag,
-						value)
-					]) : _List_Nil;
-			}
-		});
-};
-var $elm$url$Url$Parser$slash = F2(
-	function (_v0, _v1) {
-		var parseBefore = _v0.a;
-		var parseAfter = _v1.a;
-		return $elm$url$Url$Parser$Parser(
-			function (state) {
-				return A2(
-					$elm$core$List$concatMap,
-					parseAfter,
-					parseBefore(state));
-			});
-	});
-var $elm$url$Url$Parser$top = $elm$url$Url$Parser$Parser(
-	function (state) {
-		return _List_fromArray(
-			[state]);
-	});
 var $elm$core$Basics$composeR = F3(
 	function (f, g, x) {
 		return g(
 			f(x));
 	});
-var $elm$url$Url$Parser$custom = F2(
-	function (tipe, stringToSomething) {
-		return $elm$url$Url$Parser$Parser(
-			function (_v0) {
-				var visited = _v0.visited;
-				var unvisited = _v0.unvisited;
-				var params = _v0.params;
-				var frag = _v0.frag;
-				var value = _v0.value;
-				if (!unvisited.b) {
-					return _List_Nil;
-				} else {
-					var next = unvisited.a;
-					var rest = unvisited.b;
-					var _v2 = stringToSomething(next);
-					if (_v2.$ === 'Just') {
-						var nextValue = _v2.a;
-						return _List_fromArray(
-							[
-								A5(
-								$elm$url$Url$Parser$State,
-								A2($elm$core$List$cons, next, visited),
-								rest,
-								params,
-								frag,
-								value(nextValue))
-							]);
-					} else {
-						return _List_Nil;
-					}
-				}
-			});
-	});
-var $author$project$Bieter$ID = function (a) {
-	return {$: 'ID', a: a};
-};
-var $author$project$Bieter$idFromString = function (sid) {
-	return $author$project$Bieter$ID(sid);
-};
-var $author$project$Bieter$urlParser = A2(
-	$elm$url$Url$Parser$custom,
-	'BIETER',
-	A2($elm$core$Basics$composeR, $author$project$Bieter$idFromString, $elm$core$Maybe$Just));
-var $author$project$Route$parser = $elm$url$Url$Parser$oneOf(
-	_List_fromArray(
-		[
-			A2($elm$url$Url$Parser$map, $author$project$Route$Front, $elm$url$Url$Parser$top),
-			A2(
-			$elm$url$Url$Parser$map,
-			$author$project$Route$Admin,
-			$elm$url$Url$Parser$s('admin')),
-			A2(
-			$elm$url$Url$Parser$map,
-			$author$project$Route$Bieter,
-			A2(
-				$elm$url$Url$Parser$slash,
-				$elm$url$Url$Parser$s('bieter'),
-				$author$project$Bieter$urlParser)),
-			A2(
-			$elm$url$Url$Parser$map,
-			$author$project$Route$Logout,
-			$elm$url$Url$Parser$s('logout'))
-		]));
-var $author$project$Route$fromUrl = function (url) {
-	return A2($elm$url$Url$Parser$parse, $author$project$Route$parser, url);
-};
-var $author$project$Session$Loading = function (a) {
-	return {$: 'Loading', a: a};
-};
-var $author$project$Bieter$Bieter = F4(
-	function (id, name, adresse, iban) {
-		return {adresse: adresse, iban: iban, id: id, name: name};
-	});
-var $elm$json$Json$Decode$string = _Json_decodeString;
-var $author$project$Bieter$idDecoder = A2($elm$json$Json$Decode$map, $author$project$Bieter$ID, $elm$json$Json$Decode$string);
-var $elm$json$Json$Decode$field = _Json_decodeField;
-var $elm$json$Json$Decode$at = F2(
-	function (fields, decoder) {
-		return A3($elm$core$List$foldr, $elm$json$Json$Decode$field, decoder, fields);
-	});
-var $NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$custom = $elm$json$Json$Decode$map2($elm$core$Basics$apR);
-var $elm$json$Json$Decode$andThen = _Json_andThen;
-var $elm$json$Json$Decode$decodeValue = _Json_run;
-var $elm$json$Json$Decode$fail = _Json_fail;
-var $elm$json$Json$Decode$null = _Json_decodeNull;
-var $elm$json$Json$Decode$oneOf = _Json_oneOf;
-var $elm$json$Json$Decode$value = _Json_decodeValue;
-var $NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$optionalDecoder = F3(
-	function (pathDecoder, valDecoder, fallback) {
-		var nullOr = function (decoder) {
-			return $elm$json$Json$Decode$oneOf(
-				_List_fromArray(
-					[
-						decoder,
-						$elm$json$Json$Decode$null(fallback)
-					]));
-		};
-		var handleResult = function (input) {
-			var _v0 = A2($elm$json$Json$Decode$decodeValue, pathDecoder, input);
-			if (_v0.$ === 'Ok') {
-				var rawValue = _v0.a;
-				var _v1 = A2(
-					$elm$json$Json$Decode$decodeValue,
-					nullOr(valDecoder),
-					rawValue);
-				if (_v1.$ === 'Ok') {
-					var finalResult = _v1.a;
-					return $elm$json$Json$Decode$succeed(finalResult);
-				} else {
-					var finalErr = _v1.a;
-					return $elm$json$Json$Decode$fail(
-						$elm$json$Json$Decode$errorToString(finalErr));
-				}
-			} else {
-				return $elm$json$Json$Decode$succeed(fallback);
-			}
-		};
-		return A2($elm$json$Json$Decode$andThen, handleResult, $elm$json$Json$Decode$value);
-	});
-var $NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$optionalAt = F4(
-	function (path, valDecoder, fallback, decoder) {
-		return A2(
-			$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$custom,
-			A3(
-				$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$optionalDecoder,
-				A2($elm$json$Json$Decode$at, path, $elm$json$Json$Decode$value),
-				valDecoder,
-				fallback),
-			decoder);
-	});
-var $NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required = F3(
-	function (key, valDecoder, decoder) {
-		return A2(
-			$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$custom,
-			A2($elm$json$Json$Decode$field, key, valDecoder),
-			decoder);
-	});
-var $author$project$Bieter$bieterDecoder = A4(
-	$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$optionalAt,
-	_List_fromArray(
-		['payload', 'iban']),
-	$elm$json$Json$Decode$string,
-	'',
-	A4(
-		$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$optionalAt,
-		_List_fromArray(
-			['payload', 'adresse']),
-		$elm$json$Json$Decode$string,
-		'',
-		A4(
-			$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$optionalAt,
-			_List_fromArray(
-				['payload', 'name']),
-			$elm$json$Json$Decode$string,
-			'',
-			A3(
-				$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
-				'id',
-				$author$project$Bieter$idDecoder,
-				$elm$json$Json$Decode$succeed($author$project$Bieter$Bieter)))));
-var $elm$json$Json$Decode$decodeString = _Json_runOnString;
-var $elm$http$Http$BadStatus_ = F2(
-	function (a, b) {
-		return {$: 'BadStatus_', a: a, b: b};
-	});
-var $elm$http$Http$BadUrl_ = function (a) {
-	return {$: 'BadUrl_', a: a};
-};
-var $elm$http$Http$GoodStatus_ = F2(
-	function (a, b) {
-		return {$: 'GoodStatus_', a: a, b: b};
-	});
-var $elm$http$Http$NetworkError_ = {$: 'NetworkError_'};
-var $elm$http$Http$Receiving = function (a) {
-	return {$: 'Receiving', a: a};
-};
-var $elm$http$Http$Sending = function (a) {
-	return {$: 'Sending', a: a};
-};
-var $elm$http$Http$Timeout_ = {$: 'Timeout_'};
-var $elm$core$Maybe$isJust = function (maybe) {
-	if (maybe.$ === 'Just') {
-		return true;
-	} else {
-		return false;
-	}
-};
-var $elm$core$Platform$sendToSelf = _Platform_sendToSelf;
 var $elm$http$Http$expectStringResponse = F2(
 	function (toMsg, toResult) {
 		return A3(
@@ -6787,6 +6662,450 @@ var $author$project$Session$loadBieter = F3(
 				m,
 				$author$project$Bieter$idToString(bieterID)));
 	});
+var $author$project$Ports$RemoveBieterID = {$: 'RemoveBieterID'};
+var $author$project$Ports$SendData = F2(
+	function (tag, data) {
+		return {data: data, tag: tag};
+	});
+var $elm$json$Json$Encode$object = function (pairs) {
+	return _Json_wrap(
+		A3(
+			$elm$core$List$foldl,
+			F2(
+				function (_v0, obj) {
+					var k = _v0.a;
+					var v = _v0.b;
+					return A3(_Json_addField, k, v, obj);
+				}),
+			_Json_emptyObject(_Utils_Tuple0),
+			pairs));
+};
+var $elm$json$Json$Encode$string = _Json_wrap;
+var $author$project$Ports$fromElm = _Platform_outgoingPort(
+	'fromElm',
+	function ($) {
+		return $elm$json$Json$Encode$object(
+			_List_fromArray(
+				[
+					_Utils_Tuple2(
+					'data',
+					$elm$json$Json$Encode$string($.data)),
+					_Utils_Tuple2(
+					'tag',
+					$elm$json$Json$Encode$string($.tag))
+				]));
+	});
+var $author$project$Ports$send = function (msg) {
+	switch (msg.$) {
+		case 'StoreBieterID':
+			var id = msg.a;
+			return $author$project$Ports$fromElm(
+				A2(
+					$author$project$Ports$SendData,
+					'store-id',
+					$author$project$Bieter$idToString(id)));
+		case 'RemoveBieterID':
+			return $author$project$Ports$fromElm(
+				A2($author$project$Ports$SendData, 'remove-id', ''));
+		default:
+			return $author$project$Ports$fromElm(
+				A2($author$project$Ports$SendData, 'get-id', ''));
+	}
+};
+var $author$project$Session$loggedOut = function (session) {
+	return _Utils_Tuple2(
+		_Utils_update(
+			session,
+			{viewer: $author$project$Session$Guest}),
+		$author$project$Ports$send($author$project$Ports$RemoveBieterID));
+};
+var $author$project$Session$navKey = function (s) {
+	return s.navKey;
+};
+var $elm$browser$Browser$Navigation$replaceUrl = _Browser_replaceUrl;
+var $author$project$Route$routeToPieces = function (page) {
+	switch (page.$) {
+		case 'Front':
+			return _List_Nil;
+		case 'Admin':
+			return _List_fromArray(
+				['admin']);
+		case 'Bieter':
+			var id = page.a;
+			return _List_fromArray(
+				[
+					'bieter',
+					$author$project$Bieter$idToString(id)
+				]);
+		default:
+			return _List_fromArray(
+				['logout']);
+	}
+};
+var $author$project$Route$routeToString = function (page) {
+	return '/' + A2(
+		$elm$core$String$join,
+		'/',
+		$author$project$Route$routeToPieces(page));
+};
+var $author$project$Route$replaceUrl = F2(
+	function (key, route) {
+		return A2(
+			$elm$browser$Browser$Navigation$replaceUrl,
+			key,
+			$author$project$Route$routeToString(route));
+	});
+var $elm$core$Platform$Cmd$map = _Platform_map;
+var $author$project$Main$updateWith = F3(
+	function (toModel, toMsg, _v0) {
+		var subModel = _v0.a;
+		var subCmd = _v0.b;
+		return _Utils_Tuple2(
+			toModel(subModel),
+			A2($elm$core$Platform$Cmd$map, toMsg, subCmd));
+	});
+var $author$project$Main$changeRouteTo = F2(
+	function (maybeRoute, session) {
+		if (maybeRoute.$ === 'Nothing') {
+			return _Utils_Tuple2(
+				$author$project$Main$NotFound(session),
+				$elm$core$Platform$Cmd$none);
+		} else {
+			switch (maybeRoute.a.$) {
+				case 'Admin':
+					var _v1 = maybeRoute.a;
+					return A3(
+						$author$project$Main$updateWith,
+						$author$project$Main$Admin,
+						$author$project$Main$GotAdminMsg,
+						$author$project$Page$Admin$init(session));
+				case 'Front':
+					var _v2 = maybeRoute.a;
+					return A3(
+						$author$project$Main$updateWith,
+						$author$project$Main$Front,
+						$author$project$Main$GotFrontMsg,
+						$author$project$Page$Front$init(session));
+				case 'Bieter':
+					var id = maybeRoute.a.a;
+					var _v3 = A3($author$project$Session$loadBieter, session, $author$project$Main$ReceivedBieter, id);
+					var newSession = _v3.a;
+					var cmdLoadBieter = _v3.b;
+					return _Utils_Tuple2(
+						$author$project$Main$Redirect(newSession),
+						$elm$core$Platform$Cmd$batch(
+							_List_fromArray(
+								[
+									cmdLoadBieter,
+									A2(
+									$author$project$Route$replaceUrl,
+									$author$project$Session$navKey(newSession),
+									$author$project$Route$Front)
+								])));
+				default:
+					var _v4 = maybeRoute.a;
+					var _v5 = $author$project$Session$loggedOut(session);
+					var newSession = _v5.a;
+					var cmdLogout = _v5.b;
+					return _Utils_Tuple2(
+						$author$project$Main$Redirect(newSession),
+						cmdLogout);
+			}
+		}
+	});
+var $elm$url$Url$Parser$State = F5(
+	function (visited, unvisited, params, frag, value) {
+		return {frag: frag, params: params, unvisited: unvisited, value: value, visited: visited};
+	});
+var $elm$url$Url$Parser$getFirstMatch = function (states) {
+	getFirstMatch:
+	while (true) {
+		if (!states.b) {
+			return $elm$core$Maybe$Nothing;
+		} else {
+			var state = states.a;
+			var rest = states.b;
+			var _v1 = state.unvisited;
+			if (!_v1.b) {
+				return $elm$core$Maybe$Just(state.value);
+			} else {
+				if ((_v1.a === '') && (!_v1.b.b)) {
+					return $elm$core$Maybe$Just(state.value);
+				} else {
+					var $temp$states = rest;
+					states = $temp$states;
+					continue getFirstMatch;
+				}
+			}
+		}
+	}
+};
+var $elm$url$Url$Parser$removeFinalEmpty = function (segments) {
+	if (!segments.b) {
+		return _List_Nil;
+	} else {
+		if ((segments.a === '') && (!segments.b.b)) {
+			return _List_Nil;
+		} else {
+			var segment = segments.a;
+			var rest = segments.b;
+			return A2(
+				$elm$core$List$cons,
+				segment,
+				$elm$url$Url$Parser$removeFinalEmpty(rest));
+		}
+	}
+};
+var $elm$url$Url$Parser$preparePath = function (path) {
+	var _v0 = A2($elm$core$String$split, '/', path);
+	if (_v0.b && (_v0.a === '')) {
+		var segments = _v0.b;
+		return $elm$url$Url$Parser$removeFinalEmpty(segments);
+	} else {
+		var segments = _v0;
+		return $elm$url$Url$Parser$removeFinalEmpty(segments);
+	}
+};
+var $elm$url$Url$Parser$addToParametersHelp = F2(
+	function (value, maybeList) {
+		if (maybeList.$ === 'Nothing') {
+			return $elm$core$Maybe$Just(
+				_List_fromArray(
+					[value]));
+		} else {
+			var list = maybeList.a;
+			return $elm$core$Maybe$Just(
+				A2($elm$core$List$cons, value, list));
+		}
+	});
+var $elm$url$Url$percentDecode = _Url_percentDecode;
+var $elm$url$Url$Parser$addParam = F2(
+	function (segment, dict) {
+		var _v0 = A2($elm$core$String$split, '=', segment);
+		if ((_v0.b && _v0.b.b) && (!_v0.b.b.b)) {
+			var rawKey = _v0.a;
+			var _v1 = _v0.b;
+			var rawValue = _v1.a;
+			var _v2 = $elm$url$Url$percentDecode(rawKey);
+			if (_v2.$ === 'Nothing') {
+				return dict;
+			} else {
+				var key = _v2.a;
+				var _v3 = $elm$url$Url$percentDecode(rawValue);
+				if (_v3.$ === 'Nothing') {
+					return dict;
+				} else {
+					var value = _v3.a;
+					return A3(
+						$elm$core$Dict$update,
+						key,
+						$elm$url$Url$Parser$addToParametersHelp(value),
+						dict);
+				}
+			}
+		} else {
+			return dict;
+		}
+	});
+var $elm$url$Url$Parser$prepareQuery = function (maybeQuery) {
+	if (maybeQuery.$ === 'Nothing') {
+		return $elm$core$Dict$empty;
+	} else {
+		var qry = maybeQuery.a;
+		return A3(
+			$elm$core$List$foldr,
+			$elm$url$Url$Parser$addParam,
+			$elm$core$Dict$empty,
+			A2($elm$core$String$split, '&', qry));
+	}
+};
+var $elm$url$Url$Parser$parse = F2(
+	function (_v0, url) {
+		var parser = _v0.a;
+		return $elm$url$Url$Parser$getFirstMatch(
+			parser(
+				A5(
+					$elm$url$Url$Parser$State,
+					_List_Nil,
+					$elm$url$Url$Parser$preparePath(url.path),
+					$elm$url$Url$Parser$prepareQuery(url.query),
+					url.fragment,
+					$elm$core$Basics$identity)));
+	});
+var $author$project$Route$Admin = {$: 'Admin'};
+var $author$project$Route$Bieter = function (a) {
+	return {$: 'Bieter', a: a};
+};
+var $author$project$Route$Logout = {$: 'Logout'};
+var $elm$url$Url$Parser$Parser = function (a) {
+	return {$: 'Parser', a: a};
+};
+var $elm$url$Url$Parser$mapState = F2(
+	function (func, _v0) {
+		var visited = _v0.visited;
+		var unvisited = _v0.unvisited;
+		var params = _v0.params;
+		var frag = _v0.frag;
+		var value = _v0.value;
+		return A5(
+			$elm$url$Url$Parser$State,
+			visited,
+			unvisited,
+			params,
+			frag,
+			func(value));
+	});
+var $elm$url$Url$Parser$map = F2(
+	function (subValue, _v0) {
+		var parseArg = _v0.a;
+		return $elm$url$Url$Parser$Parser(
+			function (_v1) {
+				var visited = _v1.visited;
+				var unvisited = _v1.unvisited;
+				var params = _v1.params;
+				var frag = _v1.frag;
+				var value = _v1.value;
+				return A2(
+					$elm$core$List$map,
+					$elm$url$Url$Parser$mapState(value),
+					parseArg(
+						A5($elm$url$Url$Parser$State, visited, unvisited, params, frag, subValue)));
+			});
+	});
+var $elm$core$List$append = F2(
+	function (xs, ys) {
+		if (!ys.b) {
+			return xs;
+		} else {
+			return A3($elm$core$List$foldr, $elm$core$List$cons, ys, xs);
+		}
+	});
+var $elm$core$List$concat = function (lists) {
+	return A3($elm$core$List$foldr, $elm$core$List$append, _List_Nil, lists);
+};
+var $elm$core$List$concatMap = F2(
+	function (f, list) {
+		return $elm$core$List$concat(
+			A2($elm$core$List$map, f, list));
+	});
+var $elm$url$Url$Parser$oneOf = function (parsers) {
+	return $elm$url$Url$Parser$Parser(
+		function (state) {
+			return A2(
+				$elm$core$List$concatMap,
+				function (_v0) {
+					var parser = _v0.a;
+					return parser(state);
+				},
+				parsers);
+		});
+};
+var $elm$url$Url$Parser$s = function (str) {
+	return $elm$url$Url$Parser$Parser(
+		function (_v0) {
+			var visited = _v0.visited;
+			var unvisited = _v0.unvisited;
+			var params = _v0.params;
+			var frag = _v0.frag;
+			var value = _v0.value;
+			if (!unvisited.b) {
+				return _List_Nil;
+			} else {
+				var next = unvisited.a;
+				var rest = unvisited.b;
+				return _Utils_eq(next, str) ? _List_fromArray(
+					[
+						A5(
+						$elm$url$Url$Parser$State,
+						A2($elm$core$List$cons, next, visited),
+						rest,
+						params,
+						frag,
+						value)
+					]) : _List_Nil;
+			}
+		});
+};
+var $elm$url$Url$Parser$slash = F2(
+	function (_v0, _v1) {
+		var parseBefore = _v0.a;
+		var parseAfter = _v1.a;
+		return $elm$url$Url$Parser$Parser(
+			function (state) {
+				return A2(
+					$elm$core$List$concatMap,
+					parseAfter,
+					parseBefore(state));
+			});
+	});
+var $elm$url$Url$Parser$top = $elm$url$Url$Parser$Parser(
+	function (state) {
+		return _List_fromArray(
+			[state]);
+	});
+var $elm$url$Url$Parser$custom = F2(
+	function (tipe, stringToSomething) {
+		return $elm$url$Url$Parser$Parser(
+			function (_v0) {
+				var visited = _v0.visited;
+				var unvisited = _v0.unvisited;
+				var params = _v0.params;
+				var frag = _v0.frag;
+				var value = _v0.value;
+				if (!unvisited.b) {
+					return _List_Nil;
+				} else {
+					var next = unvisited.a;
+					var rest = unvisited.b;
+					var _v2 = stringToSomething(next);
+					if (_v2.$ === 'Just') {
+						var nextValue = _v2.a;
+						return _List_fromArray(
+							[
+								A5(
+								$elm$url$Url$Parser$State,
+								A2($elm$core$List$cons, next, visited),
+								rest,
+								params,
+								frag,
+								value(nextValue))
+							]);
+					} else {
+						return _List_Nil;
+					}
+				}
+			});
+	});
+var $author$project$Bieter$idFromString = function (sid) {
+	return $author$project$Bieter$ID(sid);
+};
+var $author$project$Bieter$urlParser = A2(
+	$elm$url$Url$Parser$custom,
+	'BIETER',
+	A2($elm$core$Basics$composeR, $author$project$Bieter$idFromString, $elm$core$Maybe$Just));
+var $author$project$Route$parser = $elm$url$Url$Parser$oneOf(
+	_List_fromArray(
+		[
+			A2($elm$url$Url$Parser$map, $author$project$Route$Front, $elm$url$Url$Parser$top),
+			A2(
+			$elm$url$Url$Parser$map,
+			$author$project$Route$Admin,
+			$elm$url$Url$Parser$s('admin')),
+			A2(
+			$elm$url$Url$Parser$map,
+			$author$project$Route$Bieter,
+			A2(
+				$elm$url$Url$Parser$slash,
+				$elm$url$Url$Parser$s('bieter'),
+				$author$project$Bieter$urlParser)),
+			A2(
+			$elm$url$Url$Parser$map,
+			$author$project$Route$Logout,
+			$elm$url$Url$Parser$s('logout'))
+		]));
+var $author$project$Route$fromUrl = function (url) {
+	return A2($elm$url$Url$Parser$parse, $author$project$Route$parser, url);
+};
 var $elm$core$Maybe$map = F2(
 	function (f, maybe) {
 		if (maybe.$ === 'Just') {
@@ -6806,13 +7125,19 @@ var $author$project$Main$init = F3(
 			var _v1 = $author$project$Main$parseFlags(flags);
 			if (_v1.$ === 'Nothing') {
 				return _Utils_Tuple2(
-					$author$project$Session$anonymous(navKey),
+					A2(
+						$author$project$Session$anonymous,
+						navKey,
+						$author$project$Main$absUrl(url)),
 					$elm$core$Platform$Cmd$none);
 			} else {
 				var bieterID = _v1.a;
 				return A3(
 					$author$project$Session$loadBieter,
-					$author$project$Session$anonymous(navKey),
+					A2(
+						$author$project$Session$anonymous,
+						navKey,
+						$author$project$Main$absUrl(url)),
 					$author$project$Main$ReceivedBieter,
 					bieterID);
 			}
@@ -6822,7 +7147,7 @@ var $author$project$Main$init = F3(
 		var _v2 = A2(
 			$author$project$Main$changeRouteTo,
 			$author$project$Route$fromUrl(url),
-			$author$project$Main$Redirect(session));
+			session);
 		var model = _v2.a;
 		var changePageCmd = _v2.b;
 		return _Utils_Tuple2(
@@ -6855,6 +7180,28 @@ var $author$project$Session$loggedIn = F2(
 				$author$project$Ports$StoreBieterID(bieter.id)));
 	});
 var $elm$browser$Browser$Navigation$pushUrl = _Browser_pushUrl;
+var $author$project$Page$Admin$toSession = function (model) {
+	return model.session;
+};
+var $author$project$Page$Front$toSession = function (model) {
+	return model.session;
+};
+var $author$project$Main$toSession = function (model) {
+	switch (model.$) {
+		case 'NotFound':
+			var session = model.a;
+			return session;
+		case 'Redirect':
+			var session = model.a;
+			return session;
+		case 'Front':
+			var front = model.a;
+			return $author$project$Page$Front$toSession(front);
+		default:
+			var admin = model.a;
+			return $author$project$Page$Admin$toSession(admin);
+	}
+};
 var $elm$url$Url$addPort = F2(
 	function (maybePort, starter) {
 		if (maybePort.$ === 'Nothing') {
@@ -7083,6 +7430,18 @@ var $author$project$Page$Front$createBieter = function (name) {
 			url: '/api/bieter'
 		});
 };
+var $author$project$Session$toBieter = function (s) {
+	var _v0 = s.viewer;
+	switch (_v0.$) {
+		case 'LoggedIn':
+			var b = _v0.a;
+			return $elm$core$Maybe$Just(b);
+		case 'Guest':
+			return $elm$core$Maybe$Nothing;
+		default:
+			return $elm$core$Maybe$Nothing;
+	}
+};
 var $author$project$Page$Front$FormReceived = function (a) {
 	return {$: 'FormReceived', a: a};
 };
@@ -7209,7 +7568,10 @@ var $author$project$Page$Front$update = F2(
 				return _Utils_Tuple2(
 					_Utils_update(
 						model,
-						{page: $author$project$Page$Front$Edit}),
+						{
+							draftBieter: $author$project$Session$toBieter(model.session),
+							page: $author$project$Page$Front$Edit
+						}),
 					$elm$core$Platform$Cmd$none);
 			case 'SaveNumber':
 				var nr = msg.a;
@@ -7339,7 +7701,6 @@ var $author$project$Main$update = F2(
 							A2($author$project$Main$updateSession, model, newSession),
 							cmd);
 					} else {
-						var e = response.a;
 						return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 					}
 				case 'LinkClicked':
@@ -7388,16 +7749,15 @@ var $author$project$Main$update = F2(
 					return A2(
 						$author$project$Main$changeRouteTo,
 						$author$project$Route$fromUrl(url),
-						model);
+						$author$project$Main$toSession(model));
 				case 'GotFrontMsg':
 					if (_v0.b.$ === 'Front') {
 						var subMsg = _v0.a.a;
 						var pageModel = _v0.b.a;
-						return A4(
+						return A3(
 							$author$project$Main$updateWith,
 							$author$project$Main$Front,
 							$author$project$Main$GotFrontMsg,
-							model,
 							A2($author$project$Page$Front$update, subMsg, pageModel));
 					} else {
 						break _v0$5;
@@ -7406,11 +7766,10 @@ var $author$project$Main$update = F2(
 					if (_v0.b.$ === 'Admin') {
 						var subMsg = _v0.a.a;
 						var pageModel = _v0.b.a;
-						return A4(
+						return A3(
 							$author$project$Main$updateWith,
 							$author$project$Main$Admin,
 							$author$project$Main$GotAdminMsg,
-							model,
 							A2($author$project$Page$Admin$update, subMsg, pageModel));
 					} else {
 						break _v0$5;
@@ -7461,18 +7820,6 @@ var $author$project$Page$viewFooter = A2(
 		]));
 var $elm$html$Html$h1 = _VirtualDom_node('h1');
 var $elm$html$Html$header = _VirtualDom_node('header');
-var $author$project$Session$toBieter = function (s) {
-	var _v0 = s.viewer;
-	switch (_v0.$) {
-		case 'LoggedIn':
-			var b = _v0.a;
-			return $elm$core$Maybe$Just(b);
-		case 'Guest':
-			return $elm$core$Maybe$Nothing;
-		default:
-			return $elm$core$Maybe$Nothing;
-	}
-};
 var $author$project$Page$viewMaybeLogout = function (session) {
 	var _v0 = $author$project$Session$toBieter(session);
 	if (_v0.$ === 'Nothing') {
@@ -7771,70 +8118,4176 @@ var $author$project$Page$Admin$view = function (model) {
 	return {content: content, title: 'Admin'};
 };
 var $author$project$Page$Front$GotoEditPage = {$: 'GotoEditPage'};
-var $author$project$Page$Front$viewBieter = function (bieter) {
-	return {
-		content: A2(
-			$elm$html$Html$div,
+var $pablohirafuji$elm_qrcode$QRCode$Quartile = {$: 'Quartile'};
+var $pablohirafuji$elm_qrcode$QRCode$QRCode = function (a) {
+	return {$: 'QRCode', a: a};
+};
+var $elm$core$Result$andThen = F2(
+	function (callback, result) {
+		if (result.$ === 'Ok') {
+			var value = result.a;
+			return callback(value);
+		} else {
+			var msg = result.a;
+			return $elm$core$Result$Err(msg);
+		}
+	});
+var $elm$core$Basics$ge = _Utils_ge;
+var $elm$core$Bitwise$and = _Bitwise_and;
+var $elm$core$Bitwise$shiftRightZfBy = _Bitwise_shiftRightZfBy;
+var $elm$core$Array$bitMask = 4294967295 >>> (32 - $elm$core$Array$shiftStep);
+var $elm$core$Elm$JsArray$unsafeGet = _JsArray_unsafeGet;
+var $elm$core$Array$getHelp = F3(
+	function (shift, index, tree) {
+		getHelp:
+		while (true) {
+			var pos = $elm$core$Array$bitMask & (index >>> shift);
+			var _v0 = A2($elm$core$Elm$JsArray$unsafeGet, pos, tree);
+			if (_v0.$ === 'SubTree') {
+				var subTree = _v0.a;
+				var $temp$shift = shift - $elm$core$Array$shiftStep,
+					$temp$index = index,
+					$temp$tree = subTree;
+				shift = $temp$shift;
+				index = $temp$index;
+				tree = $temp$tree;
+				continue getHelp;
+			} else {
+				var values = _v0.a;
+				return A2($elm$core$Elm$JsArray$unsafeGet, $elm$core$Array$bitMask & index, values);
+			}
+		}
+	});
+var $elm$core$Bitwise$shiftLeftBy = _Bitwise_shiftLeftBy;
+var $elm$core$Array$tailIndex = function (len) {
+	return (len >>> 5) << 5;
+};
+var $elm$core$Array$get = F2(
+	function (index, _v0) {
+		var len = _v0.a;
+		var startShift = _v0.b;
+		var tree = _v0.c;
+		var tail = _v0.d;
+		return ((index < 0) || (_Utils_cmp(index, len) > -1)) ? $elm$core$Maybe$Nothing : ((_Utils_cmp(
+			index,
+			$elm$core$Array$tailIndex(len)) > -1) ? $elm$core$Maybe$Just(
+			A2($elm$core$Elm$JsArray$unsafeGet, $elm$core$Array$bitMask & index, tail)) : $elm$core$Maybe$Just(
+			A3($elm$core$Array$getHelp, startShift, index, tree)));
+	});
+var $pablohirafuji$elm_qrcode$QRCode$Matrix$getIndex = F3(
+	function (size, row, col) {
+		return (size * row) + col;
+	});
+var $pablohirafuji$elm_qrcode$QRCode$Matrix$isOccupy = F4(
+	function (row, col, size, matrix) {
+		var _v0 = A2(
+			$elm$core$Array$get,
+			A3($pablohirafuji$elm_qrcode$QRCode$Matrix$getIndex, size, row, col),
+			matrix);
+		if ((_v0.$ === 'Just') && (_v0.a.$ === 'Just')) {
+			return true;
+		} else {
+			return false;
+		}
+	});
+var $pablohirafuji$elm_qrcode$QRCode$Matrix$nextModule = function (placement) {
+	var row = placement.row;
+	var col = placement.col;
+	var isRight = placement.isRight;
+	var isUp = placement.isUp;
+	return isRight ? _Utils_update(
+		placement,
+		{col: col - 1, isRight: false}) : (isUp ? _Utils_update(
+		placement,
+		{col: col + 1, isRight: true, row: row - 1}) : _Utils_update(
+		placement,
+		{col: col + 1, isRight: true, row: row + 1}));
+};
+var $elm$core$Bitwise$shiftRightBy = _Bitwise_shiftRightBy;
+var $pablohirafuji$elm_qrcode$QRCode$Matrix$bitToColor = F2(
+	function (_byte, offset) {
+		return (1 & (_byte >> (7 - offset))) === 1;
+	});
+var $elm$core$Elm$JsArray$unsafeSet = _JsArray_unsafeSet;
+var $elm$core$Array$setHelp = F4(
+	function (shift, index, value, tree) {
+		var pos = $elm$core$Array$bitMask & (index >>> shift);
+		var _v0 = A2($elm$core$Elm$JsArray$unsafeGet, pos, tree);
+		if (_v0.$ === 'SubTree') {
+			var subTree = _v0.a;
+			var newSub = A4($elm$core$Array$setHelp, shift - $elm$core$Array$shiftStep, index, value, subTree);
+			return A3(
+				$elm$core$Elm$JsArray$unsafeSet,
+				pos,
+				$elm$core$Array$SubTree(newSub),
+				tree);
+		} else {
+			var values = _v0.a;
+			var newLeaf = A3($elm$core$Elm$JsArray$unsafeSet, $elm$core$Array$bitMask & index, value, values);
+			return A3(
+				$elm$core$Elm$JsArray$unsafeSet,
+				pos,
+				$elm$core$Array$Leaf(newLeaf),
+				tree);
+		}
+	});
+var $elm$core$Array$set = F3(
+	function (index, value, array) {
+		var len = array.a;
+		var startShift = array.b;
+		var tree = array.c;
+		var tail = array.d;
+		return ((index < 0) || (_Utils_cmp(index, len) > -1)) ? array : ((_Utils_cmp(
+			index,
+			$elm$core$Array$tailIndex(len)) > -1) ? A4(
+			$elm$core$Array$Array_elm_builtin,
+			len,
+			startShift,
+			tree,
+			A3($elm$core$Elm$JsArray$unsafeSet, $elm$core$Array$bitMask & index, value, tail)) : A4(
+			$elm$core$Array$Array_elm_builtin,
+			len,
+			startShift,
+			A4($elm$core$Array$setHelp, startShift, index, value, tree),
+			tail));
+	});
+var $pablohirafuji$elm_qrcode$QRCode$Matrix$setDataModule = F3(
+	function (_v0, _byte, offset) {
+		var size = _v0.size;
+		var row = _v0.row;
+		var col = _v0.col;
+		return A2(
+			$elm$core$Array$set,
+			A3($pablohirafuji$elm_qrcode$QRCode$Matrix$getIndex, size, row, col),
+			$elm$core$Maybe$Just(
+				_Utils_Tuple2(
+					false,
+					A2($pablohirafuji$elm_qrcode$QRCode$Matrix$bitToColor, _byte, offset))));
+	});
+var $pablohirafuji$elm_qrcode$QRCode$Matrix$addDataModule = F4(
+	function (placement, bytes, offset, matrix) {
+		addDataModule:
+		while (true) {
+			var size = placement.size;
+			var row = placement.row;
+			var col = placement.col;
+			if (!bytes.b) {
+				return matrix;
+			} else {
+				var head = bytes.a;
+				var tail = bytes.b;
+				if (offset >= 8) {
+					var $temp$placement = placement,
+						$temp$bytes = tail,
+						$temp$offset = 0,
+						$temp$matrix = matrix;
+					placement = $temp$placement;
+					bytes = $temp$bytes;
+					offset = $temp$offset;
+					matrix = $temp$matrix;
+					continue addDataModule;
+				} else {
+					if (col === 6) {
+						var $temp$placement = _Utils_update(
+							placement,
+							{col: col - 1, isRight: true}),
+							$temp$bytes = bytes,
+							$temp$offset = offset,
+							$temp$matrix = matrix;
+						placement = $temp$placement;
+						bytes = $temp$bytes;
+						offset = $temp$offset;
+						matrix = $temp$matrix;
+						continue addDataModule;
+					} else {
+						if (row < 0) {
+							var $temp$placement = _Utils_update(
+								placement,
+								{col: col - 2, isRight: true, isUp: false, row: 0}),
+								$temp$bytes = bytes,
+								$temp$offset = offset,
+								$temp$matrix = matrix;
+							placement = $temp$placement;
+							bytes = $temp$bytes;
+							offset = $temp$offset;
+							matrix = $temp$matrix;
+							continue addDataModule;
+						} else {
+							if (_Utils_cmp(row, size) > -1) {
+								var $temp$placement = _Utils_update(
+									placement,
+									{col: col - 2, isRight: true, isUp: true, row: size - 1}),
+									$temp$bytes = bytes,
+									$temp$offset = offset,
+									$temp$matrix = matrix;
+								placement = $temp$placement;
+								bytes = $temp$bytes;
+								offset = $temp$offset;
+								matrix = $temp$matrix;
+								continue addDataModule;
+							} else {
+								if (A4($pablohirafuji$elm_qrcode$QRCode$Matrix$isOccupy, row, col, size, matrix)) {
+									var $temp$placement = $pablohirafuji$elm_qrcode$QRCode$Matrix$nextModule(placement),
+										$temp$bytes = bytes,
+										$temp$offset = offset,
+										$temp$matrix = matrix;
+									placement = $temp$placement;
+									bytes = $temp$bytes;
+									offset = $temp$offset;
+									matrix = $temp$matrix;
+									continue addDataModule;
+								} else {
+									var $temp$placement = $pablohirafuji$elm_qrcode$QRCode$Matrix$nextModule(placement),
+										$temp$bytes = bytes,
+										$temp$offset = offset + 1,
+										$temp$matrix = A4($pablohirafuji$elm_qrcode$QRCode$Matrix$setDataModule, placement, head, offset, matrix);
+									placement = $temp$placement;
+									bytes = $temp$bytes;
+									offset = $temp$offset;
+									matrix = $temp$matrix;
+									continue addDataModule;
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	});
+var $pablohirafuji$elm_qrcode$QRCode$Matrix$initPlacement = function (size) {
+	return {col: size + 1, isRight: true, isUp: true, row: size + 1, size: size};
+};
+var $pablohirafuji$elm_qrcode$QRCode$Matrix$addData = F3(
+	function (size, bytes, matrix) {
+		return A4(
+			$pablohirafuji$elm_qrcode$QRCode$Matrix$addDataModule,
+			$pablohirafuji$elm_qrcode$QRCode$Matrix$initPlacement(size),
+			bytes,
+			0,
+			matrix);
+	});
+var $pablohirafuji$elm_qrcode$QRCode$Error$AlignmentPatternNotFound = {$: 'AlignmentPatternNotFound'};
+var $elm$core$Array$fromListHelp = F3(
+	function (list, nodeList, nodeListSize) {
+		fromListHelp:
+		while (true) {
+			var _v0 = A2($elm$core$Elm$JsArray$initializeFromList, $elm$core$Array$branchFactor, list);
+			var jsArray = _v0.a;
+			var remainingItems = _v0.b;
+			if (_Utils_cmp(
+				$elm$core$Elm$JsArray$length(jsArray),
+				$elm$core$Array$branchFactor) < 0) {
+				return A2(
+					$elm$core$Array$builderToArray,
+					true,
+					{nodeList: nodeList, nodeListSize: nodeListSize, tail: jsArray});
+			} else {
+				var $temp$list = remainingItems,
+					$temp$nodeList = A2(
+					$elm$core$List$cons,
+					$elm$core$Array$Leaf(jsArray),
+					nodeList),
+					$temp$nodeListSize = nodeListSize + 1;
+				list = $temp$list;
+				nodeList = $temp$nodeList;
+				nodeListSize = $temp$nodeListSize;
+				continue fromListHelp;
+			}
+		}
+	});
+var $elm$core$Array$fromList = function (list) {
+	if (!list.b) {
+		return $elm$core$Array$empty;
+	} else {
+		return A3($elm$core$Array$fromListHelp, list, _List_Nil, 0);
+	}
+};
+var $pablohirafuji$elm_qrcode$QRCode$Matrix$alignmentPatternData = $elm$core$Array$fromList(
+	_List_fromArray(
+		[
 			_List_Nil,
 			_List_fromArray(
-				[
-					A2(
-					$elm$html$Html$h1,
-					_List_Nil,
-					_List_fromArray(
-						[
-							$elm$html$Html$text('Hallo ' + bieter.name)
-						])),
-					A2(
-					$elm$html$Html$div,
-					_List_Nil,
-					_List_fromArray(
-						[
-							$elm$html$Html$text('Deine Bieternummer ist '),
-							A2(
-							$elm$html$Html$strong,
-							_List_Nil,
-							_List_fromArray(
-								[
-									$elm$html$Html$text(
-									$author$project$Bieter$idToString(bieter.id))
-								])),
-							$elm$html$Html$text('. Merke sie dir gut. Du brauchst sie für die nächste anmeldung')
-						])),
-					A2(
-					$elm$html$Html$div,
-					_List_Nil,
-					_List_fromArray(
-						[
-							$elm$html$Html$text('Adresse: ' + bieter.adresse)
-						])),
-					A2(
-					$elm$html$Html$div,
-					_List_Nil,
-					_List_fromArray(
-						[
-							$elm$html$Html$text('IBAN: ' + bieter.iban)
-						])),
-					A2(
-					$elm$html$Html$div,
-					_List_Nil,
-					_List_fromArray(
-						[
-							A2(
-							$elm$html$Html$button,
-							_List_fromArray(
-								[
-									$elm$html$Html$Events$onClick($author$project$Page$Front$GotoEditPage)
-								]),
-							_List_fromArray(
-								[
-									$elm$html$Html$text('Bearbeiten')
-								]))
-						]))
-				])),
-		title: 'Bieter'
-	};
+			[6, 18]),
+			_List_fromArray(
+			[6, 22]),
+			_List_fromArray(
+			[6, 26]),
+			_List_fromArray(
+			[6, 30]),
+			_List_fromArray(
+			[6, 34]),
+			_List_fromArray(
+			[6, 22, 38]),
+			_List_fromArray(
+			[6, 24, 42]),
+			_List_fromArray(
+			[6, 26, 46]),
+			_List_fromArray(
+			[6, 28, 50]),
+			_List_fromArray(
+			[6, 30, 54]),
+			_List_fromArray(
+			[6, 32, 58]),
+			_List_fromArray(
+			[6, 34, 62]),
+			_List_fromArray(
+			[6, 26, 46, 66]),
+			_List_fromArray(
+			[6, 26, 48, 70]),
+			_List_fromArray(
+			[6, 26, 50, 74]),
+			_List_fromArray(
+			[6, 30, 54, 78]),
+			_List_fromArray(
+			[6, 30, 56, 82]),
+			_List_fromArray(
+			[6, 30, 58, 86]),
+			_List_fromArray(
+			[6, 34, 62, 90]),
+			_List_fromArray(
+			[6, 28, 50, 72, 94]),
+			_List_fromArray(
+			[6, 26, 50, 74, 98]),
+			_List_fromArray(
+			[6, 30, 54, 78, 102]),
+			_List_fromArray(
+			[6, 28, 54, 80, 106]),
+			_List_fromArray(
+			[6, 32, 58, 84, 110]),
+			_List_fromArray(
+			[6, 30, 58, 86, 114]),
+			_List_fromArray(
+			[6, 34, 62, 90, 118]),
+			_List_fromArray(
+			[6, 26, 50, 74, 98, 122]),
+			_List_fromArray(
+			[6, 30, 54, 78, 102, 126]),
+			_List_fromArray(
+			[6, 26, 52, 78, 104, 130]),
+			_List_fromArray(
+			[6, 30, 56, 82, 108, 134]),
+			_List_fromArray(
+			[6, 34, 60, 86, 112, 138]),
+			_List_fromArray(
+			[6, 30, 58, 86, 114, 142]),
+			_List_fromArray(
+			[6, 34, 62, 90, 118, 146]),
+			_List_fromArray(
+			[6, 30, 54, 78, 102, 126, 150]),
+			_List_fromArray(
+			[6, 24, 50, 76, 102, 128, 154]),
+			_List_fromArray(
+			[6, 28, 54, 80, 106, 132, 158]),
+			_List_fromArray(
+			[6, 32, 58, 84, 110, 136, 162]),
+			_List_fromArray(
+			[6, 26, 54, 82, 110, 138, 166]),
+			_List_fromArray(
+			[6, 30, 58, 86, 114, 142, 170])
+		]));
+var $elm$core$Result$fromMaybe = F2(
+	function (err, maybe) {
+		if (maybe.$ === 'Just') {
+			var v = maybe.a;
+			return $elm$core$Result$Ok(v);
+		} else {
+			return $elm$core$Result$Err(err);
+		}
+	});
+var $elm$core$Result$map = F2(
+	function (func, ra) {
+		if (ra.$ === 'Ok') {
+			var a = ra.a;
+			return $elm$core$Result$Ok(
+				func(a));
+		} else {
+			var e = ra.a;
+			return $elm$core$Result$Err(e);
+		}
+	});
+var $elm$core$List$filter = F2(
+	function (isGood, list) {
+		return A3(
+			$elm$core$List$foldr,
+			F2(
+				function (x, xs) {
+					return isGood(x) ? A2($elm$core$List$cons, x, xs) : xs;
+				}),
+			_List_Nil,
+			list);
+	});
+var $pablohirafuji$elm_qrcode$QRCode$Matrix$getAreaCoord = F2(
+	function (rows, cols) {
+		return A3(
+			$elm$core$List$foldl,
+			F2(
+				function (row, list) {
+					return A3(
+						$elm$core$List$foldl,
+						F2(
+							function (col, list_) {
+								return A2(
+									$elm$core$List$cons,
+									_Utils_Tuple2(row, col),
+									list_);
+							}),
+						list,
+						cols);
+				}),
+			_List_Nil,
+			rows);
+	});
+var $pablohirafuji$elm_qrcode$QRCode$Matrix$isValidAlign = F2(
+	function (size, _v0) {
+		var row = _v0.a;
+		var col = _v0.b;
+		return ((row > 10) || ((10 < col) && (_Utils_cmp(col, size - 10) < 0))) && ((_Utils_cmp(row, size - 10) < 0) || (col > 10));
+	});
+var $elm$core$Basics$negate = function (n) {
+	return -n;
 };
+var $pablohirafuji$elm_qrcode$QRCode$Matrix$alignmentRange = A2($elm$core$List$range, -2, 2);
+var $pablohirafuji$elm_qrcode$QRCode$Matrix$alignmentColor = F2(
+	function (row, col) {
+		return (_Utils_eq(row, -2) || ((row === 2) || (_Utils_eq(col, -2) || ((col === 2) || ((!row) && (!col)))))) ? $elm$core$Maybe$Just(
+			_Utils_Tuple2(true, true)) : $elm$core$Maybe$Just(
+			_Utils_Tuple2(true, false));
+	});
+var $pablohirafuji$elm_qrcode$QRCode$Matrix$setAlignModule = F4(
+	function (size, rowPos, colPos, _v0) {
+		var row = _v0.a;
+		var col = _v0.b;
+		return A2(
+			$elm$core$Array$set,
+			A3($pablohirafuji$elm_qrcode$QRCode$Matrix$getIndex, size, row + rowPos, col + colPos),
+			A2($pablohirafuji$elm_qrcode$QRCode$Matrix$alignmentColor, row, col));
+	});
+var $pablohirafuji$elm_qrcode$QRCode$Matrix$setAlignment = F3(
+	function (size, _v0, matrix) {
+		var row = _v0.a;
+		var col = _v0.b;
+		return A3(
+			$elm$core$List$foldl,
+			A3($pablohirafuji$elm_qrcode$QRCode$Matrix$setAlignModule, size, row, col),
+			matrix,
+			A2($pablohirafuji$elm_qrcode$QRCode$Matrix$getAreaCoord, $pablohirafuji$elm_qrcode$QRCode$Matrix$alignmentRange, $pablohirafuji$elm_qrcode$QRCode$Matrix$alignmentRange));
+	});
+var $pablohirafuji$elm_qrcode$QRCode$Matrix$setAlignments = F3(
+	function (size, locations, matrix) {
+		return A3(
+			$elm$core$List$foldl,
+			$pablohirafuji$elm_qrcode$QRCode$Matrix$setAlignment(size),
+			matrix,
+			A2(
+				$elm$core$List$filter,
+				$pablohirafuji$elm_qrcode$QRCode$Matrix$isValidAlign(size),
+				A2($pablohirafuji$elm_qrcode$QRCode$Matrix$getAreaCoord, locations, locations)));
+	});
+var $pablohirafuji$elm_qrcode$QRCode$Matrix$alignmentPattern = F3(
+	function (version, size, matrix) {
+		return A2(
+			$elm$core$Result$map,
+			function (a) {
+				return A3($pablohirafuji$elm_qrcode$QRCode$Matrix$setAlignments, size, a, matrix);
+			},
+			A2(
+				$elm$core$Result$fromMaybe,
+				$pablohirafuji$elm_qrcode$QRCode$Error$AlignmentPatternNotFound,
+				A2($elm$core$Array$get, version - 1, $pablohirafuji$elm_qrcode$QRCode$Matrix$alignmentPatternData)));
+	});
+var $elm$core$Basics$always = F2(
+	function (a, _v0) {
+		return a;
+	});
+var $pablohirafuji$elm_qrcode$QRCode$Matrix$darkModule = F2(
+	function (version, size) {
+		return A2(
+			$elm$core$Array$set,
+			A3($pablohirafuji$elm_qrcode$QRCode$Matrix$getIndex, size, (4 * version) + 9, 8),
+			$elm$core$Maybe$Just(
+				_Utils_Tuple2(true, true)));
+	});
+var $pablohirafuji$elm_qrcode$QRCode$Matrix$finderRange = A2($elm$core$List$range, 0, 8);
+var $pablohirafuji$elm_qrcode$QRCode$Matrix$finderColor = F2(
+	function (row, col) {
+		return ((1 <= row) && ((row <= 7) && ((col === 1) || (col === 7)))) || (((1 <= col) && ((col <= 7) && ((row === 1) || (row === 7)))) || ((3 <= row) && ((row <= 5) && ((3 <= col) && (col <= 5)))));
+	});
+var $pablohirafuji$elm_qrcode$QRCode$Matrix$setFinder = F5(
+	function (size, rowOffset, colOffset, _v0, matrix) {
+		var row = _v0.a;
+		var col = _v0.b;
+		var finalRow = row + rowOffset;
+		var finalCol = col + colOffset;
+		return ((finalRow < 0) || ((finalCol < 0) || ((_Utils_cmp(finalRow, size) > -1) || (_Utils_cmp(finalCol, size) > -1)))) ? matrix : A3(
+			$elm$core$Array$set,
+			A3($pablohirafuji$elm_qrcode$QRCode$Matrix$getIndex, size, finalRow, finalCol),
+			$elm$core$Maybe$Just(
+				_Utils_Tuple2(
+					true,
+					A2($pablohirafuji$elm_qrcode$QRCode$Matrix$finderColor, row, col))),
+			matrix);
+	});
+var $pablohirafuji$elm_qrcode$QRCode$Matrix$finderPattern = F4(
+	function (size, rowOffset, colOffset, matrix) {
+		return A3(
+			$elm$core$List$foldl,
+			A3($pablohirafuji$elm_qrcode$QRCode$Matrix$setFinder, size, rowOffset, colOffset),
+			matrix,
+			A2($pablohirafuji$elm_qrcode$QRCode$Matrix$getAreaCoord, $pablohirafuji$elm_qrcode$QRCode$Matrix$finderRange, $pablohirafuji$elm_qrcode$QRCode$Matrix$finderRange));
+	});
+var $elm$core$Basics$not = _Basics_not;
+var $pablohirafuji$elm_qrcode$QRCode$Matrix$applyMaskColor = F2(
+	function (maybeModule, isChange) {
+		if (isChange) {
+			if ((maybeModule.$ === 'Just') && (!maybeModule.a.a)) {
+				var _v1 = maybeModule.a;
+				var isDark = _v1.b;
+				return $elm$core$Maybe$Just(
+					_Utils_Tuple2(false, !isDark));
+			} else {
+				return maybeModule;
+			}
+		} else {
+			return maybeModule;
+		}
+	});
+var $elm$core$Basics$modBy = _Basics_modBy;
+var $pablohirafuji$elm_qrcode$QRCode$Matrix$getCoord = F2(
+	function (size, index) {
+		return _Utils_Tuple2(
+			(index / size) | 0,
+			A2($elm$core$Basics$modBy, size, index));
+	});
+var $pablohirafuji$elm_qrcode$QRCode$Matrix$applyMaskFunction = F4(
+	function (_function, size, index, maybeModule) {
+		return A2(
+			$pablohirafuji$elm_qrcode$QRCode$Matrix$applyMaskColor,
+			maybeModule,
+			_function(
+				A2($pablohirafuji$elm_qrcode$QRCode$Matrix$getCoord, size, index)));
+	});
+var $elm$core$Elm$JsArray$foldl = _JsArray_foldl;
+var $elm$core$Elm$JsArray$indexedMap = _JsArray_indexedMap;
+var $elm$core$Array$indexedMap = F2(
+	function (func, _v0) {
+		var len = _v0.a;
+		var tree = _v0.c;
+		var tail = _v0.d;
+		var initialBuilder = {
+			nodeList: _List_Nil,
+			nodeListSize: 0,
+			tail: A3(
+				$elm$core$Elm$JsArray$indexedMap,
+				func,
+				$elm$core$Array$tailIndex(len),
+				tail)
+		};
+		var helper = F2(
+			function (node, builder) {
+				if (node.$ === 'SubTree') {
+					var subTree = node.a;
+					return A3($elm$core$Elm$JsArray$foldl, helper, builder, subTree);
+				} else {
+					var leaf = node.a;
+					var offset = builder.nodeListSize * $elm$core$Array$branchFactor;
+					var mappedLeaf = $elm$core$Array$Leaf(
+						A3($elm$core$Elm$JsArray$indexedMap, func, offset, leaf));
+					return {
+						nodeList: A2($elm$core$List$cons, mappedLeaf, builder.nodeList),
+						nodeListSize: builder.nodeListSize + 1,
+						tail: builder.tail
+					};
+				}
+			});
+		return A2(
+			$elm$core$Array$builderToArray,
+			true,
+			A3($elm$core$Elm$JsArray$foldl, helper, initialBuilder, tree));
+	});
+var $pablohirafuji$elm_qrcode$QRCode$Matrix$maskFunction = function (mask) {
+	switch (mask.$) {
+		case 'Pattern0':
+			return function (_v1) {
+				var row = _v1.a;
+				var col = _v1.b;
+				return !A2($elm$core$Basics$modBy, 2, row + col);
+			};
+		case 'Pattern1':
+			return function (_v2) {
+				var row = _v2.a;
+				return !A2($elm$core$Basics$modBy, 2, row);
+			};
+		case 'Pattern2':
+			return function (_v3) {
+				var col = _v3.b;
+				return !A2($elm$core$Basics$modBy, 3, col);
+			};
+		case 'Pattern3':
+			return function (_v4) {
+				var row = _v4.a;
+				var col = _v4.b;
+				return !A2($elm$core$Basics$modBy, 3, row + col);
+			};
+		case 'Pattern4':
+			return function (_v5) {
+				var row = _v5.a;
+				var col = _v5.b;
+				return !A2(
+					$elm$core$Basics$modBy,
+					2,
+					$elm$core$Basics$floor(row / 2) + $elm$core$Basics$floor(col / 3));
+			};
+		case 'Pattern5':
+			return function (_v6) {
+				var row = _v6.a;
+				var col = _v6.b;
+				return !(A2($elm$core$Basics$modBy, 2, row * col) + A2($elm$core$Basics$modBy, 3, row * col));
+			};
+		case 'Pattern6':
+			return function (_v7) {
+				var row = _v7.a;
+				var col = _v7.b;
+				return !A2(
+					$elm$core$Basics$modBy,
+					2,
+					A2($elm$core$Basics$modBy, 2, row * col) + A2($elm$core$Basics$modBy, 3, row * col));
+			};
+		default:
+			return function (_v8) {
+				var row = _v8.a;
+				var col = _v8.b;
+				return !A2(
+					$elm$core$Basics$modBy,
+					2,
+					A2($elm$core$Basics$modBy, 3, row * col) + A2($elm$core$Basics$modBy, 2, row + col));
+			};
+	}
+};
+var $pablohirafuji$elm_qrcode$QRCode$Matrix$applyMask = F3(
+	function (size, mask, matrix) {
+		return A2(
+			$elm$core$Array$indexedMap,
+			A2(
+				$pablohirafuji$elm_qrcode$QRCode$Matrix$applyMaskFunction,
+				$pablohirafuji$elm_qrcode$QRCode$Matrix$maskFunction(mask),
+				size),
+			matrix);
+	});
+var $elm$core$List$drop = F2(
+	function (n, list) {
+		drop:
+		while (true) {
+			if (n <= 0) {
+				return list;
+			} else {
+				if (!list.b) {
+					return list;
+				} else {
+					var x = list.a;
+					var xs = list.b;
+					var $temp$n = n - 1,
+						$temp$list = xs;
+					n = $temp$n;
+					list = $temp$list;
+					continue drop;
+				}
+			}
+		}
+	});
+var $elm$core$List$takeReverse = F3(
+	function (n, list, kept) {
+		takeReverse:
+		while (true) {
+			if (n <= 0) {
+				return kept;
+			} else {
+				if (!list.b) {
+					return kept;
+				} else {
+					var x = list.a;
+					var xs = list.b;
+					var $temp$n = n - 1,
+						$temp$list = xs,
+						$temp$kept = A2($elm$core$List$cons, x, kept);
+					n = $temp$n;
+					list = $temp$list;
+					kept = $temp$kept;
+					continue takeReverse;
+				}
+			}
+		}
+	});
+var $elm$core$List$takeTailRec = F2(
+	function (n, list) {
+		return $elm$core$List$reverse(
+			A3($elm$core$List$takeReverse, n, list, _List_Nil));
+	});
+var $elm$core$List$takeFast = F3(
+	function (ctr, n, list) {
+		if (n <= 0) {
+			return _List_Nil;
+		} else {
+			var _v0 = _Utils_Tuple2(n, list);
+			_v0$1:
+			while (true) {
+				_v0$5:
+				while (true) {
+					if (!_v0.b.b) {
+						return list;
+					} else {
+						if (_v0.b.b.b) {
+							switch (_v0.a) {
+								case 1:
+									break _v0$1;
+								case 2:
+									var _v2 = _v0.b;
+									var x = _v2.a;
+									var _v3 = _v2.b;
+									var y = _v3.a;
+									return _List_fromArray(
+										[x, y]);
+								case 3:
+									if (_v0.b.b.b.b) {
+										var _v4 = _v0.b;
+										var x = _v4.a;
+										var _v5 = _v4.b;
+										var y = _v5.a;
+										var _v6 = _v5.b;
+										var z = _v6.a;
+										return _List_fromArray(
+											[x, y, z]);
+									} else {
+										break _v0$5;
+									}
+								default:
+									if (_v0.b.b.b.b && _v0.b.b.b.b.b) {
+										var _v7 = _v0.b;
+										var x = _v7.a;
+										var _v8 = _v7.b;
+										var y = _v8.a;
+										var _v9 = _v8.b;
+										var z = _v9.a;
+										var _v10 = _v9.b;
+										var w = _v10.a;
+										var tl = _v10.b;
+										return (ctr > 1000) ? A2(
+											$elm$core$List$cons,
+											x,
+											A2(
+												$elm$core$List$cons,
+												y,
+												A2(
+													$elm$core$List$cons,
+													z,
+													A2(
+														$elm$core$List$cons,
+														w,
+														A2($elm$core$List$takeTailRec, n - 4, tl))))) : A2(
+											$elm$core$List$cons,
+											x,
+											A2(
+												$elm$core$List$cons,
+												y,
+												A2(
+													$elm$core$List$cons,
+													z,
+													A2(
+														$elm$core$List$cons,
+														w,
+														A3($elm$core$List$takeFast, ctr + 1, n - 4, tl)))));
+									} else {
+										break _v0$5;
+									}
+							}
+						} else {
+							if (_v0.a === 1) {
+								break _v0$1;
+							} else {
+								break _v0$5;
+							}
+						}
+					}
+				}
+				return list;
+			}
+			var _v1 = _v0.b;
+			var x = _v1.a;
+			return _List_fromArray(
+				[x]);
+		}
+	});
+var $elm$core$List$take = F2(
+	function (n, list) {
+		return A3($elm$core$List$takeFast, 0, n, list);
+	});
+var $pablohirafuji$elm_qrcode$QRCode$Matrix$breakList = F3(
+	function (width, list, acc) {
+		breakList:
+		while (true) {
+			if (!list.b) {
+				return $elm$core$List$reverse(acc);
+			} else {
+				var $temp$width = width,
+					$temp$list = A2($elm$core$List$drop, width, list),
+					$temp$acc = A2(
+					$elm$core$List$cons,
+					A2($elm$core$List$take, width, list),
+					acc);
+				width = $temp$width;
+				list = $temp$list;
+				acc = $temp$acc;
+				continue breakList;
+			}
+		}
+	});
+var $elm$core$Tuple$second = function (_v0) {
+	var y = _v0.b;
+	return y;
+};
+var $elm$core$Maybe$withDefault = F2(
+	function (_default, maybe) {
+		if (maybe.$ === 'Just') {
+			var value = maybe.a;
+			return value;
+		} else {
+			return _default;
+		}
+	});
+var $pablohirafuji$elm_qrcode$QRCode$Matrix$isDarkModule = A2(
+	$elm$core$Basics$composeR,
+	$elm$core$Maybe$map($elm$core$Tuple$second),
+	$elm$core$Maybe$withDefault(false));
+var $pablohirafuji$elm_qrcode$QRCode$Matrix$rule1Score_ = F2(
+	function (simplifiedList, _v0) {
+		rule1Score_:
+		while (true) {
+			var last = _v0.a;
+			var partialScore = _v0.b;
+			var score = _v0.c;
+			if (!simplifiedList.b) {
+				return (partialScore >= 5) ? ((score + partialScore) - 2) : score;
+			} else {
+				var head = simplifiedList.a;
+				var tail = simplifiedList.b;
+				if (_Utils_eq(last, head)) {
+					var $temp$simplifiedList = tail,
+						$temp$_v0 = _Utils_Tuple3(last, partialScore + 1, score);
+					simplifiedList = $temp$simplifiedList;
+					_v0 = $temp$_v0;
+					continue rule1Score_;
+				} else {
+					if (partialScore >= 5) {
+						var $temp$simplifiedList = tail,
+							$temp$_v0 = _Utils_Tuple3(head, 0, (score + partialScore) - 2);
+						simplifiedList = $temp$simplifiedList;
+						_v0 = $temp$_v0;
+						continue rule1Score_;
+					} else {
+						var $temp$simplifiedList = tail,
+							$temp$_v0 = _Utils_Tuple3(head, 0, score);
+						simplifiedList = $temp$simplifiedList;
+						_v0 = $temp$_v0;
+						continue rule1Score_;
+					}
+				}
+			}
+		}
+	});
+var $elm$core$List$sum = function (numbers) {
+	return A3($elm$core$List$foldl, $elm$core$Basics$add, 0, numbers);
+};
+var $pablohirafuji$elm_qrcode$QRCode$Matrix$rule1Score = A2(
+	$elm$core$Basics$composeR,
+	$elm$core$List$map(
+		function (a) {
+			return A2(
+				$pablohirafuji$elm_qrcode$QRCode$Matrix$rule1Score_,
+				a,
+				_Utils_Tuple3(false, 0, 0));
+		}),
+	$elm$core$List$sum);
+var $pablohirafuji$elm_qrcode$QRCode$Matrix$rule2Score_ = F4(
+	function (row1, row2, maybeLast, score) {
+		rule2Score_:
+		while (true) {
+			if (!row1.b) {
+				return score;
+			} else {
+				var head = row1.a;
+				var tail = row1.b;
+				if (!row2.b) {
+					return score;
+				} else {
+					var head2 = row2.a;
+					var tail2 = row2.b;
+					if (_Utils_eq(head, head2)) {
+						if (_Utils_eq(
+							$elm$core$Maybe$Just(head),
+							maybeLast)) {
+							var $temp$row1 = tail,
+								$temp$row2 = tail2,
+								$temp$maybeLast = $elm$core$Maybe$Just(head),
+								$temp$score = score + 3;
+							row1 = $temp$row1;
+							row2 = $temp$row2;
+							maybeLast = $temp$maybeLast;
+							score = $temp$score;
+							continue rule2Score_;
+						} else {
+							var $temp$row1 = tail,
+								$temp$row2 = tail2,
+								$temp$maybeLast = $elm$core$Maybe$Just(head),
+								$temp$score = score;
+							row1 = $temp$row1;
+							row2 = $temp$row2;
+							maybeLast = $temp$maybeLast;
+							score = $temp$score;
+							continue rule2Score_;
+						}
+					} else {
+						var $temp$row1 = tail,
+							$temp$row2 = tail2,
+							$temp$maybeLast = $elm$core$Maybe$Nothing,
+							$temp$score = score;
+						row1 = $temp$row1;
+						row2 = $temp$row2;
+						maybeLast = $temp$maybeLast;
+						score = $temp$score;
+						continue rule2Score_;
+					}
+				}
+			}
+		}
+	});
+var $pablohirafuji$elm_qrcode$QRCode$Matrix$rule2Score = F2(
+	function (list, score) {
+		rule2Score:
+		while (true) {
+			if (list.b && list.b.b) {
+				var head1 = list.a;
+				var _v1 = list.b;
+				var head2 = _v1.a;
+				var tail = _v1.b;
+				var $temp$list = tail,
+					$temp$score = score + A4($pablohirafuji$elm_qrcode$QRCode$Matrix$rule2Score_, head1, head2, $elm$core$Maybe$Nothing, 0);
+				list = $temp$list;
+				score = $temp$score;
+				continue rule2Score;
+			} else {
+				return score;
+			}
+		}
+	});
+var $pablohirafuji$elm_qrcode$QRCode$Matrix$rule3Score_ = F2(
+	function (simplifiedList, score) {
+		rule3Score_:
+		while (true) {
+			_v0$3:
+			while (true) {
+				if (!simplifiedList.b) {
+					return score;
+				} else {
+					if (!simplifiedList.a) {
+						if (((((((((((((((((((simplifiedList.b.b && (!simplifiedList.b.a)) && simplifiedList.b.b.b) && (!simplifiedList.b.b.a)) && simplifiedList.b.b.b.b) && (!simplifiedList.b.b.b.a)) && simplifiedList.b.b.b.b.b) && simplifiedList.b.b.b.b.a) && simplifiedList.b.b.b.b.b.b) && (!simplifiedList.b.b.b.b.b.a)) && simplifiedList.b.b.b.b.b.b.b) && simplifiedList.b.b.b.b.b.b.a) && simplifiedList.b.b.b.b.b.b.b.b) && simplifiedList.b.b.b.b.b.b.b.a) && simplifiedList.b.b.b.b.b.b.b.b.b) && simplifiedList.b.b.b.b.b.b.b.b.a) && simplifiedList.b.b.b.b.b.b.b.b.b.b) && (!simplifiedList.b.b.b.b.b.b.b.b.b.a)) && simplifiedList.b.b.b.b.b.b.b.b.b.b.b) && simplifiedList.b.b.b.b.b.b.b.b.b.b.a) {
+							var _v1 = simplifiedList.b;
+							var _v2 = _v1.b;
+							var _v3 = _v2.b;
+							var _v4 = _v3.b;
+							var _v5 = _v4.b;
+							var _v6 = _v5.b;
+							var _v7 = _v6.b;
+							var _v8 = _v7.b;
+							var _v9 = _v8.b;
+							var _v10 = _v9.b;
+							var tail = _v10.b;
+							var $temp$simplifiedList = tail,
+								$temp$score = score + 40;
+							simplifiedList = $temp$simplifiedList;
+							score = $temp$score;
+							continue rule3Score_;
+						} else {
+							break _v0$3;
+						}
+					} else {
+						if (((((((((((((((((((simplifiedList.b.b && (!simplifiedList.b.a)) && simplifiedList.b.b.b) && simplifiedList.b.b.a) && simplifiedList.b.b.b.b) && simplifiedList.b.b.b.a) && simplifiedList.b.b.b.b.b) && simplifiedList.b.b.b.b.a) && simplifiedList.b.b.b.b.b.b) && (!simplifiedList.b.b.b.b.b.a)) && simplifiedList.b.b.b.b.b.b.b) && simplifiedList.b.b.b.b.b.b.a) && simplifiedList.b.b.b.b.b.b.b.b) && (!simplifiedList.b.b.b.b.b.b.b.a)) && simplifiedList.b.b.b.b.b.b.b.b.b) && (!simplifiedList.b.b.b.b.b.b.b.b.a)) && simplifiedList.b.b.b.b.b.b.b.b.b.b) && (!simplifiedList.b.b.b.b.b.b.b.b.b.a)) && simplifiedList.b.b.b.b.b.b.b.b.b.b.b) && (!simplifiedList.b.b.b.b.b.b.b.b.b.b.a)) {
+							var _v11 = simplifiedList.b;
+							var _v12 = _v11.b;
+							var _v13 = _v12.b;
+							var _v14 = _v13.b;
+							var _v15 = _v14.b;
+							var _v16 = _v15.b;
+							var _v17 = _v16.b;
+							var _v18 = _v17.b;
+							var _v19 = _v18.b;
+							var _v20 = _v19.b;
+							var tail = _v20.b;
+							var $temp$simplifiedList = tail,
+								$temp$score = score + 40;
+							simplifiedList = $temp$simplifiedList;
+							score = $temp$score;
+							continue rule3Score_;
+						} else {
+							break _v0$3;
+						}
+					}
+				}
+			}
+			var head = simplifiedList.a;
+			var tail = simplifiedList.b;
+			var $temp$simplifiedList = tail,
+				$temp$score = score;
+			simplifiedList = $temp$simplifiedList;
+			score = $temp$score;
+			continue rule3Score_;
+		}
+	});
+var $pablohirafuji$elm_qrcode$QRCode$Matrix$rule3Score = A2($elm$core$List$foldl, $pablohirafuji$elm_qrcode$QRCode$Matrix$rule3Score_, 0);
+var $elm$core$Basics$abs = function (n) {
+	return (n < 0) ? (-n) : n;
+};
+var $elm$core$Basics$min = F2(
+	function (x, y) {
+		return (_Utils_cmp(x, y) < 0) ? x : y;
+	});
+var $elm$core$Basics$round = _Basics_round;
+var $pablohirafuji$elm_qrcode$QRCode$Matrix$rule4Score = F2(
+	function (size, simplifiedList) {
+		var moduleCount = size * size;
+		var darkCount = $elm$core$List$length(
+			A2($elm$core$List$filter, $elm$core$Basics$identity, simplifiedList));
+		var darkPerc = $elm$core$Basics$round((100 * darkCount) / moduleCount);
+		var remOf5 = darkPerc % 5;
+		var nextMult5 = $elm$core$Basics$round(
+			$elm$core$Basics$abs((darkPerc + (5 - remOf5)) - 50) / 5);
+		var prevMult5 = $elm$core$Basics$round(
+			$elm$core$Basics$abs((darkPerc - remOf5) - 50) / 5);
+		return A2($elm$core$Basics$min, prevMult5, nextMult5) * 10;
+	});
+var $elm$core$List$head = function (list) {
+	if (list.b) {
+		var x = list.a;
+		var xs = list.b;
+		return $elm$core$Maybe$Just(x);
+	} else {
+		return $elm$core$Maybe$Nothing;
+	}
+};
+var $elm$core$List$tail = function (list) {
+	if (list.b) {
+		var x = list.a;
+		var xs = list.b;
+		return $elm$core$Maybe$Just(xs);
+	} else {
+		return $elm$core$Maybe$Nothing;
+	}
+};
+var $pablohirafuji$elm_qrcode$QRCode$Helpers$transpose = function (ll) {
+	transpose:
+	while (true) {
+		if (!ll.b) {
+			return _List_Nil;
+		} else {
+			if (!ll.a.b) {
+				var xss = ll.b;
+				var $temp$ll = xss;
+				ll = $temp$ll;
+				continue transpose;
+			} else {
+				var _v1 = ll.a;
+				var x = _v1.a;
+				var xs = _v1.b;
+				var xss = ll.b;
+				var tails = A2($elm$core$List$filterMap, $elm$core$List$tail, xss);
+				var heads = A2($elm$core$List$filterMap, $elm$core$List$head, xss);
+				return A2(
+					$elm$core$List$cons,
+					A2($elm$core$List$cons, x, heads),
+					$pablohirafuji$elm_qrcode$QRCode$Helpers$transpose(
+						A2($elm$core$List$cons, xs, tails)));
+			}
+		}
+	}
+};
+var $pablohirafuji$elm_qrcode$QRCode$Matrix$getMaskScore = F2(
+	function (size, matrix) {
+		var list = A2(
+			$elm$core$List$map,
+			$pablohirafuji$elm_qrcode$QRCode$Matrix$isDarkModule,
+			$elm$core$Array$toList(matrix));
+		var rowList = A3($pablohirafuji$elm_qrcode$QRCode$Matrix$breakList, size, list, _List_Nil);
+		var transposedRowList = $pablohirafuji$elm_qrcode$QRCode$Helpers$transpose(rowList);
+		return function (b) {
+			return _Utils_Tuple2(rowList, b);
+		}(
+			A2($pablohirafuji$elm_qrcode$QRCode$Matrix$rule4Score, size, list) + ($pablohirafuji$elm_qrcode$QRCode$Matrix$rule3Score(transposedRowList) + ($pablohirafuji$elm_qrcode$QRCode$Matrix$rule3Score(rowList) + (A2($pablohirafuji$elm_qrcode$QRCode$Matrix$rule2Score, rowList, 0) + ($pablohirafuji$elm_qrcode$QRCode$Matrix$rule1Score(transposedRowList) + $pablohirafuji$elm_qrcode$QRCode$Matrix$rule1Score(rowList))))));
+	});
+var $elm$core$Basics$neq = _Utils_notEqual;
+var $pablohirafuji$elm_qrcode$QRCode$Matrix$ecLevelToInt = function (ecLevel) {
+	switch (ecLevel.$) {
+		case 'L':
+			return 1;
+		case 'M':
+			return 0;
+		case 'Q':
+			return 3;
+		default:
+			return 2;
+	}
+};
+var $pablohirafuji$elm_qrcode$QRCode$Matrix$getBCHDigit = function (_int) {
+	var helper = F2(
+		function (digit, int_) {
+			helper:
+			while (true) {
+				if (!(!int_)) {
+					var $temp$digit = digit + 1,
+						$temp$int_ = int_ >>> 1;
+					digit = $temp$digit;
+					int_ = $temp$int_;
+					continue helper;
+				} else {
+					return digit;
+				}
+			}
+		});
+	return A2(helper, 0, _int);
+};
+var $pablohirafuji$elm_qrcode$QRCode$Matrix$maskToInt = function (mask) {
+	switch (mask.$) {
+		case 'Pattern0':
+			return 0;
+		case 'Pattern1':
+			return 1;
+		case 'Pattern2':
+			return 2;
+		case 'Pattern3':
+			return 3;
+		case 'Pattern4':
+			return 4;
+		case 'Pattern5':
+			return 5;
+		case 'Pattern6':
+			return 6;
+		default:
+			return 7;
+	}
+};
+var $elm$core$Bitwise$or = _Bitwise_or;
+var $elm$core$Bitwise$xor = _Bitwise_xor;
+var $pablohirafuji$elm_qrcode$QRCode$Matrix$encodeFormatInfo = F2(
+	function (ecLevel, mask) {
+		var g15Mask = 21522;
+		var g15Int = 1335;
+		var g15Digit = $pablohirafuji$elm_qrcode$QRCode$Matrix$getBCHDigit(g15Int);
+		var formatInfoInt = $pablohirafuji$elm_qrcode$QRCode$Matrix$maskToInt(mask) | ($pablohirafuji$elm_qrcode$QRCode$Matrix$ecLevelToInt(ecLevel) << 3);
+		var helper = function (d_) {
+			helper:
+			while (true) {
+				if (($pablohirafuji$elm_qrcode$QRCode$Matrix$getBCHDigit(d_) - g15Digit) >= 0) {
+					var $temp$d_ = d_ ^ (g15Int << ($pablohirafuji$elm_qrcode$QRCode$Matrix$getBCHDigit(d_) - g15Digit));
+					d_ = $temp$d_;
+					continue helper;
+				} else {
+					return g15Mask ^ (d_ | (formatInfoInt << 10));
+				}
+			}
+		};
+		var d = formatInfoInt << 10;
+		return helper(d);
+	});
+var $pablohirafuji$elm_qrcode$QRCode$Matrix$formatInfoHorizontal = F2(
+	function (size, count) {
+		return (count < 8) ? _Utils_Tuple2(8, (size - count) - 1) : ((count < 9) ? _Utils_Tuple2(8, 15 - count) : _Utils_Tuple2(8, (15 - count) - 1));
+	});
+var $pablohirafuji$elm_qrcode$QRCode$Matrix$formatInfoVertical = F2(
+	function (size, count) {
+		return (count < 6) ? _Utils_Tuple2(count, 8) : ((count < 8) ? _Utils_Tuple2(count + 1, 8) : _Utils_Tuple2((size - 15) + count, 8));
+	});
+var $pablohirafuji$elm_qrcode$QRCode$Matrix$setFormatModule = F4(
+	function (size, isBlack, row, col) {
+		return A2(
+			$elm$core$Array$set,
+			A3($pablohirafuji$elm_qrcode$QRCode$Matrix$getIndex, size, row, col),
+			$elm$core$Maybe$Just(
+				_Utils_Tuple2(true, isBlack)));
+	});
+var $pablohirafuji$elm_qrcode$QRCode$Matrix$setFormatInfo_ = F4(
+	function (size, isBlackFn, count, matrix) {
+		setFormatInfo_:
+		while (true) {
+			if (count < 15) {
+				var isBlack = isBlackFn(count);
+				var _v0 = A2($pablohirafuji$elm_qrcode$QRCode$Matrix$formatInfoVertical, size, count);
+				var x2 = _v0.a;
+				var y2 = _v0.b;
+				var _v1 = A2($pablohirafuji$elm_qrcode$QRCode$Matrix$formatInfoHorizontal, size, count);
+				var x1 = _v1.a;
+				var y1 = _v1.b;
+				var $temp$size = size,
+					$temp$isBlackFn = isBlackFn,
+					$temp$count = count + 1,
+					$temp$matrix = A5(
+					$pablohirafuji$elm_qrcode$QRCode$Matrix$setFormatModule,
+					size,
+					isBlack,
+					x2,
+					y2,
+					A5($pablohirafuji$elm_qrcode$QRCode$Matrix$setFormatModule, size, isBlack, x1, y1, matrix));
+				size = $temp$size;
+				isBlackFn = $temp$isBlackFn;
+				count = $temp$count;
+				matrix = $temp$matrix;
+				continue setFormatInfo_;
+			} else {
+				return matrix;
+			}
+		}
+	});
+var $pablohirafuji$elm_qrcode$QRCode$Matrix$setFormatInfo = F4(
+	function (ecLevel, size, mask, matrix) {
+		var isBlack = F2(
+			function (bits_, count) {
+				return (1 & (bits_ >> count)) === 1;
+			});
+		var bits = A2($pablohirafuji$elm_qrcode$QRCode$Matrix$encodeFormatInfo, ecLevel, mask);
+		return A4(
+			$pablohirafuji$elm_qrcode$QRCode$Matrix$setFormatInfo_,
+			size,
+			isBlack(bits),
+			0,
+			matrix);
+	});
+var $pablohirafuji$elm_qrcode$QRCode$Matrix$getBestMask_ = F5(
+	function (ecLevel, size, matrix, mask, _v0) {
+		var minSMatrix = _v0.a;
+		var minScore = _v0.b;
+		var maskedMatrix = A4(
+			$pablohirafuji$elm_qrcode$QRCode$Matrix$setFormatInfo,
+			ecLevel,
+			size,
+			mask,
+			A3($pablohirafuji$elm_qrcode$QRCode$Matrix$applyMask, size, mask, matrix));
+		var _v1 = A2($pablohirafuji$elm_qrcode$QRCode$Matrix$getMaskScore, size, maskedMatrix);
+		var maskSMatrix = _v1.a;
+		var maskScore = _v1.b;
+		return ((_Utils_cmp(minScore, maskScore) < 0) && (!_Utils_eq(minScore, -1))) ? _Utils_Tuple2(minSMatrix, minScore) : _Utils_Tuple2(maskSMatrix, maskScore);
+	});
+var $pablohirafuji$elm_qrcode$QRCode$Matrix$Pattern0 = {$: 'Pattern0'};
+var $pablohirafuji$elm_qrcode$QRCode$Matrix$Pattern1 = {$: 'Pattern1'};
+var $pablohirafuji$elm_qrcode$QRCode$Matrix$Pattern2 = {$: 'Pattern2'};
+var $pablohirafuji$elm_qrcode$QRCode$Matrix$Pattern3 = {$: 'Pattern3'};
+var $pablohirafuji$elm_qrcode$QRCode$Matrix$Pattern4 = {$: 'Pattern4'};
+var $pablohirafuji$elm_qrcode$QRCode$Matrix$Pattern5 = {$: 'Pattern5'};
+var $pablohirafuji$elm_qrcode$QRCode$Matrix$Pattern6 = {$: 'Pattern6'};
+var $pablohirafuji$elm_qrcode$QRCode$Matrix$Pattern7 = {$: 'Pattern7'};
+var $pablohirafuji$elm_qrcode$QRCode$Matrix$patternList = _List_fromArray(
+	[$pablohirafuji$elm_qrcode$QRCode$Matrix$Pattern0, $pablohirafuji$elm_qrcode$QRCode$Matrix$Pattern1, $pablohirafuji$elm_qrcode$QRCode$Matrix$Pattern2, $pablohirafuji$elm_qrcode$QRCode$Matrix$Pattern3, $pablohirafuji$elm_qrcode$QRCode$Matrix$Pattern4, $pablohirafuji$elm_qrcode$QRCode$Matrix$Pattern5, $pablohirafuji$elm_qrcode$QRCode$Matrix$Pattern6, $pablohirafuji$elm_qrcode$QRCode$Matrix$Pattern7]);
+var $pablohirafuji$elm_qrcode$QRCode$Matrix$getBestMask = F3(
+	function (ecLevel, size, matrix) {
+		return A3(
+			$elm$core$List$foldl,
+			A3($pablohirafuji$elm_qrcode$QRCode$Matrix$getBestMask_, ecLevel, size, matrix),
+			_Utils_Tuple2(_List_Nil, -1),
+			$pablohirafuji$elm_qrcode$QRCode$Matrix$patternList).a;
+	});
+var $pablohirafuji$elm_qrcode$QRCode$Matrix$reserveFormatInfo = F2(
+	function (size, matrix) {
+		return A4(
+			$pablohirafuji$elm_qrcode$QRCode$Matrix$setFormatInfo_,
+			size,
+			$elm$core$Basics$always(true),
+			0,
+			matrix);
+	});
+var $pablohirafuji$elm_qrcode$QRCode$Matrix$encodeVersionInfo = function (version) {
+	var g18Int = 7973;
+	var g18Digit = $pablohirafuji$elm_qrcode$QRCode$Matrix$getBCHDigit(g18Int);
+	var helper = function (d_) {
+		helper:
+		while (true) {
+			if (($pablohirafuji$elm_qrcode$QRCode$Matrix$getBCHDigit(d_) - g18Digit) >= 0) {
+				var $temp$d_ = d_ ^ (g18Int << ($pablohirafuji$elm_qrcode$QRCode$Matrix$getBCHDigit(d_) - g18Digit));
+				d_ = $temp$d_;
+				continue helper;
+			} else {
+				return d_ | (version << 12);
+			}
+		}
+	};
+	var d = version << 12;
+	return helper(d);
+};
+var $pablohirafuji$elm_qrcode$QRCode$Matrix$setVersionModule = F3(
+	function (size, isBlack, _v0) {
+		var row = _v0.a;
+		var col = _v0.b;
+		return A2(
+			$elm$core$Array$set,
+			A3($pablohirafuji$elm_qrcode$QRCode$Matrix$getIndex, size, row, col),
+			$elm$core$Maybe$Just(
+				_Utils_Tuple2(true, isBlack)));
+	});
+var $pablohirafuji$elm_qrcode$QRCode$Matrix$setVersionInfo_ = F4(
+	function (size, isBlackFn, count, matrix) {
+		setVersionInfo_:
+		while (true) {
+			if (count < 18) {
+				var topRight = _Utils_Tuple2(
+					$elm$core$Basics$floor(count / 3),
+					((A2($elm$core$Basics$modBy, 3, count) + size) - 8) - 3);
+				var isBlack = isBlackFn(count);
+				var bottomLeft = _Utils_Tuple2(
+					((A2($elm$core$Basics$modBy, 3, count) + size) - 8) - 3,
+					$elm$core$Basics$floor(count / 3));
+				var $temp$size = size,
+					$temp$isBlackFn = isBlackFn,
+					$temp$count = count + 1,
+					$temp$matrix = A4(
+					$pablohirafuji$elm_qrcode$QRCode$Matrix$setVersionModule,
+					size,
+					isBlack,
+					bottomLeft,
+					A4($pablohirafuji$elm_qrcode$QRCode$Matrix$setVersionModule, size, isBlack, topRight, matrix));
+				size = $temp$size;
+				isBlackFn = $temp$isBlackFn;
+				count = $temp$count;
+				matrix = $temp$matrix;
+				continue setVersionInfo_;
+			} else {
+				return matrix;
+			}
+		}
+	});
+var $pablohirafuji$elm_qrcode$QRCode$Matrix$setVersionInfo = F3(
+	function (version, size, matrix) {
+		if (version >= 7) {
+			var isBlack = F2(
+				function (bits_, count) {
+					return (1 & (bits_ >> count)) === 1;
+				});
+			var bits = $pablohirafuji$elm_qrcode$QRCode$Matrix$encodeVersionInfo(version);
+			return A4(
+				$pablohirafuji$elm_qrcode$QRCode$Matrix$setVersionInfo_,
+				size,
+				isBlack(bits),
+				0,
+				matrix);
+		} else {
+			return matrix;
+		}
+	});
+var $pablohirafuji$elm_qrcode$QRCode$Matrix$timingColor = F2(
+	function (row, col) {
+		return (!A2($elm$core$Basics$modBy, 2, row + col)) ? $elm$core$Maybe$Just(
+			_Utils_Tuple2(true, true)) : $elm$core$Maybe$Just(
+			_Utils_Tuple2(true, false));
+	});
+var $pablohirafuji$elm_qrcode$QRCode$Matrix$setTiming = F3(
+	function (size, row, col) {
+		return A2(
+			$elm$core$Array$set,
+			A3($pablohirafuji$elm_qrcode$QRCode$Matrix$getIndex, size, row, col),
+			A2($pablohirafuji$elm_qrcode$QRCode$Matrix$timingColor, row, col));
+	});
+var $pablohirafuji$elm_qrcode$QRCode$Matrix$timingPattern = F2(
+	function (size, matrix) {
+		var range = A2($elm$core$List$range, 8, size - 9);
+		return A3(
+			$elm$core$List$foldl,
+			function (b) {
+				return A3($pablohirafuji$elm_qrcode$QRCode$Matrix$setTiming, size, b, 6);
+			},
+			A3(
+				$elm$core$List$foldl,
+				A2($pablohirafuji$elm_qrcode$QRCode$Matrix$setTiming, size, 6),
+				matrix,
+				range),
+			range);
+	});
+var $pablohirafuji$elm_qrcode$QRCode$Matrix$apply = function (_v0) {
+	var ecLevel = _v0.a.ecLevel;
+	var groupInfo = _v0.a.groupInfo;
+	var bytes = _v0.b;
+	var version = groupInfo.version;
+	var size = ((version - 1) * 4) + 21;
+	return A2(
+		$elm$core$Result$map,
+		A2($pablohirafuji$elm_qrcode$QRCode$Matrix$getBestMask, ecLevel, size),
+		A2(
+			$elm$core$Result$map,
+			A2($pablohirafuji$elm_qrcode$QRCode$Matrix$addData, size, bytes),
+			A3(
+				$pablohirafuji$elm_qrcode$QRCode$Matrix$alignmentPattern,
+				version,
+				size,
+				A2(
+					$pablohirafuji$elm_qrcode$QRCode$Matrix$timingPattern,
+					size,
+					A3(
+						$pablohirafuji$elm_qrcode$QRCode$Matrix$darkModule,
+						version,
+						size,
+						A3(
+							$pablohirafuji$elm_qrcode$QRCode$Matrix$setVersionInfo,
+							version,
+							size,
+							A2(
+								$pablohirafuji$elm_qrcode$QRCode$Matrix$reserveFormatInfo,
+								size,
+								A4(
+									$pablohirafuji$elm_qrcode$QRCode$Matrix$finderPattern,
+									size,
+									-1,
+									size - 8,
+									A4(
+										$pablohirafuji$elm_qrcode$QRCode$Matrix$finderPattern,
+										size,
+										size - 8,
+										-1,
+										A4(
+											$pablohirafuji$elm_qrcode$QRCode$Matrix$finderPattern,
+											size,
+											-1,
+											-1,
+											A2(
+												$elm$core$Array$initialize,
+												size * size,
+												$elm$core$Basics$always($elm$core$Maybe$Nothing))))))))))));
+};
+var $pablohirafuji$elm_qrcode$QRCode$ECLevel$H = {$: 'H'};
+var $pablohirafuji$elm_qrcode$QRCode$ECLevel$L = {$: 'L'};
+var $pablohirafuji$elm_qrcode$QRCode$ECLevel$M = {$: 'M'};
+var $pablohirafuji$elm_qrcode$QRCode$ECLevel$Q = {$: 'Q'};
+var $pablohirafuji$elm_qrcode$QRCode$convertEC = function (ec) {
+	switch (ec.$) {
+		case 'Low':
+			return $pablohirafuji$elm_qrcode$QRCode$ECLevel$L;
+		case 'Medium':
+			return $pablohirafuji$elm_qrcode$QRCode$ECLevel$M;
+		case 'Quartile':
+			return $pablohirafuji$elm_qrcode$QRCode$ECLevel$Q;
+		default:
+			return $pablohirafuji$elm_qrcode$QRCode$ECLevel$H;
+	}
+};
+var $pablohirafuji$elm_qrcode$QRCode$AlignmentPatternNotFound = {$: 'AlignmentPatternNotFound'};
+var $pablohirafuji$elm_qrcode$QRCode$InputLengthOverflow = {$: 'InputLengthOverflow'};
+var $pablohirafuji$elm_qrcode$QRCode$InvalidAlphanumericChar = {$: 'InvalidAlphanumericChar'};
+var $pablohirafuji$elm_qrcode$QRCode$InvalidNumericChar = {$: 'InvalidNumericChar'};
+var $pablohirafuji$elm_qrcode$QRCode$InvalidUTF8Char = {$: 'InvalidUTF8Char'};
+var $pablohirafuji$elm_qrcode$QRCode$LogTableException = function (a) {
+	return {$: 'LogTableException', a: a};
+};
+var $pablohirafuji$elm_qrcode$QRCode$PolynomialModException = {$: 'PolynomialModException'};
+var $pablohirafuji$elm_qrcode$QRCode$PolynomialMultiplyException = {$: 'PolynomialMultiplyException'};
+var $pablohirafuji$elm_qrcode$QRCode$convertError = function (e) {
+	switch (e.$) {
+		case 'AlignmentPatternNotFound':
+			return $pablohirafuji$elm_qrcode$QRCode$AlignmentPatternNotFound;
+		case 'InvalidNumericChar':
+			return $pablohirafuji$elm_qrcode$QRCode$InvalidNumericChar;
+		case 'InvalidAlphanumericChar':
+			return $pablohirafuji$elm_qrcode$QRCode$InvalidAlphanumericChar;
+		case 'InvalidUTF8Char':
+			return $pablohirafuji$elm_qrcode$QRCode$InvalidUTF8Char;
+		case 'LogTableException':
+			var n = e.a;
+			return $pablohirafuji$elm_qrcode$QRCode$LogTableException(n);
+		case 'PolynomialMultiplyException':
+			return $pablohirafuji$elm_qrcode$QRCode$PolynomialMultiplyException;
+		case 'PolynomialModException':
+			return $pablohirafuji$elm_qrcode$QRCode$PolynomialModException;
+		default:
+			return $pablohirafuji$elm_qrcode$QRCode$InputLengthOverflow;
+	}
+};
+var $pablohirafuji$elm_qrcode$QRCode$Encode$firstFillerByte = 236;
+var $elm$core$List$repeatHelp = F3(
+	function (result, n, value) {
+		repeatHelp:
+		while (true) {
+			if (n <= 0) {
+				return result;
+			} else {
+				var $temp$result = A2($elm$core$List$cons, value, result),
+					$temp$n = n - 1,
+					$temp$value = value;
+				result = $temp$result;
+				n = $temp$n;
+				value = $temp$value;
+				continue repeatHelp;
+			}
+		}
+	});
+var $elm$core$List$repeat = F2(
+	function (n, value) {
+		return A3($elm$core$List$repeatHelp, _List_Nil, n, value);
+	});
+var $pablohirafuji$elm_qrcode$QRCode$Encode$secondFillerByte = 17;
+var $pablohirafuji$elm_qrcode$QRCode$Encode$addFiller = F2(
+	function (capacity, bytes) {
+		var fillerLength = ((capacity / 8) | 0) - $elm$core$List$length(bytes);
+		var ns = $elm$core$List$concat(
+			A2(
+				$elm$core$List$repeat,
+				(fillerLength / 2) | 0,
+				_List_fromArray(
+					[$pablohirafuji$elm_qrcode$QRCode$Encode$firstFillerByte, $pablohirafuji$elm_qrcode$QRCode$Encode$secondFillerByte])));
+		return (!A2($elm$core$Basics$modBy, 2, fillerLength)) ? _Utils_ap(bytes, ns) : _Utils_ap(
+			bytes,
+			_Utils_ap(
+				ns,
+				_List_fromArray(
+					[$pablohirafuji$elm_qrcode$QRCode$Encode$firstFillerByte])));
+	});
+var $pablohirafuji$elm_qrcode$QRCode$Encode$addTerminator = F3(
+	function (capacity, bitsCount, bits) {
+		return _Utils_ap(
+			bits,
+			_List_fromArray(
+				[
+					_Utils_Tuple2(
+					0,
+					A2($elm$core$Basics$min, 4, capacity - bitsCount))
+				]));
+	});
+var $pablohirafuji$elm_qrcode$QRCode$Encode$bitsToBytes3 = function (_v0) {
+	bitsToBytes3:
+	while (true) {
+		var _v1 = _v0.a;
+		var bits = _v1.a;
+		var length = _v1.b;
+		var bytes = _v0.b;
+		if (length >= 8) {
+			var remLength = length - 8;
+			var remBits = bits & ((1 << remLength) - 1);
+			var _byte = bits >> remLength;
+			var $temp$_v0 = _Utils_Tuple2(
+				_Utils_Tuple2(remBits, remLength),
+				A2($elm$core$List$cons, _byte, bytes));
+			_v0 = $temp$_v0;
+			continue bitsToBytes3;
+		} else {
+			return _Utils_Tuple2(
+				_Utils_Tuple2(bits, length),
+				bytes);
+		}
+	}
+};
+var $pablohirafuji$elm_qrcode$QRCode$Encode$bitsToBytes2 = F2(
+	function (_v0, _v1) {
+		var curBits = _v0.a;
+		var curLength = _v0.b;
+		var _v2 = _v1.a;
+		var remBits = _v2.a;
+		var remLength = _v2.b;
+		var bytes = _v1.b;
+		var lengthSum = curLength + remLength;
+		var bitsSum = curBits | (remBits << curLength);
+		return $pablohirafuji$elm_qrcode$QRCode$Encode$bitsToBytes3(
+			_Utils_Tuple2(
+				_Utils_Tuple2(bitsSum, lengthSum),
+				bytes));
+	});
+var $pablohirafuji$elm_qrcode$QRCode$Encode$bitsToBytes1 = F2(
+	function (bits, _v0) {
+		bitsToBytes1:
+		while (true) {
+			var _v1 = _v0.a;
+			var remBits = _v1.a;
+			var remLength = _v1.b;
+			var bytes = _v0.b;
+			if (bits.b) {
+				var head = bits.a;
+				var tail = bits.b;
+				var $temp$bits = tail,
+					$temp$_v0 = A2(
+					$pablohirafuji$elm_qrcode$QRCode$Encode$bitsToBytes2,
+					head,
+					_Utils_Tuple2(
+						_Utils_Tuple2(remBits, remLength),
+						bytes));
+				bits = $temp$bits;
+				_v0 = $temp$_v0;
+				continue bitsToBytes1;
+			} else {
+				return (!remLength) ? $elm$core$List$reverse(bytes) : $elm$core$List$reverse(
+					A2($elm$core$List$cons, remBits << (8 - remLength), bytes));
+			}
+		}
+	});
+var $pablohirafuji$elm_qrcode$QRCode$Encode$bitsToBytes = function (bits) {
+	return A2(
+		$pablohirafuji$elm_qrcode$QRCode$Encode$bitsToBytes1,
+		bits,
+		_Utils_Tuple2(
+			_Utils_Tuple2(0, 0),
+			_List_Nil));
+};
+var $pablohirafuji$elm_qrcode$QRCode$Encode$UTF8 = {$: 'UTF8'};
+var $pablohirafuji$elm_qrcode$QRCode$Encode$charCountIndicatorLength = F2(
+	function (mode, version) {
+		if (version <= 9) {
+			switch (mode.$) {
+				case 'Numeric':
+					return 10;
+				case 'Alphanumeric':
+					return 9;
+				case 'Byte':
+					return 8;
+				default:
+					return 8;
+			}
+		} else {
+			if (version <= 26) {
+				switch (mode.$) {
+					case 'Numeric':
+						return 12;
+					case 'Alphanumeric':
+						return 11;
+					case 'Byte':
+						return 16;
+					default:
+						return 16;
+				}
+			} else {
+				switch (mode.$) {
+					case 'Numeric':
+						return 14;
+					case 'Alphanumeric':
+						return 13;
+					case 'Byte':
+						return 16;
+					default:
+						return 16;
+				}
+			}
+		}
+	});
+var $pablohirafuji$elm_qrcode$QRCode$Encode$charCountIndicator = F2(
+	function (_v0, bits) {
+		var groupInfo = _v0.groupInfo;
+		var inputStr = _v0.inputStr;
+		var mode = _v0.mode;
+		var length = A2($pablohirafuji$elm_qrcode$QRCode$Encode$charCountIndicatorLength, mode, groupInfo.version);
+		var charCount = _Utils_eq(mode, $pablohirafuji$elm_qrcode$QRCode$Encode$UTF8) ? $elm$core$List$length(bits) : $elm$core$String$length(inputStr);
+		return _Utils_Tuple2(charCount, length);
+	});
+var $pablohirafuji$elm_qrcode$QRCode$Encode$modeIndicator = function (mode) {
+	switch (mode.$) {
+		case 'Numeric':
+			return 1;
+		case 'Alphanumeric':
+			return 2;
+		case 'Byte':
+			return 4;
+		default:
+			return 4;
+	}
+};
+var $pablohirafuji$elm_qrcode$QRCode$Encode$addInfoAndFinalBits = function (_v0) {
+	var bits = _v0.a;
+	var model = _v0.b;
+	return _Utils_Tuple2(
+		model,
+		A2(
+			$pablohirafuji$elm_qrcode$QRCode$Encode$addFiller,
+			model.groupInfo.capacity,
+			$pablohirafuji$elm_qrcode$QRCode$Encode$bitsToBytes(
+				A3(
+					$pablohirafuji$elm_qrcode$QRCode$Encode$addTerminator,
+					model.groupInfo.capacity,
+					model.bitsCount,
+					A2(
+						$elm$core$List$cons,
+						_Utils_Tuple2(
+							$pablohirafuji$elm_qrcode$QRCode$Encode$modeIndicator(model.mode),
+							4),
+						A2(
+							$elm$core$List$cons,
+							A2($pablohirafuji$elm_qrcode$QRCode$Encode$charCountIndicator, model, bits),
+							bits))))));
+};
+var $pablohirafuji$elm_qrcode$QRCode$Encode$concatTranspose = function (_v0) {
+	var model = _v0.a;
+	var dataBlocks = _v0.b;
+	var ecBlocks = _v0.c;
+	return _Utils_Tuple2(
+		model,
+		$elm$core$List$concat(
+			_Utils_ap(
+				$pablohirafuji$elm_qrcode$QRCode$Helpers$transpose(dataBlocks),
+				$pablohirafuji$elm_qrcode$QRCode$Helpers$transpose(ecBlocks))));
+};
+var $elm_community$list_extra$List$Extra$greedyGroupsOfWithStep = F3(
+	function (size, step, xs) {
+		var xs_ = A2($elm$core$List$drop, step, xs);
+		var okayXs = $elm$core$List$length(xs) > 0;
+		var okayArgs = (size > 0) && (step > 0);
+		return (okayArgs && okayXs) ? A2(
+			$elm$core$List$cons,
+			A2($elm$core$List$take, size, xs),
+			A3($elm_community$list_extra$List$Extra$greedyGroupsOfWithStep, size, step, xs_)) : _List_Nil;
+	});
+var $elm_community$list_extra$List$Extra$greedyGroupsOf = F2(
+	function (size, xs) {
+		return A3($elm_community$list_extra$List$Extra$greedyGroupsOfWithStep, size, size, xs);
+	});
+var $elm$core$Result$map2 = F3(
+	function (func, ra, rb) {
+		if (ra.$ === 'Err') {
+			var x = ra.a;
+			return $elm$core$Result$Err(x);
+		} else {
+			var a = ra.a;
+			if (rb.$ === 'Err') {
+				var x = rb.a;
+				return $elm$core$Result$Err(x);
+			} else {
+				var b = rb.a;
+				return $elm$core$Result$Ok(
+					A2(func, a, b));
+			}
+		}
+	});
+var $pablohirafuji$elm_qrcode$QRCode$Error$InvalidAlphanumericChar = {$: 'InvalidAlphanumericChar'};
+var $elm$core$Dict$fromList = function (assocs) {
+	return A3(
+		$elm$core$List$foldl,
+		F2(
+			function (_v0, dict) {
+				var key = _v0.a;
+				var value = _v0.b;
+				return A3($elm$core$Dict$insert, key, value, dict);
+			}),
+		$elm$core$Dict$empty,
+		assocs);
+};
+var $pablohirafuji$elm_qrcode$QRCode$Encode$Alphanumeric$alphanumericCodes = $elm$core$Dict$fromList(
+	_List_fromArray(
+		[
+			_Utils_Tuple2(
+			_Utils_chr('0'),
+			0),
+			_Utils_Tuple2(
+			_Utils_chr('1'),
+			1),
+			_Utils_Tuple2(
+			_Utils_chr('2'),
+			2),
+			_Utils_Tuple2(
+			_Utils_chr('3'),
+			3),
+			_Utils_Tuple2(
+			_Utils_chr('4'),
+			4),
+			_Utils_Tuple2(
+			_Utils_chr('5'),
+			5),
+			_Utils_Tuple2(
+			_Utils_chr('6'),
+			6),
+			_Utils_Tuple2(
+			_Utils_chr('7'),
+			7),
+			_Utils_Tuple2(
+			_Utils_chr('8'),
+			8),
+			_Utils_Tuple2(
+			_Utils_chr('9'),
+			9),
+			_Utils_Tuple2(
+			_Utils_chr('A'),
+			10),
+			_Utils_Tuple2(
+			_Utils_chr('B'),
+			11),
+			_Utils_Tuple2(
+			_Utils_chr('C'),
+			12),
+			_Utils_Tuple2(
+			_Utils_chr('D'),
+			13),
+			_Utils_Tuple2(
+			_Utils_chr('E'),
+			14),
+			_Utils_Tuple2(
+			_Utils_chr('F'),
+			15),
+			_Utils_Tuple2(
+			_Utils_chr('G'),
+			16),
+			_Utils_Tuple2(
+			_Utils_chr('H'),
+			17),
+			_Utils_Tuple2(
+			_Utils_chr('I'),
+			18),
+			_Utils_Tuple2(
+			_Utils_chr('J'),
+			19),
+			_Utils_Tuple2(
+			_Utils_chr('K'),
+			20),
+			_Utils_Tuple2(
+			_Utils_chr('L'),
+			21),
+			_Utils_Tuple2(
+			_Utils_chr('M'),
+			22),
+			_Utils_Tuple2(
+			_Utils_chr('N'),
+			23),
+			_Utils_Tuple2(
+			_Utils_chr('O'),
+			24),
+			_Utils_Tuple2(
+			_Utils_chr('P'),
+			25),
+			_Utils_Tuple2(
+			_Utils_chr('Q'),
+			26),
+			_Utils_Tuple2(
+			_Utils_chr('R'),
+			27),
+			_Utils_Tuple2(
+			_Utils_chr('S'),
+			28),
+			_Utils_Tuple2(
+			_Utils_chr('T'),
+			29),
+			_Utils_Tuple2(
+			_Utils_chr('U'),
+			30),
+			_Utils_Tuple2(
+			_Utils_chr('V'),
+			31),
+			_Utils_Tuple2(
+			_Utils_chr('W'),
+			32),
+			_Utils_Tuple2(
+			_Utils_chr('X'),
+			33),
+			_Utils_Tuple2(
+			_Utils_chr('Y'),
+			34),
+			_Utils_Tuple2(
+			_Utils_chr('Z'),
+			35),
+			_Utils_Tuple2(
+			_Utils_chr(' '),
+			36),
+			_Utils_Tuple2(
+			_Utils_chr('$'),
+			37),
+			_Utils_Tuple2(
+			_Utils_chr('%'),
+			38),
+			_Utils_Tuple2(
+			_Utils_chr('*'),
+			39),
+			_Utils_Tuple2(
+			_Utils_chr('+'),
+			40),
+			_Utils_Tuple2(
+			_Utils_chr('-'),
+			41),
+			_Utils_Tuple2(
+			_Utils_chr('.'),
+			42),
+			_Utils_Tuple2(
+			_Utils_chr('/'),
+			43),
+			_Utils_Tuple2(
+			_Utils_chr(':'),
+			44)
+		]));
+var $pablohirafuji$elm_qrcode$QRCode$Encode$Alphanumeric$toAlphanumericCode = function (_char) {
+	return A2(
+		$elm$core$Result$fromMaybe,
+		$pablohirafuji$elm_qrcode$QRCode$Error$InvalidAlphanumericChar,
+		A2($elm$core$Dict$get, _char, $pablohirafuji$elm_qrcode$QRCode$Encode$Alphanumeric$alphanumericCodes));
+};
+var $pablohirafuji$elm_qrcode$QRCode$Encode$Alphanumeric$toBinary = function (chars) {
+	_v0$2:
+	while (true) {
+		if (chars.b) {
+			if (chars.b.b) {
+				if (!chars.b.b.b) {
+					var firstChar = chars.a;
+					var _v1 = chars.b;
+					var secondChar = _v1.a;
+					return A3(
+						$elm$core$Result$map2,
+						F2(
+							function (firstCode, secondCode) {
+								return _Utils_Tuple2((firstCode * 45) + secondCode, 11);
+							}),
+						$pablohirafuji$elm_qrcode$QRCode$Encode$Alphanumeric$toAlphanumericCode(firstChar),
+						$pablohirafuji$elm_qrcode$QRCode$Encode$Alphanumeric$toAlphanumericCode(secondChar));
+				} else {
+					break _v0$2;
+				}
+			} else {
+				var _char = chars.a;
+				return A2(
+					$elm$core$Result$map,
+					function (a) {
+						return _Utils_Tuple2(a, 6);
+					},
+					$pablohirafuji$elm_qrcode$QRCode$Encode$Alphanumeric$toAlphanumericCode(_char));
+			}
+		} else {
+			break _v0$2;
+		}
+	}
+	return $elm$core$Result$Err($pablohirafuji$elm_qrcode$QRCode$Error$InvalidAlphanumericChar);
+};
+var $elm$core$String$foldr = _String_foldr;
+var $elm$core$String$toList = function (string) {
+	return A3($elm$core$String$foldr, $elm$core$List$cons, _List_Nil, string);
+};
+var $pablohirafuji$elm_qrcode$QRCode$Encode$Alphanumeric$encode = function (str) {
+	return A3(
+		$elm$core$List$foldr,
+		$elm$core$Result$map2($elm$core$List$cons),
+		$elm$core$Result$Ok(_List_Nil),
+		A2(
+			$elm$core$List$map,
+			$pablohirafuji$elm_qrcode$QRCode$Encode$Alphanumeric$toBinary,
+			A2(
+				$elm_community$list_extra$List$Extra$greedyGroupsOf,
+				2,
+				$elm$core$String$toList(str))));
+};
+var $pablohirafuji$elm_qrcode$QRCode$Encode$Byte$encode = function (str) {
+	return $elm$core$Result$Ok(
+		A2(
+			$elm$core$List$map,
+			function (a) {
+				return _Utils_Tuple2(
+					$elm$core$Char$toCode(a),
+					8);
+			},
+			$elm$core$String$toList(str)));
+};
+var $pablohirafuji$elm_qrcode$QRCode$Error$InvalidNumericChar = {$: 'InvalidNumericChar'};
+var $elm$core$String$fromList = _String_fromList;
+var $pablohirafuji$elm_qrcode$QRCode$Encode$Numeric$numericLength = function (str) {
+	var _v0 = $elm$core$String$length(str);
+	switch (_v0) {
+		case 1:
+			return 4;
+		case 2:
+			return 7;
+		default:
+			return 10;
+	}
+};
+var $pablohirafuji$elm_qrcode$QRCode$Encode$Numeric$encodeHelp = function (chars) {
+	var str = $elm$core$String$fromList(chars);
+	return A2(
+		$elm$core$Result$fromMaybe,
+		$pablohirafuji$elm_qrcode$QRCode$Error$InvalidNumericChar,
+		A2(
+			$elm$core$Maybe$map,
+			function (a) {
+				return _Utils_Tuple2(
+					a,
+					$pablohirafuji$elm_qrcode$QRCode$Encode$Numeric$numericLength(str));
+			},
+			$elm$core$String$toInt(str)));
+};
+var $pablohirafuji$elm_qrcode$QRCode$Encode$Numeric$encode = function (str) {
+	return A3(
+		$elm$core$List$foldr,
+		$elm$core$Result$map2($elm$core$List$cons),
+		$elm$core$Result$Ok(_List_Nil),
+		A2(
+			$elm$core$List$map,
+			$pablohirafuji$elm_qrcode$QRCode$Encode$Numeric$encodeHelp,
+			A2(
+				$elm_community$list_extra$List$Extra$greedyGroupsOf,
+				3,
+				$elm$core$String$toList(str))));
+};
+var $pablohirafuji$elm_qrcode$QRCode$Error$InvalidUTF8Char = {$: 'InvalidUTF8Char'};
+var $elm$bytes$Bytes$Encode$getWidth = function (builder) {
+	switch (builder.$) {
+		case 'I8':
+			return 1;
+		case 'I16':
+			return 2;
+		case 'I32':
+			return 4;
+		case 'U8':
+			return 1;
+		case 'U16':
+			return 2;
+		case 'U32':
+			return 4;
+		case 'F32':
+			return 4;
+		case 'F64':
+			return 8;
+		case 'Seq':
+			var w = builder.a;
+			return w;
+		case 'Utf8':
+			var w = builder.a;
+			return w;
+		default:
+			var bs = builder.a;
+			return _Bytes_width(bs);
+	}
+};
+var $elm$bytes$Bytes$LE = {$: 'LE'};
+var $elm$bytes$Bytes$Encode$write = F3(
+	function (builder, mb, offset) {
+		switch (builder.$) {
+			case 'I8':
+				var n = builder.a;
+				return A3(_Bytes_write_i8, mb, offset, n);
+			case 'I16':
+				var e = builder.a;
+				var n = builder.b;
+				return A4(
+					_Bytes_write_i16,
+					mb,
+					offset,
+					n,
+					_Utils_eq(e, $elm$bytes$Bytes$LE));
+			case 'I32':
+				var e = builder.a;
+				var n = builder.b;
+				return A4(
+					_Bytes_write_i32,
+					mb,
+					offset,
+					n,
+					_Utils_eq(e, $elm$bytes$Bytes$LE));
+			case 'U8':
+				var n = builder.a;
+				return A3(_Bytes_write_u8, mb, offset, n);
+			case 'U16':
+				var e = builder.a;
+				var n = builder.b;
+				return A4(
+					_Bytes_write_u16,
+					mb,
+					offset,
+					n,
+					_Utils_eq(e, $elm$bytes$Bytes$LE));
+			case 'U32':
+				var e = builder.a;
+				var n = builder.b;
+				return A4(
+					_Bytes_write_u32,
+					mb,
+					offset,
+					n,
+					_Utils_eq(e, $elm$bytes$Bytes$LE));
+			case 'F32':
+				var e = builder.a;
+				var n = builder.b;
+				return A4(
+					_Bytes_write_f32,
+					mb,
+					offset,
+					n,
+					_Utils_eq(e, $elm$bytes$Bytes$LE));
+			case 'F64':
+				var e = builder.a;
+				var n = builder.b;
+				return A4(
+					_Bytes_write_f64,
+					mb,
+					offset,
+					n,
+					_Utils_eq(e, $elm$bytes$Bytes$LE));
+			case 'Seq':
+				var bs = builder.b;
+				return A3($elm$bytes$Bytes$Encode$writeSequence, bs, mb, offset);
+			case 'Utf8':
+				var s = builder.b;
+				return A3(_Bytes_write_string, mb, offset, s);
+			default:
+				var bs = builder.a;
+				return A3(_Bytes_write_bytes, mb, offset, bs);
+		}
+	});
+var $elm$bytes$Bytes$Encode$writeSequence = F3(
+	function (builders, mb, offset) {
+		writeSequence:
+		while (true) {
+			if (!builders.b) {
+				return offset;
+			} else {
+				var b = builders.a;
+				var bs = builders.b;
+				var $temp$builders = bs,
+					$temp$mb = mb,
+					$temp$offset = A3($elm$bytes$Bytes$Encode$write, b, mb, offset);
+				builders = $temp$builders;
+				mb = $temp$mb;
+				offset = $temp$offset;
+				continue writeSequence;
+			}
+		}
+	});
+var $elm$bytes$Bytes$Decode$decode = F2(
+	function (_v0, bs) {
+		var decoder = _v0.a;
+		return A2(_Bytes_decode, decoder, bs);
+	});
+var $elm$bytes$Bytes$Encode$encode = _Bytes_encode;
+var $elm$bytes$Bytes$Encode$getStringWidth = _Bytes_getStringWidth;
+var $elm$bytes$Bytes$Decode$Decoder = function (a) {
+	return {$: 'Decoder', a: a};
+};
+var $elm$bytes$Bytes$Decode$loopHelp = F4(
+	function (state, callback, bites, offset) {
+		loopHelp:
+		while (true) {
+			var _v0 = callback(state);
+			var decoder = _v0.a;
+			var _v1 = A2(decoder, bites, offset);
+			var newOffset = _v1.a;
+			var step = _v1.b;
+			if (step.$ === 'Loop') {
+				var newState = step.a;
+				var $temp$state = newState,
+					$temp$callback = callback,
+					$temp$bites = bites,
+					$temp$offset = newOffset;
+				state = $temp$state;
+				callback = $temp$callback;
+				bites = $temp$bites;
+				offset = $temp$offset;
+				continue loopHelp;
+			} else {
+				var result = step.a;
+				return _Utils_Tuple2(newOffset, result);
+			}
+		}
+	});
+var $elm$bytes$Bytes$Decode$loop = F2(
+	function (state, callback) {
+		return $elm$bytes$Bytes$Decode$Decoder(
+			A2($elm$bytes$Bytes$Decode$loopHelp, state, callback));
+	});
+var $elm$bytes$Bytes$Decode$Done = function (a) {
+	return {$: 'Done', a: a};
+};
+var $elm$bytes$Bytes$Decode$Loop = function (a) {
+	return {$: 'Loop', a: a};
+};
+var $elm$bytes$Bytes$Decode$map = F2(
+	function (func, _v0) {
+		var decodeA = _v0.a;
+		return $elm$bytes$Bytes$Decode$Decoder(
+			F2(
+				function (bites, offset) {
+					var _v1 = A2(decodeA, bites, offset);
+					var aOffset = _v1.a;
+					var a = _v1.b;
+					return _Utils_Tuple2(
+						aOffset,
+						func(a));
+				}));
+	});
+var $elm$bytes$Bytes$Decode$succeed = function (a) {
+	return $elm$bytes$Bytes$Decode$Decoder(
+		F2(
+			function (_v0, offset) {
+				return _Utils_Tuple2(offset, a);
+			}));
+};
+var $elm$bytes$Bytes$Decode$unsignedInt8 = $elm$bytes$Bytes$Decode$Decoder(_Bytes_read_u8);
+var $pablohirafuji$elm_qrcode$QRCode$Encode$UTF8$step = function (_v0) {
+	var n = _v0.a;
+	var xs = _v0.b;
+	return (n <= 0) ? $elm$bytes$Bytes$Decode$succeed(
+		$elm$bytes$Bytes$Decode$Done(
+			$elm$core$List$reverse(xs))) : A2(
+		$elm$bytes$Bytes$Decode$map,
+		function (x) {
+			return $elm$bytes$Bytes$Decode$Loop(
+				_Utils_Tuple2(
+					n - 1,
+					A2(
+						$elm$core$List$cons,
+						_Utils_Tuple2(x, 8),
+						xs)));
+		},
+		$elm$bytes$Bytes$Decode$unsignedInt8);
+};
+var $elm$bytes$Bytes$Encode$Utf8 = F2(
+	function (a, b) {
+		return {$: 'Utf8', a: a, b: b};
+	});
+var $elm$bytes$Bytes$Encode$string = function (str) {
+	return A2(
+		$elm$bytes$Bytes$Encode$Utf8,
+		_Bytes_getStringWidth(str),
+		str);
+};
+var $pablohirafuji$elm_qrcode$QRCode$Encode$UTF8$encode = function (str) {
+	var utf8BytesWidth = $elm$bytes$Bytes$Encode$getStringWidth(str);
+	var decoder = A2(
+		$elm$bytes$Bytes$Decode$loop,
+		_Utils_Tuple2(utf8BytesWidth, _List_Nil),
+		$pablohirafuji$elm_qrcode$QRCode$Encode$UTF8$step);
+	return A2(
+		$elm$core$Result$fromMaybe,
+		$pablohirafuji$elm_qrcode$QRCode$Error$InvalidUTF8Char,
+		A2(
+			$elm$bytes$Bytes$Decode$decode,
+			decoder,
+			$elm$bytes$Bytes$Encode$encode(
+				$elm$bytes$Bytes$Encode$string(str))));
+};
+var $pablohirafuji$elm_qrcode$QRCode$Encode$encoder = function (mode) {
+	switch (mode.$) {
+		case 'Numeric':
+			return $pablohirafuji$elm_qrcode$QRCode$Encode$Numeric$encode;
+		case 'Alphanumeric':
+			return $pablohirafuji$elm_qrcode$QRCode$Encode$Alphanumeric$encode;
+		case 'Byte':
+			return $pablohirafuji$elm_qrcode$QRCode$Encode$Byte$encode;
+		default:
+			return $pablohirafuji$elm_qrcode$QRCode$Encode$UTF8$encode;
+	}
+};
+var $pablohirafuji$elm_qrcode$QRCode$ErrorCorrection$expTable = $elm$core$Array$fromList(
+	_List_fromArray(
+		[1, 2, 4, 8, 16, 32, 64, 128, 29, 58, 116, 232, 205, 135, 19, 38, 76, 152, 45, 90, 180, 117, 234, 201, 143, 3, 6, 12, 24, 48, 96, 192, 157, 39, 78, 156, 37, 74, 148, 53, 106, 212, 181, 119, 238, 193, 159, 35, 70, 140, 5, 10, 20, 40, 80, 160, 93, 186, 105, 210, 185, 111, 222, 161, 95, 190, 97, 194, 153, 47, 94, 188, 101, 202, 137, 15, 30, 60, 120, 240, 253, 231, 211, 187, 107, 214, 177, 127, 254, 225, 223, 163, 91, 182, 113, 226, 217, 175, 67, 134, 17, 34, 68, 136, 13, 26, 52, 104, 208, 189, 103, 206, 129, 31, 62, 124, 248, 237, 199, 147, 59, 118, 236, 197, 151, 51, 102, 204, 133, 23, 46, 92, 184, 109, 218, 169, 79, 158, 33, 66, 132, 21, 42, 84, 168, 77, 154, 41, 82, 164, 85, 170, 73, 146, 57, 114, 228, 213, 183, 115, 230, 209, 191, 99, 198, 145, 63, 126, 252, 229, 215, 179, 123, 246, 241, 255, 227, 219, 171, 75, 150, 49, 98, 196, 149, 55, 110, 220, 165, 87, 174, 65, 130, 25, 50, 100, 200, 141, 7, 14, 28, 56, 112, 224, 221, 167, 83, 166, 81, 162, 89, 178, 121, 242, 249, 239, 195, 155, 43, 86, 172, 69, 138, 9, 18, 36, 72, 144, 61, 122, 244, 245, 247, 243, 251, 235, 203, 139, 11, 22, 44, 88, 176, 125, 250, 233, 207, 131, 27, 54, 108, 216, 173, 71, 142, 1]));
+var $pablohirafuji$elm_qrcode$QRCode$ErrorCorrection$getExp = function (index) {
+	return A2(
+		$elm$core$Maybe$withDefault,
+		0,
+		A2(
+			$elm$core$Array$get,
+			A2($elm$core$Basics$modBy, 255, index),
+			$pablohirafuji$elm_qrcode$QRCode$ErrorCorrection$expTable));
+};
+var $pablohirafuji$elm_qrcode$QRCode$Error$PolynomialMultiplyException = {$: 'PolynomialMultiplyException'};
+var $pablohirafuji$elm_qrcode$QRCode$Error$LogTableException = function (a) {
+	return {$: 'LogTableException', a: a};
+};
+var $pablohirafuji$elm_qrcode$QRCode$ErrorCorrection$logTable = $elm$core$Array$fromList(
+	_List_fromArray(
+		[0, 1, 25, 2, 50, 26, 198, 3, 223, 51, 238, 27, 104, 199, 75, 4, 100, 224, 14, 52, 141, 239, 129, 28, 193, 105, 248, 200, 8, 76, 113, 5, 138, 101, 47, 225, 36, 15, 33, 53, 147, 142, 218, 240, 18, 130, 69, 29, 181, 194, 125, 106, 39, 249, 185, 201, 154, 9, 120, 77, 228, 114, 166, 6, 191, 139, 98, 102, 221, 48, 253, 226, 152, 37, 179, 16, 145, 34, 136, 54, 208, 148, 206, 143, 150, 219, 189, 241, 210, 19, 92, 131, 56, 70, 64, 30, 66, 182, 163, 195, 72, 126, 110, 107, 58, 40, 84, 250, 133, 186, 61, 202, 94, 155, 159, 10, 21, 121, 43, 78, 212, 229, 172, 115, 243, 167, 87, 7, 112, 192, 247, 140, 128, 99, 13, 103, 74, 222, 237, 49, 197, 254, 24, 227, 165, 153, 119, 38, 184, 180, 124, 17, 68, 146, 217, 35, 32, 137, 46, 55, 63, 209, 91, 149, 188, 207, 205, 144, 135, 151, 178, 220, 252, 190, 97, 242, 86, 211, 171, 20, 42, 93, 158, 132, 60, 57, 83, 71, 109, 65, 162, 31, 45, 67, 216, 183, 123, 164, 118, 196, 23, 73, 236, 127, 12, 111, 246, 108, 161, 59, 82, 41, 157, 85, 170, 251, 96, 134, 177, 187, 204, 62, 90, 203, 89, 95, 176, 156, 169, 160, 81, 11, 245, 22, 235, 122, 117, 44, 215, 79, 174, 213, 233, 230, 231, 173, 232, 116, 214, 244, 234, 168, 80, 88, 175]));
+var $pablohirafuji$elm_qrcode$QRCode$ErrorCorrection$getLog = function (index) {
+	return (index < 1) ? $elm$core$Result$Err(
+		$pablohirafuji$elm_qrcode$QRCode$Error$LogTableException(index)) : A2(
+		$elm$core$Result$fromMaybe,
+		$pablohirafuji$elm_qrcode$QRCode$Error$LogTableException(index),
+		A2($elm$core$Array$get, index - 1, $pablohirafuji$elm_qrcode$QRCode$ErrorCorrection$logTable));
+};
+var $elm$core$Array$length = function (_v0) {
+	var len = _v0.a;
+	return len;
+};
+var $pablohirafuji$elm_qrcode$QRCode$ErrorCorrection$getOffset = function (_v0) {
+	getOffset:
+	while (true) {
+		var num = _v0.a;
+		var offset = _v0.b;
+		if (num.b) {
+			var head = num.a;
+			var tail = num.b;
+			if (!head) {
+				var $temp$_v0 = _Utils_Tuple2(tail, offset + 1);
+				_v0 = $temp$_v0;
+				continue getOffset;
+			} else {
+				return offset;
+			}
+		} else {
+			return offset;
+		}
+	}
+};
+var $pablohirafuji$elm_qrcode$QRCode$ErrorCorrection$newPolynomial = F2(
+	function (num, shift) {
+		var offset = $pablohirafuji$elm_qrcode$QRCode$ErrorCorrection$getOffset(
+			_Utils_Tuple2(num, 0));
+		var numArray = $elm$core$Array$fromList(num);
+		return A2(
+			$elm$core$Array$initialize,
+			($elm$core$List$length(num) - offset) + shift,
+			function (index) {
+				return A2(
+					$elm$core$Maybe$withDefault,
+					0,
+					A2($elm$core$Array$get, index + offset, numArray));
+			});
+	});
+var $pablohirafuji$elm_qrcode$QRCode$ErrorCorrection$multiply = F2(
+	function (poly1, poly2) {
+		var valuesArray = A2(
+			$elm$core$List$indexedMap,
+			F2(
+				function (index1, value1) {
+					return A2(
+						$elm$core$List$indexedMap,
+						F2(
+							function (index2, value2) {
+								return _Utils_Tuple3(index1 + index2, value1, value2);
+							}),
+						$elm$core$Array$toList(poly2));
+				}),
+			$elm$core$Array$toList(poly1));
+		var process__ = F3(
+			function (indexSum, num_, exp) {
+				return A2(
+					$elm$core$Result$fromMaybe,
+					$pablohirafuji$elm_qrcode$QRCode$Error$PolynomialMultiplyException,
+					A2(
+						$elm$core$Maybe$map,
+						$elm$core$Bitwise$xor(exp),
+						A2($elm$core$Array$get, indexSum, num_)));
+			});
+		var process_ = F2(
+			function (_v0, num_) {
+				var indexSum = _v0.a;
+				var value1 = _v0.b;
+				var value2 = _v0.c;
+				return A2(
+					$elm$core$Result$map,
+					function (r) {
+						return A3($elm$core$Array$set, indexSum, r, num_);
+					},
+					A2(
+						$elm$core$Result$andThen,
+						A2(process__, indexSum, num_),
+						A2(
+							$elm$core$Result$map,
+							$pablohirafuji$elm_qrcode$QRCode$ErrorCorrection$getExp,
+							A3(
+								$elm$core$Result$map2,
+								$elm$core$Basics$add,
+								$pablohirafuji$elm_qrcode$QRCode$ErrorCorrection$getLog(value1),
+								$pablohirafuji$elm_qrcode$QRCode$ErrorCorrection$getLog(value2)))));
+			});
+		var process = F2(
+			function (args, numResult) {
+				return A2(
+					$elm$core$Result$andThen,
+					process_(args),
+					numResult);
+			});
+		var num = A2(
+			$elm$core$Array$initialize,
+			($elm$core$Array$length(poly1) + $elm$core$Array$length(poly2)) - 1,
+			$elm$core$Basics$always(0));
+		return A2(
+			$elm$core$Result$map,
+			function (a) {
+				return A2($pablohirafuji$elm_qrcode$QRCode$ErrorCorrection$newPolynomial, a, 0);
+			},
+			A2(
+				$elm$core$Result$map,
+				$elm$core$Array$toList,
+				A3(
+					$elm$core$List$foldl,
+					process,
+					$elm$core$Result$Ok(num),
+					$elm$core$List$concat(valuesArray))));
+	});
+var $pablohirafuji$elm_qrcode$QRCode$ErrorCorrection$getECPolynomial = function (ecLength) {
+	var generate = F2(
+		function (count, polyResult) {
+			generate:
+			while (true) {
+				if (_Utils_cmp(count, ecLength) < 0) {
+					var $temp$count = count + 1,
+						$temp$polyResult = A2(
+						$elm$core$Result$andThen,
+						function (a) {
+							return A2(
+								$pablohirafuji$elm_qrcode$QRCode$ErrorCorrection$multiply,
+								a,
+								A2(
+									$pablohirafuji$elm_qrcode$QRCode$ErrorCorrection$newPolynomial,
+									_List_fromArray(
+										[
+											1,
+											$pablohirafuji$elm_qrcode$QRCode$ErrorCorrection$getExp(count)
+										]),
+									0));
+						},
+						polyResult);
+					count = $temp$count;
+					polyResult = $temp$polyResult;
+					continue generate;
+				} else {
+					return polyResult;
+				}
+			}
+		});
+	return A2(
+		generate,
+		0,
+		$elm$core$Result$Ok(
+			A2(
+				$pablohirafuji$elm_qrcode$QRCode$ErrorCorrection$newPolynomial,
+				_List_fromArray(
+					[1]),
+				0)));
+};
+var $pablohirafuji$elm_qrcode$QRCode$ErrorCorrection$get___ = F2(
+	function (ecLength, modPoly) {
+		return $elm$core$Array$toList(
+			A2(
+				$elm$core$Array$initialize,
+				ecLength,
+				function (index) {
+					var modIndex = (index + $elm$core$Array$length(modPoly)) - ecLength;
+					return (modIndex >= 0) ? A2(
+						$elm$core$Maybe$withDefault,
+						0,
+						A2($elm$core$Array$get, modIndex, modPoly)) : 0;
+				}));
+	});
+var $pablohirafuji$elm_qrcode$QRCode$Error$PolynomialModException = {$: 'PolynomialModException'};
+var $elm$core$Array$foldl = F3(
+	function (func, baseCase, _v0) {
+		var tree = _v0.c;
+		var tail = _v0.d;
+		var helper = F2(
+			function (node, acc) {
+				if (node.$ === 'SubTree') {
+					var subTree = node.a;
+					return A3($elm$core$Elm$JsArray$foldl, helper, acc, subTree);
+				} else {
+					var values = node.a;
+					return A3($elm$core$Elm$JsArray$foldl, func, acc, values);
+				}
+			});
+		return A3(
+			$elm$core$Elm$JsArray$foldl,
+			func,
+			A3($elm$core$Elm$JsArray$foldl, helper, baseCase, tree),
+			tail);
+	});
+var $pablohirafuji$elm_qrcode$QRCode$ErrorCorrection$mod = F2(
+	function (poly1, poly2) {
+		if (($elm$core$Array$length(poly1) - $elm$core$Array$length(poly2)) < 0) {
+			return $elm$core$Result$Ok(poly1);
+		} else {
+			var helper_ = F3(
+				function (index2, poly1_, exp) {
+					return A2(
+						$elm$core$Result$fromMaybe,
+						$pablohirafuji$elm_qrcode$QRCode$Error$PolynomialModException,
+						A2(
+							$elm$core$Maybe$map,
+							$elm$core$Bitwise$xor(exp),
+							A2($elm$core$Array$get, index2, poly1_)));
+				});
+			var getHead = function (poly) {
+				return A2(
+					$elm$core$Result$andThen,
+					$pablohirafuji$elm_qrcode$QRCode$ErrorCorrection$getLog,
+					A2(
+						$elm$core$Result$fromMaybe,
+						$pablohirafuji$elm_qrcode$QRCode$Error$PolynomialModException,
+						A2($elm$core$Array$get, 0, poly)));
+			};
+			var ratio = A3(
+				$elm$core$Result$map2,
+				$elm$core$Basics$sub,
+				getHead(poly1),
+				getHead(poly2));
+			var helper = F2(
+				function (_v0, poly1_) {
+					var index2 = _v0.a;
+					var value2 = _v0.b;
+					return A2(
+						$elm$core$Result$map,
+						function (r) {
+							return A3($elm$core$Array$set, index2, r, poly1_);
+						},
+						A2(
+							$elm$core$Result$andThen,
+							A2(helper_, index2, poly1_),
+							A2(
+								$elm$core$Result$map,
+								$pablohirafuji$elm_qrcode$QRCode$ErrorCorrection$getExp,
+								A3(
+									$elm$core$Result$map2,
+									$elm$core$Basics$add,
+									ratio,
+									$pablohirafuji$elm_qrcode$QRCode$ErrorCorrection$getLog(value2)))));
+				});
+			var numFold = F2(
+				function (args, poly1Result) {
+					return A2(
+						$elm$core$Result$andThen,
+						helper(args),
+						poly1Result);
+				});
+			var numResult = A3(
+				$elm$core$Array$foldl,
+				numFold,
+				$elm$core$Result$Ok(poly1),
+				A2(
+					$elm$core$Array$indexedMap,
+					F2(
+						function (a, b) {
+							return _Utils_Tuple2(a, b);
+						}),
+					poly2));
+			return A2(
+				$elm$core$Result$andThen,
+				function (a) {
+					return A2($pablohirafuji$elm_qrcode$QRCode$ErrorCorrection$mod, a, poly2);
+				},
+				A2(
+					$elm$core$Result$map,
+					function (a) {
+						return A2($pablohirafuji$elm_qrcode$QRCode$ErrorCorrection$newPolynomial, a, 0);
+					},
+					A2($elm$core$Result$map, $elm$core$Array$toList, numResult)));
+		}
+	});
+var $pablohirafuji$elm_qrcode$QRCode$ErrorCorrection$get__ = F2(
+	function (rsPoly, dataCodewords) {
+		return A2(
+			$elm$core$Result$map,
+			$pablohirafuji$elm_qrcode$QRCode$ErrorCorrection$get___(
+				$elm$core$Array$length(rsPoly) - 1),
+			A2(
+				$pablohirafuji$elm_qrcode$QRCode$ErrorCorrection$mod,
+				A2(
+					$pablohirafuji$elm_qrcode$QRCode$ErrorCorrection$newPolynomial,
+					dataCodewords,
+					$elm$core$Array$length(rsPoly) - 1),
+				rsPoly));
+	});
+var $pablohirafuji$elm_qrcode$QRCode$Helpers$listResult = F3(
+	function (fun, listb, lista) {
+		if (lista.b) {
+			var head = lista.a;
+			var tail = lista.b;
+			return A2(
+				$elm$core$Result$andThen,
+				function (a) {
+					return A3($pablohirafuji$elm_qrcode$QRCode$Helpers$listResult, fun, a, tail);
+				},
+				A2(
+					$elm$core$Result$map,
+					function (r) {
+						return A2($elm$core$List$cons, r, listb);
+					},
+					fun(head)));
+		} else {
+			return $elm$core$Result$Ok(
+				$elm$core$List$reverse(listb));
+		}
+	});
+var $pablohirafuji$elm_qrcode$QRCode$ErrorCorrection$get_ = F2(
+	function (byteBlocks, rsPoly) {
+		return A3(
+			$pablohirafuji$elm_qrcode$QRCode$Helpers$listResult,
+			$pablohirafuji$elm_qrcode$QRCode$ErrorCorrection$get__(rsPoly),
+			_List_Nil,
+			byteBlocks);
+	});
+var $pablohirafuji$elm_qrcode$QRCode$ErrorCorrection$get = F2(
+	function (ecPerBlock, byteBlocks) {
+		return A2(
+			$elm$core$Result$andThen,
+			$pablohirafuji$elm_qrcode$QRCode$ErrorCorrection$get_(byteBlocks),
+			$pablohirafuji$elm_qrcode$QRCode$ErrorCorrection$getECPolynomial(ecPerBlock));
+	});
+var $pablohirafuji$elm_qrcode$QRCode$Encode$getErrorCorrection = function (_v0) {
+	var model = _v0.a;
+	var dataBlocks = _v0.b;
+	return A2(
+		$elm$core$Result$map,
+		function (c) {
+			return _Utils_Tuple3(model, dataBlocks, c);
+		},
+		A2($pablohirafuji$elm_qrcode$QRCode$ErrorCorrection$get, model.groupInfo.ecPerBlock, dataBlocks));
+};
+var $pablohirafuji$elm_qrcode$QRCode$Encode$Alphanumeric = {$: 'Alphanumeric'};
+var $pablohirafuji$elm_qrcode$QRCode$Encode$Byte = {$: 'Byte'};
+var $pablohirafuji$elm_qrcode$QRCode$Encode$Numeric = {$: 'Numeric'};
+var $elm$regex$Regex$Match = F4(
+	function (match, index, number, submatches) {
+		return {index: index, match: match, number: number, submatches: submatches};
+	});
+var $elm$regex$Regex$contains = _Regex_contains;
+var $elm$regex$Regex$fromStringWith = _Regex_fromStringWith;
+var $pablohirafuji$elm_qrcode$QRCode$Encode$Alphanumeric$onlyAlphanumeric = A2(
+	$elm$regex$Regex$fromStringWith,
+	{caseInsensitive: false, multiline: false},
+	'^[0-9A-Z $%*+\\-.\\/:]+$');
+var $pablohirafuji$elm_qrcode$QRCode$Encode$Alphanumeric$isValid = function (input) {
+	return A2(
+		$elm$core$Maybe$withDefault,
+		false,
+		A2(
+			$elm$core$Maybe$map,
+			function (r) {
+				return A2($elm$regex$Regex$contains, r, input);
+			},
+			$pablohirafuji$elm_qrcode$QRCode$Encode$Alphanumeric$onlyAlphanumeric));
+};
+var $pablohirafuji$elm_qrcode$QRCode$Encode$Byte$only8Bit = A2(
+	$elm$regex$Regex$fromStringWith,
+	{caseInsensitive: false, multiline: false},
+	'^[\\u0000-\\u00ff]+$');
+var $pablohirafuji$elm_qrcode$QRCode$Encode$Byte$isValid = function (input) {
+	return A2(
+		$elm$core$Maybe$withDefault,
+		false,
+		A2(
+			$elm$core$Maybe$map,
+			function (r) {
+				return A2($elm$regex$Regex$contains, r, input);
+			},
+			$pablohirafuji$elm_qrcode$QRCode$Encode$Byte$only8Bit));
+};
+var $pablohirafuji$elm_qrcode$QRCode$Encode$Numeric$onlyNumber = A2(
+	$elm$regex$Regex$fromStringWith,
+	{caseInsensitive: false, multiline: false},
+	'^[0-9]+$');
+var $pablohirafuji$elm_qrcode$QRCode$Encode$Numeric$isValid = function (input) {
+	return A2(
+		$elm$core$Maybe$withDefault,
+		false,
+		A2(
+			$elm$core$Maybe$map,
+			function (r) {
+				return A2($elm$regex$Regex$contains, r, input);
+			},
+			$pablohirafuji$elm_qrcode$QRCode$Encode$Numeric$onlyNumber));
+};
+var $pablohirafuji$elm_qrcode$QRCode$Encode$selectMode = function (input) {
+	return $pablohirafuji$elm_qrcode$QRCode$Encode$Numeric$isValid(input) ? $pablohirafuji$elm_qrcode$QRCode$Encode$Numeric : ($pablohirafuji$elm_qrcode$QRCode$Encode$Alphanumeric$isValid(input) ? $pablohirafuji$elm_qrcode$QRCode$Encode$Alphanumeric : ($pablohirafuji$elm_qrcode$QRCode$Encode$Byte$isValid(input) ? $pablohirafuji$elm_qrcode$QRCode$Encode$Byte : $pablohirafuji$elm_qrcode$QRCode$Encode$UTF8));
+};
+var $pablohirafuji$elm_qrcode$QRCode$Error$InputLengthOverflow = {$: 'InputLengthOverflow'};
+var $pablohirafuji$elm_qrcode$QRCode$Encode$filterCapacity = F3(
+	function (mode, dataLength, _v0) {
+		var version = _v0.version;
+		var capacity = _v0.capacity;
+		return _Utils_cmp(
+			A2($pablohirafuji$elm_qrcode$QRCode$Encode$charCountIndicatorLength, mode, version) + dataLength,
+			capacity) < 1;
+	});
+var $pablohirafuji$elm_qrcode$QRCode$GroupInfo$blockByteCapacity = function (_v0) {
+	var blockCount = _v0.a;
+	var bytePerBlock = _v0.b;
+	return blockCount * bytePerBlock;
+};
+var $pablohirafuji$elm_qrcode$QRCode$GroupInfo$byteCapacity = F2(
+	function (group1, maybeGroup2) {
+		if (maybeGroup2.$ === 'Just') {
+			var block2 = maybeGroup2.a;
+			return $pablohirafuji$elm_qrcode$QRCode$GroupInfo$blockByteCapacity(group1) + $pablohirafuji$elm_qrcode$QRCode$GroupInfo$blockByteCapacity(block2);
+		} else {
+			return $pablohirafuji$elm_qrcode$QRCode$GroupInfo$blockByteCapacity(group1);
+		}
+	});
+var $pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo = F4(
+	function (version, ecPerBlock, group1, maybeGroup2) {
+		return {
+			capacity: A2($pablohirafuji$elm_qrcode$QRCode$GroupInfo$byteCapacity, group1, maybeGroup2) * 8,
+			ecPerBlock: ecPerBlock,
+			group1: group1,
+			maybeGroup2: maybeGroup2,
+			version: version
+		};
+	});
+var $pablohirafuji$elm_qrcode$QRCode$GroupInfo$dataH = _List_fromArray(
+	[
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		1,
+		17,
+		_Utils_Tuple2(1, 9),
+		$elm$core$Maybe$Nothing),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		2,
+		28,
+		_Utils_Tuple2(1, 16),
+		$elm$core$Maybe$Nothing),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		3,
+		22,
+		_Utils_Tuple2(2, 13),
+		$elm$core$Maybe$Nothing),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		4,
+		16,
+		_Utils_Tuple2(4, 9),
+		$elm$core$Maybe$Nothing),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		5,
+		22,
+		_Utils_Tuple2(2, 11),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(2, 12))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		6,
+		28,
+		_Utils_Tuple2(4, 15),
+		$elm$core$Maybe$Nothing),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		7,
+		26,
+		_Utils_Tuple2(4, 13),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(1, 14))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		8,
+		26,
+		_Utils_Tuple2(4, 14),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(2, 15))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		9,
+		24,
+		_Utils_Tuple2(4, 12),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(4, 13))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		10,
+		28,
+		_Utils_Tuple2(6, 15),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(2, 16))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		11,
+		24,
+		_Utils_Tuple2(3, 12),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(8, 13))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		12,
+		28,
+		_Utils_Tuple2(7, 14),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(4, 15))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		13,
+		22,
+		_Utils_Tuple2(12, 11),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(4, 12))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		14,
+		24,
+		_Utils_Tuple2(11, 12),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(5, 13))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		15,
+		24,
+		_Utils_Tuple2(11, 12),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(7, 13))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		16,
+		30,
+		_Utils_Tuple2(3, 15),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(13, 16))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		17,
+		28,
+		_Utils_Tuple2(2, 14),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(17, 15))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		18,
+		28,
+		_Utils_Tuple2(2, 14),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(19, 15))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		19,
+		26,
+		_Utils_Tuple2(9, 13),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(16, 14))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		20,
+		28,
+		_Utils_Tuple2(15, 15),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(10, 16))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		21,
+		30,
+		_Utils_Tuple2(19, 16),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(6, 17))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		22,
+		24,
+		_Utils_Tuple2(34, 13),
+		$elm$core$Maybe$Nothing),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		23,
+		30,
+		_Utils_Tuple2(16, 15),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(14, 16))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		24,
+		30,
+		_Utils_Tuple2(30, 16),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(2, 17))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		25,
+		30,
+		_Utils_Tuple2(22, 15),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(13, 16))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		26,
+		30,
+		_Utils_Tuple2(33, 16),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(4, 17))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		27,
+		30,
+		_Utils_Tuple2(12, 15),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(28, 16))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		28,
+		30,
+		_Utils_Tuple2(11, 15),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(31, 16))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		29,
+		30,
+		_Utils_Tuple2(19, 15),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(26, 16))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		30,
+		30,
+		_Utils_Tuple2(23, 15),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(25, 16))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		31,
+		30,
+		_Utils_Tuple2(23, 15),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(28, 16))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		32,
+		30,
+		_Utils_Tuple2(19, 15),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(35, 16))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		33,
+		30,
+		_Utils_Tuple2(11, 15),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(46, 16))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		34,
+		30,
+		_Utils_Tuple2(59, 16),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(1, 17))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		35,
+		30,
+		_Utils_Tuple2(22, 15),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(41, 16))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		36,
+		30,
+		_Utils_Tuple2(2, 15),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(64, 16))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		37,
+		30,
+		_Utils_Tuple2(24, 15),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(46, 16))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		38,
+		30,
+		_Utils_Tuple2(42, 15),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(32, 16))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		39,
+		30,
+		_Utils_Tuple2(10, 15),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(67, 16))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		40,
+		30,
+		_Utils_Tuple2(20, 15),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(61, 16)))
+	]);
+var $pablohirafuji$elm_qrcode$QRCode$GroupInfo$dataL = _List_fromArray(
+	[
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		1,
+		7,
+		_Utils_Tuple2(1, 19),
+		$elm$core$Maybe$Nothing),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		2,
+		10,
+		_Utils_Tuple2(1, 34),
+		$elm$core$Maybe$Nothing),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		3,
+		15,
+		_Utils_Tuple2(1, 55),
+		$elm$core$Maybe$Nothing),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		4,
+		20,
+		_Utils_Tuple2(1, 80),
+		$elm$core$Maybe$Nothing),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		5,
+		26,
+		_Utils_Tuple2(1, 108),
+		$elm$core$Maybe$Nothing),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		6,
+		18,
+		_Utils_Tuple2(2, 68),
+		$elm$core$Maybe$Nothing),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		7,
+		20,
+		_Utils_Tuple2(2, 78),
+		$elm$core$Maybe$Nothing),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		8,
+		24,
+		_Utils_Tuple2(2, 97),
+		$elm$core$Maybe$Nothing),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		9,
+		30,
+		_Utils_Tuple2(2, 116),
+		$elm$core$Maybe$Nothing),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		10,
+		18,
+		_Utils_Tuple2(2, 68),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(2, 69))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		11,
+		20,
+		_Utils_Tuple2(4, 81),
+		$elm$core$Maybe$Nothing),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		12,
+		24,
+		_Utils_Tuple2(2, 92),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(2, 93))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		13,
+		26,
+		_Utils_Tuple2(4, 107),
+		$elm$core$Maybe$Nothing),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		14,
+		30,
+		_Utils_Tuple2(3, 115),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(1, 116))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		15,
+		22,
+		_Utils_Tuple2(5, 87),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(1, 88))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		16,
+		24,
+		_Utils_Tuple2(5, 98),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(1, 99))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		17,
+		28,
+		_Utils_Tuple2(1, 107),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(5, 108))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		18,
+		30,
+		_Utils_Tuple2(5, 120),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(1, 121))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		19,
+		28,
+		_Utils_Tuple2(3, 113),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(4, 114))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		20,
+		28,
+		_Utils_Tuple2(3, 107),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(5, 108))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		21,
+		28,
+		_Utils_Tuple2(4, 116),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(4, 117))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		22,
+		28,
+		_Utils_Tuple2(2, 111),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(7, 112))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		23,
+		30,
+		_Utils_Tuple2(4, 121),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(5, 122))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		24,
+		30,
+		_Utils_Tuple2(6, 117),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(4, 118))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		25,
+		26,
+		_Utils_Tuple2(8, 106),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(4, 107))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		26,
+		28,
+		_Utils_Tuple2(10, 114),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(2, 115))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		27,
+		30,
+		_Utils_Tuple2(8, 122),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(4, 123))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		28,
+		30,
+		_Utils_Tuple2(3, 117),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(10, 118))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		29,
+		30,
+		_Utils_Tuple2(7, 116),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(7, 117))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		30,
+		30,
+		_Utils_Tuple2(5, 115),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(10, 116))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		31,
+		30,
+		_Utils_Tuple2(13, 115),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(3, 116))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		32,
+		30,
+		_Utils_Tuple2(17, 115),
+		$elm$core$Maybe$Nothing),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		33,
+		30,
+		_Utils_Tuple2(17, 115),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(1, 116))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		34,
+		30,
+		_Utils_Tuple2(13, 115),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(6, 116))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		35,
+		30,
+		_Utils_Tuple2(12, 121),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(7, 122))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		36,
+		30,
+		_Utils_Tuple2(6, 121),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(14, 122))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		37,
+		30,
+		_Utils_Tuple2(17, 122),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(4, 123))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		38,
+		30,
+		_Utils_Tuple2(4, 122),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(18, 123))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		39,
+		30,
+		_Utils_Tuple2(20, 117),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(4, 118))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		40,
+		30,
+		_Utils_Tuple2(19, 118),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(6, 119)))
+	]);
+var $pablohirafuji$elm_qrcode$QRCode$GroupInfo$dataM = _List_fromArray(
+	[
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		1,
+		10,
+		_Utils_Tuple2(1, 16),
+		$elm$core$Maybe$Nothing),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		2,
+		16,
+		_Utils_Tuple2(1, 28),
+		$elm$core$Maybe$Nothing),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		3,
+		26,
+		_Utils_Tuple2(1, 44),
+		$elm$core$Maybe$Nothing),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		4,
+		18,
+		_Utils_Tuple2(2, 32),
+		$elm$core$Maybe$Nothing),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		5,
+		24,
+		_Utils_Tuple2(2, 43),
+		$elm$core$Maybe$Nothing),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		6,
+		16,
+		_Utils_Tuple2(4, 27),
+		$elm$core$Maybe$Nothing),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		7,
+		18,
+		_Utils_Tuple2(4, 31),
+		$elm$core$Maybe$Nothing),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		8,
+		22,
+		_Utils_Tuple2(2, 38),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(2, 39))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		9,
+		22,
+		_Utils_Tuple2(3, 36),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(2, 37))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		10,
+		26,
+		_Utils_Tuple2(4, 43),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(1, 44))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		11,
+		30,
+		_Utils_Tuple2(1, 50),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(4, 51))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		12,
+		22,
+		_Utils_Tuple2(6, 36),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(2, 37))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		13,
+		22,
+		_Utils_Tuple2(8, 37),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(1, 38))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		14,
+		24,
+		_Utils_Tuple2(4, 40),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(5, 41))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		15,
+		24,
+		_Utils_Tuple2(5, 41),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(5, 42))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		16,
+		28,
+		_Utils_Tuple2(7, 45),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(3, 46))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		17,
+		28,
+		_Utils_Tuple2(10, 46),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(1, 47))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		18,
+		26,
+		_Utils_Tuple2(9, 43),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(4, 44))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		19,
+		26,
+		_Utils_Tuple2(3, 44),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(11, 45))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		20,
+		26,
+		_Utils_Tuple2(3, 41),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(13, 42))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		21,
+		26,
+		_Utils_Tuple2(17, 42),
+		$elm$core$Maybe$Nothing),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		22,
+		28,
+		_Utils_Tuple2(17, 46),
+		$elm$core$Maybe$Nothing),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		23,
+		28,
+		_Utils_Tuple2(4, 47),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(14, 48))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		24,
+		28,
+		_Utils_Tuple2(6, 45),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(14, 46))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		25,
+		28,
+		_Utils_Tuple2(8, 47),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(13, 48))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		26,
+		28,
+		_Utils_Tuple2(19, 46),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(4, 47))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		27,
+		28,
+		_Utils_Tuple2(22, 45),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(3, 46))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		28,
+		28,
+		_Utils_Tuple2(3, 45),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(23, 46))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		29,
+		28,
+		_Utils_Tuple2(21, 45),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(7, 46))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		30,
+		28,
+		_Utils_Tuple2(19, 47),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(10, 48))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		31,
+		28,
+		_Utils_Tuple2(2, 46),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(29, 47))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		32,
+		28,
+		_Utils_Tuple2(10, 46),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(23, 47))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		33,
+		28,
+		_Utils_Tuple2(14, 46),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(21, 47))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		34,
+		28,
+		_Utils_Tuple2(14, 46),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(23, 47))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		35,
+		28,
+		_Utils_Tuple2(12, 47),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(26, 48))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		36,
+		28,
+		_Utils_Tuple2(6, 47),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(34, 48))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		37,
+		28,
+		_Utils_Tuple2(29, 46),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(14, 47))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		38,
+		28,
+		_Utils_Tuple2(13, 46),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(32, 47))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		39,
+		28,
+		_Utils_Tuple2(40, 47),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(7, 48))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		40,
+		28,
+		_Utils_Tuple2(18, 47),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(31, 48)))
+	]);
+var $pablohirafuji$elm_qrcode$QRCode$GroupInfo$dataQ = _List_fromArray(
+	[
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		1,
+		13,
+		_Utils_Tuple2(1, 13),
+		$elm$core$Maybe$Nothing),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		2,
+		22,
+		_Utils_Tuple2(1, 22),
+		$elm$core$Maybe$Nothing),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		3,
+		18,
+		_Utils_Tuple2(2, 17),
+		$elm$core$Maybe$Nothing),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		4,
+		26,
+		_Utils_Tuple2(2, 24),
+		$elm$core$Maybe$Nothing),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		5,
+		18,
+		_Utils_Tuple2(2, 15),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(2, 16))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		6,
+		24,
+		_Utils_Tuple2(4, 19),
+		$elm$core$Maybe$Nothing),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		7,
+		18,
+		_Utils_Tuple2(2, 14),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(4, 15))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		8,
+		22,
+		_Utils_Tuple2(4, 18),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(2, 19))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		9,
+		20,
+		_Utils_Tuple2(4, 16),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(4, 17))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		10,
+		24,
+		_Utils_Tuple2(6, 19),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(2, 20))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		11,
+		28,
+		_Utils_Tuple2(4, 22),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(4, 23))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		12,
+		26,
+		_Utils_Tuple2(4, 20),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(6, 21))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		13,
+		24,
+		_Utils_Tuple2(8, 20),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(4, 21))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		14,
+		20,
+		_Utils_Tuple2(11, 16),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(5, 17))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		15,
+		30,
+		_Utils_Tuple2(5, 24),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(7, 25))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		16,
+		24,
+		_Utils_Tuple2(15, 19),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(2, 20))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		17,
+		28,
+		_Utils_Tuple2(1, 22),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(15, 23))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		18,
+		28,
+		_Utils_Tuple2(17, 22),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(1, 23))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		19,
+		26,
+		_Utils_Tuple2(17, 21),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(4, 22))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		20,
+		30,
+		_Utils_Tuple2(15, 24),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(5, 25))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		21,
+		28,
+		_Utils_Tuple2(17, 22),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(6, 23))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		22,
+		30,
+		_Utils_Tuple2(7, 24),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(16, 25))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		23,
+		30,
+		_Utils_Tuple2(11, 24),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(14, 25))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		24,
+		30,
+		_Utils_Tuple2(11, 24),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(16, 25))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		25,
+		30,
+		_Utils_Tuple2(7, 24),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(22, 25))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		26,
+		28,
+		_Utils_Tuple2(28, 22),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(6, 23))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		27,
+		30,
+		_Utils_Tuple2(8, 23),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(26, 24))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		28,
+		30,
+		_Utils_Tuple2(4, 24),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(31, 25))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		29,
+		30,
+		_Utils_Tuple2(1, 23),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(37, 24))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		30,
+		30,
+		_Utils_Tuple2(15, 24),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(25, 25))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		31,
+		30,
+		_Utils_Tuple2(42, 24),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(1, 25))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		32,
+		30,
+		_Utils_Tuple2(10, 24),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(35, 25))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		33,
+		30,
+		_Utils_Tuple2(29, 24),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(19, 25))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		34,
+		30,
+		_Utils_Tuple2(44, 24),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(7, 25))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		35,
+		30,
+		_Utils_Tuple2(39, 24),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(14, 25))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		36,
+		30,
+		_Utils_Tuple2(46, 24),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(10, 25))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		37,
+		30,
+		_Utils_Tuple2(49, 24),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(10, 25))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		38,
+		30,
+		_Utils_Tuple2(48, 24),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(14, 25))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		39,
+		30,
+		_Utils_Tuple2(43, 24),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(22, 25))),
+		A4(
+		$pablohirafuji$elm_qrcode$QRCode$GroupInfo$newGroupInfo,
+		40,
+		30,
+		_Utils_Tuple2(34, 24),
+		$elm$core$Maybe$Just(
+			_Utils_Tuple2(34, 25)))
+	]);
+var $pablohirafuji$elm_qrcode$QRCode$GroupInfo$getGroupData = function (ecLevel) {
+	switch (ecLevel.$) {
+		case 'L':
+			return $pablohirafuji$elm_qrcode$QRCode$GroupInfo$dataL;
+		case 'M':
+			return $pablohirafuji$elm_qrcode$QRCode$GroupInfo$dataM;
+		case 'Q':
+			return $pablohirafuji$elm_qrcode$QRCode$GroupInfo$dataQ;
+		default:
+			return $pablohirafuji$elm_qrcode$QRCode$GroupInfo$dataH;
+	}
+};
+var $elm$core$List$sortBy = _List_sortBy;
+var $pablohirafuji$elm_qrcode$QRCode$Encode$getVersion = F3(
+	function (ecLevel, mode, dataLength) {
+		return A2(
+			$elm$core$Result$fromMaybe,
+			$pablohirafuji$elm_qrcode$QRCode$Error$InputLengthOverflow,
+			$elm$core$List$head(
+				A2(
+					$elm$core$List$sortBy,
+					function ($) {
+						return $.capacity;
+					},
+					A2(
+						$elm$core$List$filter,
+						A2($pablohirafuji$elm_qrcode$QRCode$Encode$filterCapacity, mode, dataLength),
+						$pablohirafuji$elm_qrcode$QRCode$GroupInfo$getGroupData(ecLevel)))));
+	});
+var $pablohirafuji$elm_qrcode$QRCode$Encode$versionToModel = F5(
+	function (inputStr, ecLevel, mode, partialBitsCount, groupInfo) {
+		return {
+			bitsCount: partialBitsCount + A2($pablohirafuji$elm_qrcode$QRCode$Encode$charCountIndicatorLength, mode, groupInfo.version),
+			ecLevel: ecLevel,
+			groupInfo: groupInfo,
+			inputStr: inputStr,
+			mode: mode
+		};
+	});
+var $pablohirafuji$elm_qrcode$QRCode$Encode$selectVersion = F4(
+	function (inputStr, ecLevel, mode, encodedStr) {
+		var partialBitsCount = 4 + A3(
+			$elm$core$List$foldl,
+			F2(
+				function (a, b) {
+					return a.b + b;
+				}),
+			0,
+			encodedStr);
+		return A2(
+			$elm$core$Result$map,
+			function (b) {
+				return _Utils_Tuple2(encodedStr, b);
+			},
+			A2(
+				$elm$core$Result$map,
+				A4($pablohirafuji$elm_qrcode$QRCode$Encode$versionToModel, inputStr, ecLevel, mode, partialBitsCount),
+				A3($pablohirafuji$elm_qrcode$QRCode$Encode$getVersion, ecLevel, mode, partialBitsCount)));
+	});
+var $pablohirafuji$elm_qrcode$QRCode$Encode$breakList = F3(
+	function (checkFinish, _v0, _v1) {
+		breakList:
+		while (true) {
+			var times = _v0.a;
+			var itemCount = _v0.b;
+			var byteList = _v1.a;
+			var progress = _v1.b;
+			if (times > 0) {
+				var remainList = A2($elm$core$List$drop, itemCount, byteList);
+				var block = A2($elm$core$List$take, itemCount, byteList);
+				var $temp$checkFinish = checkFinish,
+					$temp$_v0 = _Utils_Tuple2(times - 1, itemCount),
+					$temp$_v1 = _Utils_Tuple2(
+					remainList,
+					A2($elm$core$List$cons, block, progress));
+				checkFinish = $temp$checkFinish;
+				_v0 = $temp$_v0;
+				_v1 = $temp$_v1;
+				continue breakList;
+			} else {
+				if (checkFinish && ($elm$core$List$length(byteList) > 0)) {
+					return $elm$core$Result$Err($pablohirafuji$elm_qrcode$QRCode$Error$InputLengthOverflow);
+				} else {
+					return $elm$core$Result$Ok(
+						_Utils_Tuple2(byteList, progress));
+				}
+			}
+		}
+	});
+var $pablohirafuji$elm_qrcode$QRCode$Encode$toBlocks = function (_v0) {
+	var model = _v0.a;
+	var groupInfo = model.groupInfo;
+	var byteList = _v0.b;
+	var _v1 = groupInfo.maybeGroup2;
+	if (_v1.$ === 'Just') {
+		var group2 = _v1.a;
+		return A2(
+			$elm$core$Result$map,
+			function (b) {
+				return _Utils_Tuple2(model, b);
+			},
+			A2(
+				$elm$core$Result$map,
+				A2($elm$core$Basics$composeR, $elm$core$Tuple$second, $elm$core$List$reverse),
+				A2(
+					$elm$core$Result$andThen,
+					A2($pablohirafuji$elm_qrcode$QRCode$Encode$breakList, true, group2),
+					A3(
+						$pablohirafuji$elm_qrcode$QRCode$Encode$breakList,
+						false,
+						groupInfo.group1,
+						_Utils_Tuple2(byteList, _List_Nil)))));
+	} else {
+		return A2(
+			$elm$core$Result$map,
+			function (b) {
+				return _Utils_Tuple2(model, b);
+			},
+			A2(
+				$elm$core$Result$map,
+				A2($elm$core$Basics$composeR, $elm$core$Tuple$second, $elm$core$List$reverse),
+				A3(
+					$pablohirafuji$elm_qrcode$QRCode$Encode$breakList,
+					true,
+					groupInfo.group1,
+					_Utils_Tuple2(byteList, _List_Nil))));
+	}
+};
+var $pablohirafuji$elm_qrcode$QRCode$Encode$encode = F2(
+	function (inputStr, ecLevel) {
+		var mode = $pablohirafuji$elm_qrcode$QRCode$Encode$selectMode(inputStr);
+		return A2(
+			$elm$core$Result$map,
+			$pablohirafuji$elm_qrcode$QRCode$Encode$concatTranspose,
+			A2(
+				$elm$core$Result$andThen,
+				$pablohirafuji$elm_qrcode$QRCode$Encode$getErrorCorrection,
+				A2(
+					$elm$core$Result$andThen,
+					$pablohirafuji$elm_qrcode$QRCode$Encode$toBlocks,
+					A2(
+						$elm$core$Result$map,
+						$pablohirafuji$elm_qrcode$QRCode$Encode$addInfoAndFinalBits,
+						A2(
+							$elm$core$Result$andThen,
+							A3($pablohirafuji$elm_qrcode$QRCode$Encode$selectVersion, inputStr, ecLevel, mode),
+							A2($pablohirafuji$elm_qrcode$QRCode$Encode$encoder, mode, inputStr))))));
+	});
+var $pablohirafuji$elm_qrcode$QRCode$fromStringWith = F2(
+	function (ecLevel, input) {
+		return A2(
+			$elm$core$Result$mapError,
+			$pablohirafuji$elm_qrcode$QRCode$convertError,
+			A2(
+				$elm$core$Result$andThen,
+				function (_v0) {
+					var encodeModel = _v0.a;
+					var encodedData = _v0.b;
+					return A2(
+						$elm$core$Result$map,
+						function (matrix) {
+							return $pablohirafuji$elm_qrcode$QRCode$QRCode(
+								{matrix: matrix, version: encodeModel.groupInfo.version});
+						},
+						$pablohirafuji$elm_qrcode$QRCode$Matrix$apply(
+							_Utils_Tuple2(encodeModel, encodedData)));
+				},
+				A2(
+					$pablohirafuji$elm_qrcode$QRCode$Encode$encode,
+					input,
+					$pablohirafuji$elm_qrcode$QRCode$convertEC(ecLevel))));
+	});
+var $pablohirafuji$elm_qrcode$QRCode$fromString = $pablohirafuji$elm_qrcode$QRCode$fromStringWith($pablohirafuji$elm_qrcode$QRCode$Quartile);
+var $elm$svg$Svg$Attributes$height = _VirtualDom_attribute('height');
+var $pablohirafuji$elm_qrcode$QRCode$Render$Svg$moduleSize = 5;
+var $pablohirafuji$elm_qrcode$QRCode$Render$Svg$appendLastRect = function (_v0) {
+	var lastRect = _v0.a;
+	var rowLines = _v0.b;
+	return A2(
+		$elm$core$List$cons,
+		'h' + $elm$core$String$fromInt(lastRect.width * $pablohirafuji$elm_qrcode$QRCode$Render$Svg$moduleSize),
+		rowLines);
+};
+var $elm$core$String$concat = function (strings) {
+	return A2($elm$core$String$join, '', strings);
+};
+var $elm$svg$Svg$Attributes$d = _VirtualDom_attribute('d');
+var $elm$core$String$fromFloat = _String_fromNumber;
+var $elm$svg$Svg$trustedNode = _VirtualDom_nodeNS('http://www.w3.org/2000/svg');
+var $elm$svg$Svg$path = $elm$svg$Svg$trustedNode('path');
+var $elm$svg$Svg$Attributes$shapeRendering = _VirtualDom_attribute('shape-rendering');
+var $elm$svg$Svg$Attributes$stroke = _VirtualDom_attribute('stroke');
+var $elm$svg$Svg$Attributes$strokeWidth = _VirtualDom_attribute('stroke-width');
+var $elm$svg$Svg$Attributes$style = _VirtualDom_attribute('style');
+var $elm$svg$Svg$svg = $elm$svg$Svg$trustedNode('svg');
+var $pablohirafuji$elm_qrcode$QRCode$Render$Svg$toRowLines = F2(
+	function (isDark, _v0) {
+		var lastRect = _v0.a;
+		var rowLines = _v0.b;
+		return isDark ? ((!lastRect.space) ? _Utils_Tuple2(
+			_Utils_update(
+				lastRect,
+				{width: lastRect.width + 1}),
+			rowLines) : _Utils_Tuple2(
+			{space: 0, width: 1},
+			A2(
+				$elm$core$List$cons,
+				$elm$core$String$concat(
+					_List_fromArray(
+						[
+							(lastRect.width > 0) ? ('h' + $elm$core$String$fromInt(lastRect.width * $pablohirafuji$elm_qrcode$QRCode$Render$Svg$moduleSize)) : '',
+							'm',
+							$elm$core$String$fromInt(lastRect.space * $pablohirafuji$elm_qrcode$QRCode$Render$Svg$moduleSize),
+							' 0'
+						])),
+				rowLines))) : _Utils_Tuple2(
+			_Utils_update(
+				lastRect,
+				{space: lastRect.space + 1}),
+			rowLines);
+	});
+var $elm$svg$Svg$Attributes$transform = _VirtualDom_attribute('transform');
+var $elm$svg$Svg$Attributes$viewBox = _VirtualDom_attribute('viewBox');
+var $pablohirafuji$elm_qrcode$QRCode$Render$Svg$viewRow = F3(
+	function (quietZoneSize, rowIndex, rowLines) {
+		return A2(
+			$elm$core$List$cons,
+			'M0 ',
+			A2(
+				$elm$core$List$cons,
+				$elm$core$String$fromInt(rowIndex * $pablohirafuji$elm_qrcode$QRCode$Render$Svg$moduleSize),
+				rowLines));
+	});
+var $pablohirafuji$elm_qrcode$QRCode$Render$Svg$viewBase = F3(
+	function (quietZoneSize, extraAttrs, matrix) {
+		var quietZonePx = quietZoneSize * $pablohirafuji$elm_qrcode$QRCode$Render$Svg$moduleSize;
+		var sizePx = $elm$core$String$fromInt(
+			($elm$core$List$length(matrix) * $pablohirafuji$elm_qrcode$QRCode$Render$Svg$moduleSize) + (2 * quietZonePx));
+		return A2(
+			$elm$svg$Svg$svg,
+			_Utils_ap(
+				_List_fromArray(
+					[
+						$elm$svg$Svg$Attributes$viewBox('0 0 ' + (sizePx + (' ' + sizePx))),
+						$elm$svg$Svg$Attributes$shapeRendering('crispEdges'),
+						$elm$svg$Svg$Attributes$stroke('#000'),
+						$elm$svg$Svg$Attributes$strokeWidth(
+						$elm$core$String$fromInt($pablohirafuji$elm_qrcode$QRCode$Render$Svg$moduleSize) + 'px')
+					]),
+				extraAttrs),
+			function (d) {
+				return _List_fromArray(
+					[
+						A2(
+						$elm$svg$Svg$path,
+						_List_fromArray(
+							[
+								d,
+								$elm$svg$Svg$Attributes$transform(
+								'translate(' + ($elm$core$String$fromInt(quietZonePx) + (', ' + ($elm$core$String$fromFloat(quietZonePx + ($pablohirafuji$elm_qrcode$QRCode$Render$Svg$moduleSize / 2)) + ')')))),
+								$elm$svg$Svg$Attributes$style('stroke-width: 5px')
+							]),
+						_List_Nil)
+					]);
+			}(
+				$elm$svg$Svg$Attributes$d(
+					$elm$core$String$concat(
+						$elm$core$List$concat(
+							A2(
+								$elm$core$List$indexedMap,
+								$pablohirafuji$elm_qrcode$QRCode$Render$Svg$viewRow(quietZoneSize),
+								A2(
+									$elm$core$List$map,
+									A2(
+										$elm$core$Basics$composeR,
+										A2(
+											$elm$core$List$foldl,
+											$pablohirafuji$elm_qrcode$QRCode$Render$Svg$toRowLines,
+											_Utils_Tuple2(
+												{space: 0, width: 0},
+												_List_Nil)),
+										A2($elm$core$Basics$composeR, $pablohirafuji$elm_qrcode$QRCode$Render$Svg$appendLastRect, $elm$core$List$reverse)),
+									matrix)))))));
+	});
+var $pablohirafuji$elm_qrcode$QRCode$Render$Svg$view = $pablohirafuji$elm_qrcode$QRCode$Render$Svg$viewBase(4);
+var $pablohirafuji$elm_qrcode$QRCode$toSvg = F2(
+	function (extraAttrs, _v0) {
+		var matrix = _v0.a.matrix;
+		return A2($pablohirafuji$elm_qrcode$QRCode$Render$Svg$view, extraAttrs, matrix);
+	});
+var $elm$svg$Svg$Attributes$width = _VirtualDom_attribute('width');
+var $elm$core$Result$withDefault = F2(
+	function (def, result) {
+		if (result.$ === 'Ok') {
+			var a = result.a;
+			return a;
+		} else {
+			return def;
+		}
+	});
+var $author$project$Page$Front$viewQRCode = F2(
+	function (baseURL, id) {
+		var message = _Utils_ap(
+			baseURL,
+			$author$project$Route$routeToString(
+				$author$project$Route$Bieter(id)));
+		return A2(
+			$elm$core$Result$withDefault,
+			$elm$html$Html$text('Error while encoding to QRCode.'),
+			A2(
+				$elm$core$Result$map,
+				$pablohirafuji$elm_qrcode$QRCode$toSvg(
+					_List_fromArray(
+						[
+							$elm$svg$Svg$Attributes$width('100px'),
+							$elm$svg$Svg$Attributes$height('100px')
+						])),
+				$pablohirafuji$elm_qrcode$QRCode$fromString(message)));
+	});
+var $author$project$Page$Front$viewBieter = F2(
+	function (baseURL, bieter) {
+		return {
+			content: A2(
+				$elm$html$Html$div,
+				_List_Nil,
+				_List_fromArray(
+					[
+						A2(
+						$elm$html$Html$h1,
+						_List_Nil,
+						_List_fromArray(
+							[
+								$elm$html$Html$text('Hallo ' + bieter.name)
+							])),
+						A2(
+						$elm$html$Html$div,
+						_List_Nil,
+						_List_fromArray(
+							[
+								$elm$html$Html$text('Deine Bieternummer ist '),
+								A2(
+								$elm$html$Html$strong,
+								_List_Nil,
+								_List_fromArray(
+									[
+										$elm$html$Html$text(
+										$author$project$Bieter$idToString(bieter.id))
+									])),
+								$elm$html$Html$text('. Merke sie dir gut. Du brauchst sie für die nächste anmeldung')
+							])),
+						A2(
+						$elm$html$Html$div,
+						_List_Nil,
+						_List_fromArray(
+							[
+								$elm$html$Html$text('Adresse: ' + bieter.adresse)
+							])),
+						A2(
+						$elm$html$Html$div,
+						_List_Nil,
+						_List_fromArray(
+							[
+								$elm$html$Html$text('IBAN: ' + bieter.iban)
+							])),
+						A2(
+						$elm$html$Html$div,
+						_List_Nil,
+						_List_fromArray(
+							[
+								A2(
+								$elm$html$Html$button,
+								_List_fromArray(
+									[
+										$elm$html$Html$Events$onClick($author$project$Page$Front$GotoEditPage)
+									]),
+								_List_fromArray(
+									[
+										$elm$html$Html$text('Bearbeiten')
+									]))
+							])),
+						A2($author$project$Page$Front$viewQRCode, baseURL, bieter.id)
+					])),
+			title: 'Bieter'
+		};
+	});
 var $author$project$Page$Front$FormGoBack = {$: 'FormGoBack'};
 var $author$project$Page$Front$FormSaveAdresse = function (a) {
 	return {$: 'FormSaveAdresse', a: a};
@@ -7871,7 +12324,7 @@ var $author$project$Page$Front$viewEdit = function (model) {
 	var _v0 = model.draftBieter;
 	if (_v0.$ === 'Nothing') {
 		return {
-			content: $elm$html$Html$text('TODO invalid state'),
+			content: $elm$html$Html$text('TODO invalid state. DraftBieter is Nothing on edit view'),
 			title: 'Error'
 		};
 	} else {
@@ -8112,7 +12565,7 @@ var $author$project$Page$Front$view = function (model) {
 		var bieter = maybeBieter.a;
 		var _v1 = model.page;
 		if (_v1.$ === 'Show') {
-			return $author$project$Page$Front$viewBieter(bieter);
+			return A2($author$project$Page$Front$viewBieter, model.session.baseURL, bieter);
 		} else {
 			var _v2 = $author$project$Page$Front$viewEdit(model);
 			var title = _v2.title;
@@ -8158,9 +12611,9 @@ var $author$project$Main$view = function (model) {
 			return {
 				body: _List_fromArray(
 					[
-						$elm$html$Html$text('todo other')
+						$elm$html$Html$text('')
 					]),
-				title: 'todo'
+				title: ''
 			};
 	}
 };

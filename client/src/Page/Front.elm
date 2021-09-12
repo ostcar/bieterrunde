@@ -6,7 +6,10 @@ import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Http
 import Json.Encode as Encode
+import QRCode
+import Route
 import Session exposing (Session)
+import Svg.Attributes as SvgA
 
 
 type alias Model =
@@ -66,7 +69,7 @@ update msg model =
             updateEditPage model editMsg
 
         GotoEditPage ->
-            ( { model | page = Edit }
+            ( { model | page = Edit, draftBieter = Session.toBieter model.session }
             , Cmd.none
             )
 
@@ -251,7 +254,7 @@ view model =
         Just bieter ->
             case model.page of
                 Show ->
-                    viewBieter bieter
+                    viewBieter model.session.baseURL bieter
 
                 Edit ->
                     let
@@ -319,8 +322,8 @@ maybeError errorMsg =
             text ""
 
 
-viewBieter : Bieter.Bieter -> { title : String, content : Html Msg }
-viewBieter bieter =
+viewBieter : String -> Bieter.Bieter -> { title : String, content : Html Msg }
+viewBieter baseURL bieter =
     { title = "Bieter"
     , content =
         div []
@@ -333,15 +336,32 @@ viewBieter bieter =
             , div [] [ text ("Adresse: " ++ bieter.adresse) ]
             , div [] [ text ("IBAN: " ++ bieter.iban) ]
             , div [] [ button [ onClick GotoEditPage ] [ text "Bearbeiten" ] ]
+            , viewQRCode baseURL bieter.id
             ]
     }
+
+
+viewQRCode : String -> Bieter.ID -> Html msg
+viewQRCode baseURL id =
+    let
+        message =
+            baseURL ++ Route.routeToString (Route.Bieter id)
+    in
+    QRCode.fromString message
+        |> Result.map
+            (QRCode.toSvg
+                [ SvgA.width "100px"
+                , SvgA.height "100px"
+                ]
+            )
+        |> Result.withDefault (Html.text "Error while encoding to QRCode.")
 
 
 viewEdit : Model -> { title : String, content : Html EditPageMsg }
 viewEdit model =
     case model.draftBieter of
         Nothing ->
-            { title = "Error", content = text "TODO invalid state" }
+            { title = "Error", content = text "TODO invalid state. DraftBieter is Nothing on edit view" }
 
         Just bieter ->
             { title = "Edit Bieter " ++ bieter.name

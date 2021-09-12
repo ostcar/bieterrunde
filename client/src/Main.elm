@@ -79,16 +79,37 @@ init flags url navKey =
         ( session, cmd ) =
             case parseFlags flags of
                 Nothing ->
-                    ( Session.anonymous navKey, Cmd.none )
+                    ( Session.anonymous navKey (absUrl url), Cmd.none )
 
                 Just bieterID ->
-                    Session.loadBieter (Session.anonymous navKey) ReceivedBieter bieterID
+                    Session.loadBieter (Session.anonymous navKey (absUrl url)) ReceivedBieter bieterID
 
         ( model, changePageCmd ) =
-            changeRouteTo (Route.fromUrl url)
-                (Redirect session)
+            changeRouteTo (Route.fromUrl url) session
     in
     ( model, Cmd.batch [ cmd, changePageCmd ] )
+
+
+absUrl : Url -> String
+absUrl url =
+    let
+        proto =
+            case url.protocol of
+                Url.Http ->
+                    "http://"
+
+                Url.Https ->
+                    "https://"
+
+        port_ =
+            case url.port_ of
+                Nothing ->
+                    ""
+
+                Just i ->
+                    ":" ++ String.fromInt i
+    in
+    proto ++ url.host ++ port_ ++ "/"
 
 
 parseFlags : Maybe String -> Maybe Bieter.ID
@@ -110,8 +131,8 @@ update msg model =
                     , cmd
                     )
 
-                Err e ->
-                    -- todo
+                Err _ ->
+                    -- Ignore an the error. The user will land on the login page with the bieter nr typed in.
                     ( model, Cmd.none )
 
         ( LinkClicked urlRequest, _ ) ->
@@ -142,15 +163,15 @@ update msg model =
                     )
 
         ( UrlChanged url, _ ) ->
-            changeRouteTo (Route.fromUrl url) model
+            changeRouteTo (Route.fromUrl url) (toSession model)
 
         ( GotFrontMsg subMsg, Front pageModel ) ->
             Front.update subMsg pageModel
-                |> updateWith Front GotFrontMsg model
+                |> updateWith Front GotFrontMsg
 
         ( GotAdminMsg subMsg, Admin pageModel ) ->
             Admin.update subMsg pageModel
-                |> updateWith Admin GotAdminMsg model
+                |> updateWith Admin GotAdminMsg
 
         ( _, _ ) ->
             ( model, Cmd.none )
@@ -161,38 +182,39 @@ subscriptions _ =
     Sub.none
 
 
-changeRouteTo : Maybe Route -> Model -> ( Model, Cmd Msg )
-changeRouteTo maybeRoute model =
-    let
-        session =
-            toSession model
-    in
+changeRouteTo : Maybe Route -> Session -> ( Model, Cmd Msg )
+changeRouteTo maybeRoute session =
     case maybeRoute of
         Nothing ->
             ( NotFound session, Cmd.none )
 
         Just Route.Admin ->
             Admin.init session
-                |> updateWith Admin GotAdminMsg model
+                |> updateWith Admin GotAdminMsg
 
         Just Route.Front ->
             Front.init session
-                |> updateWith Front GotFrontMsg model
+                |> updateWith Front GotFrontMsg
 
         Just (Route.Bieter id) ->
-            -- TODO: Save id and redirect to home page
-            ( model, Route.replaceUrl (Session.navKey session) Route.Front )
+            let
+                ( newSession, cmdLoadBieter ) =
+                    Session.loadBieter session ReceivedBieter id
+            in
+            ( Redirect newSession
+            , Cmd.batch [ cmdLoadBieter, Route.replaceUrl (Session.navKey newSession) Route.Front ]
+            )
 
         Just Route.Logout ->
             let
                 ( newSession, cmdLogout ) =
-                    Session.loggedOut (toSession model)
+                    Session.loggedOut session
             in
             ( Redirect newSession, cmdLogout )
 
 
-updateWith : (subModel -> Model) -> (subMsg -> Msg) -> Model -> ( subModel, Cmd subMsg ) -> ( Model, Cmd Msg )
-updateWith toModel toMsg _ ( subModel, subCmd ) =
+updateWith : (subModel -> Model) -> (subMsg -> Msg) -> ( subModel, Cmd subMsg ) -> ( Model, Cmd Msg )
+updateWith toModel toMsg ( subModel, subCmd ) =
     ( toModel subModel
     , Cmd.map toMsg subCmd
     )
@@ -218,6 +240,6 @@ view model =
             viewPage GotAdminMsg (Admin.view admin)
 
         _ ->
-            { title = "todo"
-            , body = [ text "todo other" ]
+            { title = ""
+            , body = [ text "" ]
             }
