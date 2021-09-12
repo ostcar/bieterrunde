@@ -77,6 +77,9 @@ tasks:
       
         You manually have to create a git tag and set the
         ENC-variable `GITHUB_TOKEN`.
+
+        git tag v0.1.0
+        export GITHUB_TOKEN=12345
     cmds:
       - goreleaser release
       
