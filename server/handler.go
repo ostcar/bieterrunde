@@ -194,8 +194,20 @@ func handleBieterList(router *mux.Router, db *Database, config Config) {
 
 // handleState gets or sets the service status.
 func handleState(router *mux.Router, db *Database, config Config) {
-	router.Path(pathPrefixAPI + "/state").Methods("GET").
+	router.Path(pathPrefixAPI+"/state").Methods("GET", "PUT").
 		HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.Method == "PUT" {
+				if !isAdmin(r, config) {
+					handleError(w, clientError{msg: "not allowed", status: 403})
+					return
+				}
+
+				if err := db.SetState(r.Body); err != nil {
+					handleError(w, fmt.Errorf("set state: %w", err))
+					return
+				}
+			}
+
 			s := db.State()
 			response := struct {
 				State int    `json:"state"`
@@ -211,16 +223,6 @@ func handleState(router *mux.Router, db *Database, config Config) {
 			}
 		})
 
-	router.Path(pathPrefixAPI + "/status").Methods("PUT").
-		HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if !isAdmin(r, config) {
-				handleError(w, clientError{msg: "not allowed", status: 403})
-			}
-
-			if err := db.SetState(r.Body); err != nil {
-				handleError(w, fmt.Errorf("set state: %w", err))
-			}
-		})
 }
 
 func handleSetOffer(router *mux.Router, db *Database, config Config) {
@@ -271,7 +273,7 @@ func (fs MultiFS) Open(name string) (fs.File, error) {
 
 func loggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Println(r.RequestURI)
+		log.Println(r.Method + " " + r.RequestURI)
 		next.ServeHTTP(w, r)
 	})
 }

@@ -1,4 +1,4 @@
-module Session exposing (Session, anonymous, headers, isAdmin, loadBieter, loadState, loggedIn, loggedOut, navKey, stateChanged, toBieter, toBieterID)
+module Session exposing (Session, anonymous, headers, isAdmin, loadBieter, loadState, loggedIn, loggedOut, navKey, stateChanged, toBieter, toBieterID, withAdmin)
 
 import Bieter
 import Browser.Navigation as Navigation
@@ -69,10 +69,10 @@ toBieter s =
         LoggedIn b ->
             Just b
 
-        Guest ->
+        Loading _ ->
             Nothing
 
-        Loading _ ->
+        Guest ->
             Nothing
 
 
@@ -116,3 +116,13 @@ isAdmin session =
 
         NoAdmin ->
             False
+
+
+withAdmin : Maybe String -> Session -> Session
+withAdmin maybePassword session =
+    case maybePassword of
+        Just pw ->
+            { session | admin = IsAdmin pw }
+
+        Nothing ->
+            { session | admin = NoAdmin }

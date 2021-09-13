@@ -156,7 +156,7 @@ const (
 )
 
 func (s ServiceState) String() string {
-	return [...]string{"Ungültig", "Registrierung", "Überprüfung", "Gebote"}[s]
+	return [...]string{"0 - Ungültig", "1 - Registrierung", "2 - Überprüfung", "3 - Gebote"}[s]
 }
 
 // Bieter returns the  data for a bieterID.

@@ -1,48 +1,60 @@
-module Page.Admin exposing (Model, Msg, init, subscriptions, toSession, update, updateSession, view)
+module Page.Admin exposing (Model, Msg, init, toSession, update, updateSession, view)
 
 import Bieter
 import Html exposing (..)
 import Html.Attributes exposing (..)
-import Html.Events exposing (onClick, onInput)
+import Html.Events exposing (..)
 import Http
 import Route
 import Session exposing (Session)
+import State exposing (State(..))
 
 
 type alias Model =
     { session : Session
-    , bieter : Maybe (List Bieter.Bieter)
-    , password : Maybe String
+    , bieterList : Maybe (List Bieter.Bieter)
     , formPassword : String
     , fetchErrorMsg : Maybe String
+    , setStateErrorMsg : Maybe String
     }
 
 
 type Msg
-    = RequestBieter
+    = Reload
     | ReceivedBieter (Result Http.Error (List Bieter.Bieter))
     | LoginFormSavePassword String
     | LoginFormSubmit
-    | LoginFormGoBack
+    | SetState String
+    | SetStateResult (Result Http.Error State.State)
 
 
 init : Session -> ( Model, Cmd Msg )
 init session =
-    ( Model session Nothing Nothing "" Nothing
-    , Cmd.none
+    let
+        cmd =
+            if Session.isAdmin session then
+                fetchBieterList session
+
+            else
+                Cmd.none
+    in
+    ( Model session Nothing "" Nothing Nothing
+    , cmd
     )
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        RequestBieter ->
-            case model.password of
-                Just pw ->
-                    ( model, fetchBieter pw )
-
-                Nothing ->
-                    ( model, Cmd.none )
+        Reload ->
+            -- TODO reset state
+            let
+                ( newSession, cmdSetState ) =
+                    Session.loadState model.session SetStateResult
+            in
+            ( { model | session = newSession }
+            , Cmd.batch [ fetchBieterList model.session, cmdSetState ]
+            )
 
         ReceivedBieter response ->
             fetchBieterResponse model response
@@ -53,37 +65,49 @@ update msg model =
             )
 
         LoginFormSubmit ->
+            if model.formPassword == "" then
+                ( model, Cmd.none )
+
+            else
+                let
+                    session =
+                        Session.withAdmin (Just model.formPassword) model.session
+                in
+                ( { model | session = session }
+                , fetchBieterList session
+                )
+
+        SetState state ->
             let
-                pw =
-                    if model.formPassword == "" then
-                        Nothing
-
-                    else
-                        Just model.formPassword
-
-                cmd =
-                    case pw of
-                        Nothing ->
-                            Cmd.none
-
-                        Just password ->
-                            fetchBieter password
+                newSession =
+                    Session.stateChanged model.session State.Loading
             in
-            ( { model | password = pw }
-            , cmd
+            ( { model | session = newSession }
+            , State.setState SetStateResult (Session.headers model.session) (State.fromString state)
             )
 
-        LoginFormGoBack ->
-            ( model
-            , Route.replaceUrl (Session.navKey model.session) Route.Front
-            )
+        SetStateResult result ->
+            case result of
+                Ok state ->
+                    let
+                        newSession =
+                            Session.stateChanged model.session state
+                    in
+                    ( { model | session = newSession }
+                    , Cmd.none
+                    )
+
+                Err e ->
+                    ( { model | setStateErrorMsg = Just (buildErrorMessage e) }
+                    , Cmd.none
+                    )
 
 
-fetchBieter : String -> Cmd Msg
-fetchBieter password =
+fetchBieterList : Session -> Cmd Msg
+fetchBieterList session =
     Http.request
         { method = "GET"
-        , headers = [ Http.header "Auth" password ]
+        , headers = Session.headers session
         , url = "/api/bieter"
         , body = Http.emptyBody
         , expect =
@@ -98,7 +122,7 @@ fetchBieterResponse : Model -> Result Http.Error (List Bieter.Bieter) -> ( Model
 fetchBieterResponse model response =
     case response of
         Ok a ->
-            ( { model | bieter = Just a, fetchErrorMsg = Nothing }
+            ( { model | bieterList = Just a, fetchErrorMsg = Nothing }
             , Cmd.none
             )
 
@@ -110,7 +134,7 @@ fetchBieterResponse model response =
             case e of
                 Http.BadStatus status ->
                     if status == 401 then
-                        ( { model | password = Nothing, fetchErrorMsg = Just "Passwort is falsch" }
+                        ( { model | session = Session.withAdmin Nothing model.session, fetchErrorMsg = Just "Passwort is falsch" }
                         , Cmd.none
                         )
 
@@ -144,37 +168,73 @@ buildErrorMessage httpError =
             message
 
 
-subscriptions : Model -> Sub Msg
-subscriptions _ =
-    Sub.none
-
-
 view : Model -> { title : String, content : Html Msg }
 view model =
     let
         content =
-            case model.password of
-                Nothing ->
-                    viewLogin model
+            if Session.isAdmin model.session then
+                viewAdmin model
 
-                Just _ ->
-                    case model.bieter of
-                        Just bieter ->
-                            viewList bieter
-
-                        Nothing ->
-                            text "Keine Bieter vorhanden"
+            else
+                viewLogin model
     in
     { title = "Admin"
     , content = content
     }
 
 
+viewAdmin : Model -> Html Msg
+viewAdmin model =
+    let
+        bieterList =
+            case model.bieterList of
+                Just bieter ->
+                    viewList bieter
+
+                Nothing ->
+                    div [] [ text "Keine Bieter vorhanden" ]
+    in
+    div []
+        [ h1 [] [ text "Admin" ]
+        , button [ onClick Reload ] [ text "reload" ]
+        , viewStatusSelect model
+        , bieterList
+        , a [ Route.href Route.Front ] [ text "zurück" ]
+        ]
+
+
+viewStatusSelect : Model -> Html Msg
+viewStatusSelect model =
+    let
+        state =
+            model.session.state
+
+        maybeOption =
+            case state of
+                Loading ->
+                    option [ selected True, disabled True ] [ text ("--" ++ State.toString State.Loading ++ "--") ]
+
+                Unknown ->
+                    option [ selected True, disabled True ] [ text ("--" ++ State.toString State.Unknown ++ "--") ]
+
+                _ ->
+                    text ""
+    in
+    div []
+        [ maybeError model.setStateErrorMsg
+        , select [ onInput SetState ]
+            [ maybeOption
+            , option [ selected (state == State.Registration) ] [ text (State.toString State.Registration) ]
+            , option [ selected (state == State.Validation) ] [ text (State.toString State.Validation) ]
+            , option [ selected (state == State.Offer) ] [ text (State.toString State.Offer) ]
+            ]
+        ]
+
+
 viewList : List Bieter.Bieter -> Html Msg
 viewList bieter =
     div []
-        [ h1 [] [ text "Bieter" ]
-        , text ("Anzahl:" ++ String.fromInt (List.length bieter))
+        [ text ("Anzahl:" ++ String.fromInt (List.length bieter))
         , table []
             (viewBieterTableHeader :: List.map viewBieterLine bieter)
         ]
@@ -205,21 +265,19 @@ viewLogin model =
     div []
         [ h1 [] [ text "Admin login" ]
         , maybeError model.fetchErrorMsg
-        , div []
+        , Html.form [ onSubmit LoginFormSubmit ]
             [ text "Passwort"
             , input
                 [ type_ "password"
                 , value model.formPassword
                 , onInput LoginFormSavePassword
+                , autofocus True
                 ]
                 []
             , div []
                 [ button
-                    [ onClick LoginFormSubmit ]
+                    [ type_ "submit" ]
                     [ text "Absenden" ]
-                , button
-                    [ onClick LoginFormGoBack ]
-                    [ text "Zurück" ]
                 ]
             ]
         ]

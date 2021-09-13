@@ -63,10 +63,10 @@ urlParser =
 
 
 fetch : (Result Http.Error Bieter -> msg) -> String -> Cmd msg
-fetch m id =
+fetch result id =
     Http.get
         { url = "/api/bieter/" ++ id
         , expect =
             bieterDecoder
-                |> Http.expectJson m
+                |> Http.expectJson result
         }

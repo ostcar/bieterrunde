@@ -5716,53 +5716,11 @@ var $author$project$Main$Redirect = function (a) {
 	return {$: 'Redirect', a: a};
 };
 var $author$project$Page$Admin$Model = F5(
-	function (session, bieter, password, formPassword, fetchErrorMsg) {
-		return {bieter: bieter, fetchErrorMsg: fetchErrorMsg, formPassword: formPassword, password: password, session: session};
+	function (session, bieterList, formPassword, fetchErrorMsg, setStateErrorMsg) {
+		return {bieterList: bieterList, fetchErrorMsg: fetchErrorMsg, formPassword: formPassword, session: session, setStateErrorMsg: setStateErrorMsg};
 	});
-var $elm$core$Platform$Cmd$none = $elm$core$Platform$Cmd$batch(_List_Nil);
-var $author$project$Page$Admin$init = function (session) {
-	return _Utils_Tuple2(
-		A5($author$project$Page$Admin$Model, session, $elm$core$Maybe$Nothing, $elm$core$Maybe$Nothing, '', $elm$core$Maybe$Nothing),
-		$elm$core$Platform$Cmd$none);
-};
-var $author$project$Page$Front$Model = F7(
-	function (session, page, loginErrorMsg, loginFormBieterNr, loginFormBieterName, editErrorMsg, draftBieter) {
-		return {draftBieter: draftBieter, editErrorMsg: editErrorMsg, loginErrorMsg: loginErrorMsg, loginFormBieterName: loginFormBieterName, loginFormBieterNr: loginFormBieterNr, page: page, session: session};
-	});
-var $author$project$Page$Front$Show = {$: 'Show'};
-var $author$project$Bieter$idToString = function (_v0) {
-	var id = _v0.a;
-	return id;
-};
-var $author$project$Session$toBieterID = function (s) {
-	var _v0 = s.viewer;
-	switch (_v0.$) {
-		case 'LoggedIn':
-			var bieter = _v0.a;
-			return $elm$core$Maybe$Just(bieter.id);
-		case 'Loading':
-			var id = _v0.a;
-			return $elm$core$Maybe$Just(id);
-		default:
-			return $elm$core$Maybe$Nothing;
-	}
-};
-var $author$project$Page$Front$init = function (session) {
-	var bieterID = function () {
-		var _v0 = $author$project$Session$toBieterID(session);
-		if (_v0.$ === 'Nothing') {
-			return '';
-		} else {
-			var id = _v0.a;
-			return $author$project$Bieter$idToString(id);
-		}
-	}();
-	return _Utils_Tuple2(
-		A7($author$project$Page$Front$Model, session, $author$project$Page$Front$Show, $elm$core$Maybe$Nothing, bieterID, '', $elm$core$Maybe$Nothing, $elm$core$Maybe$Nothing),
-		$elm$core$Platform$Cmd$none);
-};
-var $author$project$Session$Loading = function (a) {
-	return {$: 'Loading', a: a};
+var $author$project$Page$Admin$ReceivedBieter = function (a) {
+	return {$: 'ReceivedBieter', a: a};
 };
 var $author$project$Bieter$Bieter = F4(
 	function (id, name, adresse, iban) {
@@ -5858,7 +5816,8 @@ var $author$project$Bieter$bieterDecoder = A4(
 				'id',
 				$author$project$Bieter$idDecoder,
 				$elm$json$Json$Decode$succeed($author$project$Bieter$Bieter)))));
-var $elm$json$Json$Decode$decodeString = _Json_runOnString;
+var $elm$json$Json$Decode$list = _Json_decodeList;
+var $author$project$Bieter$bieterListDecoder = $elm$json$Json$Decode$list($author$project$Bieter$bieterDecoder);
 var $elm$http$Http$BadStatus_ = F2(
 	function (a, b) {
 		return {$: 'BadStatus_', a: a, b: b};
@@ -6401,6 +6360,8 @@ var $elm$core$Dict$update = F3(
 			return A2($elm$core$Dict$remove, targetKey, dictionary);
 		}
 	});
+var $elm$http$Http$emptyBody = _Http_emptyBody;
+var $elm$json$Json$Decode$decodeString = _Json_runOnString;
 var $elm$core$Basics$composeR = F3(
 	function (f, g, x) {
 		return g(
@@ -6472,7 +6433,23 @@ var $elm$http$Http$expectJson = F2(
 						A2($elm$json$Json$Decode$decodeString, decoder, string));
 				}));
 	});
-var $elm$http$Http$emptyBody = _Http_emptyBody;
+var $elm$http$Http$Header = F2(
+	function (a, b) {
+		return {$: 'Header', a: a, b: b};
+	});
+var $elm$http$Http$header = $elm$http$Http$Header;
+var $author$project$Session$headers = function (s) {
+	var _v0 = s.admin;
+	if (_v0.$ === 'IsAdmin') {
+		var pw = _v0.a;
+		return _List_fromArray(
+			[
+				A2($elm$http$Http$header, 'auth', pw)
+			]);
+	} else {
+		return _List_Nil;
+	}
+};
 var $elm$http$Http$Request = function (a) {
 	return {$: 'Request', a: a};
 };
@@ -6641,15 +6618,81 @@ var $elm$http$Http$request = function (r) {
 		$elm$http$Http$Request(
 			{allowCookiesFromOtherDomains: false, body: r.body, expect: r.expect, headers: r.headers, method: r.method, timeout: r.timeout, tracker: r.tracker, url: r.url}));
 };
+var $author$project$Page$Admin$fetchBieterList = function (session) {
+	return $elm$http$Http$request(
+		{
+			body: $elm$http$Http$emptyBody,
+			expect: A2($elm$http$Http$expectJson, $author$project$Page$Admin$ReceivedBieter, $author$project$Bieter$bieterListDecoder),
+			headers: $author$project$Session$headers(session),
+			method: 'GET',
+			timeout: $elm$core$Maybe$Nothing,
+			tracker: $elm$core$Maybe$Nothing,
+			url: '/api/bieter'
+		});
+};
+var $author$project$Session$isAdmin = function (session) {
+	var _v0 = session.admin;
+	if (_v0.$ === 'IsAdmin') {
+		return true;
+	} else {
+		return false;
+	}
+};
+var $elm$core$Platform$Cmd$none = $elm$core$Platform$Cmd$batch(_List_Nil);
+var $author$project$Page$Admin$init = function (session) {
+	var cmd = $author$project$Session$isAdmin(session) ? $author$project$Page$Admin$fetchBieterList(session) : $elm$core$Platform$Cmd$none;
+	return _Utils_Tuple2(
+		A5($author$project$Page$Admin$Model, session, $elm$core$Maybe$Nothing, '', $elm$core$Maybe$Nothing, $elm$core$Maybe$Nothing),
+		cmd);
+};
+var $author$project$Page$Front$Model = F7(
+	function (session, page, loginErrorMsg, loginFormBieterNr, loginFormBieterName, editErrorMsg, draftBieter) {
+		return {draftBieter: draftBieter, editErrorMsg: editErrorMsg, loginErrorMsg: loginErrorMsg, loginFormBieterName: loginFormBieterName, loginFormBieterNr: loginFormBieterNr, page: page, session: session};
+	});
+var $author$project$Page$Front$Show = {$: 'Show'};
+var $author$project$Bieter$idToString = function (_v0) {
+	var id = _v0.a;
+	return id;
+};
+var $author$project$Session$toBieterID = function (s) {
+	var _v0 = s.viewer;
+	switch (_v0.$) {
+		case 'LoggedIn':
+			var bieter = _v0.a;
+			return $elm$core$Maybe$Just(bieter.id);
+		case 'Loading':
+			var id = _v0.a;
+			return $elm$core$Maybe$Just(id);
+		default:
+			return $elm$core$Maybe$Nothing;
+	}
+};
+var $author$project$Page$Front$init = function (session) {
+	var bieterID = function () {
+		var _v0 = $author$project$Session$toBieterID(session);
+		if (_v0.$ === 'Nothing') {
+			return '';
+		} else {
+			var id = _v0.a;
+			return $author$project$Bieter$idToString(id);
+		}
+	}();
+	return _Utils_Tuple2(
+		A7($author$project$Page$Front$Model, session, $author$project$Page$Front$Show, $elm$core$Maybe$Nothing, bieterID, '', $elm$core$Maybe$Nothing, $elm$core$Maybe$Nothing),
+		$elm$core$Platform$Cmd$none);
+};
+var $author$project$Session$Loading = function (a) {
+	return {$: 'Loading', a: a};
+};
 var $elm$http$Http$get = function (r) {
 	return $elm$http$Http$request(
 		{body: $elm$http$Http$emptyBody, expect: r.expect, headers: _List_Nil, method: 'GET', timeout: $elm$core$Maybe$Nothing, tracker: $elm$core$Maybe$Nothing, url: r.url});
 };
 var $author$project$Bieter$fetch = F2(
-	function (m, id) {
+	function (result, id) {
 		return $elm$http$Http$get(
 			{
-				expect: A2($elm$http$Http$expectJson, m, $author$project$Bieter$bieterDecoder),
+				expect: A2($elm$http$Http$expectJson, result, $author$project$Bieter$bieterDecoder),
 				url: '/api/bieter/' + id
 			});
 	});
@@ -7132,10 +7175,10 @@ var $author$project$State$decoder = A3(
 	'state',
 	$elm$json$Json$Decode$int,
 	$elm$json$Json$Decode$succeed($author$project$State$stateDecoder));
-var $author$project$State$fetch = function (m) {
+var $author$project$State$fetch = function (result) {
 	return $elm$http$Http$get(
 		{
-			expect: A2($elm$http$Http$expectJson, m, $author$project$State$decoder),
+			expect: A2($elm$http$Http$expectJson, result, $author$project$State$decoder),
 			url: '/api/state'
 		});
 };
@@ -7288,30 +7331,8 @@ var $elm$url$Url$toString = function (url) {
 					_Utils_ap(http, url.host)),
 				url.path)));
 };
-var $author$project$Page$Admin$ReceivedBieter = function (a) {
-	return {$: 'ReceivedBieter', a: a};
-};
-var $elm$json$Json$Decode$list = _Json_decodeList;
-var $author$project$Bieter$bieterListDecoder = $elm$json$Json$Decode$list($author$project$Bieter$bieterDecoder);
-var $elm$http$Http$Header = F2(
-	function (a, b) {
-		return {$: 'Header', a: a, b: b};
-	});
-var $elm$http$Http$header = $elm$http$Http$Header;
-var $author$project$Page$Admin$fetchBieter = function (password) {
-	return $elm$http$Http$request(
-		{
-			body: $elm$http$Http$emptyBody,
-			expect: A2($elm$http$Http$expectJson, $author$project$Page$Admin$ReceivedBieter, $author$project$Bieter$bieterListDecoder),
-			headers: _List_fromArray(
-				[
-					A2($elm$http$Http$header, 'Auth', password)
-				]),
-			method: 'GET',
-			timeout: $elm$core$Maybe$Nothing,
-			tracker: $elm$core$Maybe$Nothing,
-			url: '/api/bieter'
-		});
+var $author$project$Page$Admin$SetStateResult = function (a) {
+	return {$: 'SetStateResult', a: a};
 };
 var $author$project$Page$Admin$buildErrorMessage = function (httpError) {
 	switch (httpError.$) {
@@ -7330,6 +7351,24 @@ var $author$project$Page$Admin$buildErrorMessage = function (httpError) {
 			return message;
 	}
 };
+var $author$project$Session$IsAdmin = function (a) {
+	return {$: 'IsAdmin', a: a};
+};
+var $author$project$Session$withAdmin = F2(
+	function (maybePassword, session) {
+		if (maybePassword.$ === 'Just') {
+			var pw = maybePassword.a;
+			return _Utils_update(
+				session,
+				{
+					admin: $author$project$Session$IsAdmin(pw)
+				});
+		} else {
+			return _Utils_update(
+				session,
+				{admin: $author$project$Session$NoAdmin});
+		}
+	});
 var $author$project$Page$Admin$fetchBieterResponse = F2(
 	function (model, response) {
 		if (response.$ === 'Ok') {
@@ -7338,7 +7377,7 @@ var $author$project$Page$Admin$fetchBieterResponse = F2(
 				_Utils_update(
 					model,
 					{
-						bieter: $elm$core$Maybe$Just(a),
+						bieterList: $elm$core$Maybe$Just(a),
 						fetchErrorMsg: $elm$core$Maybe$Nothing
 					}),
 				$elm$core$Platform$Cmd$none);
@@ -7353,7 +7392,7 @@ var $author$project$Page$Admin$fetchBieterResponse = F2(
 						model,
 						{
 							fetchErrorMsg: $elm$core$Maybe$Just('Passwort is falsch'),
-							password: $elm$core$Maybe$Nothing
+							session: A2($author$project$Session$withAdmin, $elm$core$Maybe$Nothing, model.session)
 						}),
 					$elm$core$Platform$Cmd$none) : _Utils_Tuple2(
 					_Utils_update(
@@ -7369,19 +7408,72 @@ var $author$project$Page$Admin$fetchBieterResponse = F2(
 			}
 		}
 	});
+var $author$project$State$loading = 'Wird geladen';
+var $author$project$State$offer = 'Bieten';
+var $author$project$State$registration = 'Registrierung';
+var $author$project$State$validation = 'Überprüfung';
+var $author$project$State$fromString = function (state) {
+	return _Utils_eq(state, $author$project$State$loading) ? $author$project$State$Loading : (_Utils_eq(state, $author$project$State$registration) ? $author$project$State$Registration : (_Utils_eq(state, $author$project$State$validation) ? $author$project$State$Validation : (_Utils_eq(state, $author$project$State$offer) ? $author$project$State$Offer : $author$project$State$Unknown)));
+};
+var $elm$http$Http$jsonBody = function (value) {
+	return A2(
+		_Http_pair,
+		'application/json',
+		A2($elm$json$Json$Encode$encode, 0, value));
+};
+var $elm$json$Json$Encode$int = _Json_wrap;
+var $author$project$State$stateEncoder = function (state) {
+	var stateNr = function () {
+		switch (state.$) {
+			case 'Registration':
+				return 1;
+			case 'Validation':
+				return 2;
+			case 'Offer':
+				return 3;
+			default:
+				return 0;
+		}
+	}();
+	return $elm$json$Json$Encode$object(
+		_List_fromArray(
+			[
+				_Utils_Tuple2(
+				'state',
+				$elm$json$Json$Encode$int(stateNr))
+			]));
+};
+var $author$project$State$setState = F3(
+	function (result, header, state) {
+		return $elm$http$Http$request(
+			{
+				body: $elm$http$Http$jsonBody(
+					$author$project$State$stateEncoder(state)),
+				expect: A2($elm$http$Http$expectJson, result, $author$project$State$decoder),
+				headers: header,
+				method: 'PUT',
+				timeout: $elm$core$Maybe$Nothing,
+				tracker: $elm$core$Maybe$Nothing,
+				url: '/api/state'
+			});
+	});
 var $author$project$Page$Admin$update = F2(
 	function (msg, model) {
 		switch (msg.$) {
-			case 'RequestBieter':
-				var _v1 = model.password;
-				if (_v1.$ === 'Just') {
-					var pw = _v1.a;
-					return _Utils_Tuple2(
+			case 'Reload':
+				var _v1 = A2($author$project$Session$loadState, model.session, $author$project$Page$Admin$SetStateResult);
+				var newSession = _v1.a;
+				var cmdSetState = _v1.b;
+				return _Utils_Tuple2(
+					_Utils_update(
 						model,
-						$author$project$Page$Admin$fetchBieter(pw));
-				} else {
-					return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
-				}
+						{session: newSession}),
+					$elm$core$Platform$Cmd$batch(
+						_List_fromArray(
+							[
+								$author$project$Page$Admin$fetchBieterList(model.session),
+								cmdSetState
+							])));
 			case 'ReceivedBieter':
 				var response = msg.a;
 				return A2($author$project$Page$Admin$fetchBieterResponse, model, response);
@@ -7393,27 +7485,52 @@ var $author$project$Page$Admin$update = F2(
 						{formPassword: pw}),
 					$elm$core$Platform$Cmd$none);
 			case 'LoginFormSubmit':
-				var pw = (model.formPassword === '') ? $elm$core$Maybe$Nothing : $elm$core$Maybe$Just(model.formPassword);
-				var cmd = function () {
-					if (pw.$ === 'Nothing') {
-						return $elm$core$Platform$Cmd$none;
-					} else {
-						var password = pw.a;
-						return $author$project$Page$Admin$fetchBieter(password);
-					}
-				}();
+				if (model.formPassword === '') {
+					return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+				} else {
+					var session = A2(
+						$author$project$Session$withAdmin,
+						$elm$core$Maybe$Just(model.formPassword),
+						model.session);
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{session: session}),
+						$author$project$Page$Admin$fetchBieterList(session));
+				}
+			case 'SetState':
+				var state = msg.a;
+				var newSession = A2($author$project$Session$stateChanged, model.session, $author$project$State$Loading);
 				return _Utils_Tuple2(
 					_Utils_update(
 						model,
-						{password: pw}),
-					cmd);
+						{session: newSession}),
+					A3(
+						$author$project$State$setState,
+						$author$project$Page$Admin$SetStateResult,
+						$author$project$Session$headers(model.session),
+						$author$project$State$fromString(state)));
 			default:
-				return _Utils_Tuple2(
-					model,
-					A2(
-						$author$project$Route$replaceUrl,
-						$author$project$Session$navKey(model.session),
-						$author$project$Route$Front));
+				var result = msg.a;
+				if (result.$ === 'Ok') {
+					var state = result.a;
+					var newSession = A2($author$project$Session$stateChanged, model.session, state);
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{session: newSession}),
+						$elm$core$Platform$Cmd$none);
+				} else {
+					var e = result.a;
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{
+								setStateErrorMsg: $elm$core$Maybe$Just(
+									$author$project$Page$Admin$buildErrorMessage(e))
+							}),
+						$elm$core$Platform$Cmd$none);
+				}
 		}
 	});
 var $author$project$Page$Front$Edit = {$: 'Edit'};
@@ -7453,32 +7570,27 @@ var $author$project$Page$Front$bieterNameEncoder = function (name) {
 				$elm$json$Json$Encode$string(name))
 			]));
 };
-var $elm$http$Http$jsonBody = function (value) {
-	return A2(
-		_Http_pair,
-		'application/json',
-		A2($elm$json$Json$Encode$encode, 0, value));
-};
-var $author$project$Page$Front$createBieter = function (name) {
-	return $elm$http$Http$request(
-		{
-			body: $elm$http$Http$jsonBody(
-				$author$project$Page$Front$bieterNameEncoder(name)),
-			expect: A2($elm$http$Http$expectJson, $author$project$Page$Front$ReceivedCreate, $author$project$Bieter$bieterDecoder),
-			headers: _List_Nil,
-			method: 'POST',
-			timeout: $elm$core$Maybe$Nothing,
-			tracker: $elm$core$Maybe$Nothing,
-			url: '/api/bieter'
-		});
-};
+var $author$project$Page$Front$createBieter = F2(
+	function (session, name) {
+		return $elm$http$Http$request(
+			{
+				body: $elm$http$Http$jsonBody(
+					$author$project$Page$Front$bieterNameEncoder(name)),
+				expect: A2($elm$http$Http$expectJson, $author$project$Page$Front$ReceivedCreate, $author$project$Bieter$bieterDecoder),
+				headers: $author$project$Session$headers(session),
+				method: 'POST',
+				timeout: $elm$core$Maybe$Nothing,
+				tracker: $elm$core$Maybe$Nothing,
+				url: '/api/bieter'
+			});
+	});
 var $author$project$Session$toBieter = function (s) {
 	var _v0 = s.viewer;
 	switch (_v0.$) {
 		case 'LoggedIn':
 			var b = _v0.a;
 			return $elm$core$Maybe$Just(b);
-		case 'Guest':
+		case 'Loading':
 			return $elm$core$Maybe$Nothing;
 		default:
 			return $elm$core$Maybe$Nothing;
@@ -7505,22 +7617,23 @@ var $author$project$Bieter$bieterEncoder = function (bieter) {
 				$elm$json$Json$Encode$string(bieter.iban))
 			]));
 };
-var $author$project$Page$Front$updateBieter = function (bieter) {
-	return A2(
-		$elm$core$Platform$Cmd$map,
-		$author$project$Page$Front$GotEditPageMsg,
-		$elm$http$Http$request(
-			{
-				body: $elm$http$Http$jsonBody(
-					$author$project$Bieter$bieterEncoder(bieter)),
-				expect: A2($elm$http$Http$expectJson, $author$project$Page$Front$FormReceived, $author$project$Bieter$bieterDecoder),
-				headers: _List_Nil,
-				method: 'PUT',
-				timeout: $elm$core$Maybe$Nothing,
-				tracker: $elm$core$Maybe$Nothing,
-				url: '/api/bieter/' + $author$project$Bieter$idToString(bieter.id)
-			}));
-};
+var $author$project$Page$Front$updateBieter = F2(
+	function (session, bieter) {
+		return A2(
+			$elm$core$Platform$Cmd$map,
+			$author$project$Page$Front$GotEditPageMsg,
+			$elm$http$Http$request(
+				{
+					body: $elm$http$Http$jsonBody(
+						$author$project$Bieter$bieterEncoder(bieter)),
+					expect: A2($elm$http$Http$expectJson, $author$project$Page$Front$FormReceived, $author$project$Bieter$bieterDecoder),
+					headers: $author$project$Session$headers(session),
+					method: 'PUT',
+					timeout: $elm$core$Maybe$Nothing,
+					tracker: $elm$core$Maybe$Nothing,
+					url: '/api/bieter/' + $author$project$Bieter$idToString(bieter.id)
+				}));
+	});
 var $author$project$Page$Front$updateEditPage = F2(
 	function (model, editMsg) {
 		var _v0 = model.draftBieter;
@@ -7568,7 +7681,7 @@ var $author$project$Page$Front$updateEditPage = F2(
 				case 'FormSubmit':
 					return _Utils_Tuple2(
 						model,
-						$author$project$Page$Front$updateBieter(bieter));
+						A2($author$project$Page$Front$updateBieter, model.session, bieter));
 				case 'FormReceived':
 					var response = editMsg.a;
 					if (response.$ === 'Ok') {
@@ -7668,7 +7781,7 @@ var $author$project$Page$Front$update = F2(
 			case 'RequestCreate':
 				return _Utils_Tuple2(
 					model,
-					$author$project$Page$Front$createBieter(model.loginFormBieterName));
+					A2($author$project$Page$Front$createBieter, model.session, model.loginFormBieterName));
 			default:
 				var response = msg.a;
 				if (response.$ === 'Ok') {
@@ -7923,6 +8036,25 @@ var $author$project$Page$view = F2(
 			title: title + ' - Conduit'
 		};
 	});
+var $author$project$Page$Admin$Reload = {$: 'Reload'};
+var $elm$html$Html$button = _VirtualDom_node('button');
+var $elm$virtual_dom$VirtualDom$Normal = function (a) {
+	return {$: 'Normal', a: a};
+};
+var $elm$virtual_dom$VirtualDom$on = _VirtualDom_on;
+var $elm$html$Html$Events$on = F2(
+	function (event, decoder) {
+		return A2(
+			$elm$virtual_dom$VirtualDom$on,
+			event,
+			$elm$virtual_dom$VirtualDom$Normal(decoder));
+	});
+var $elm$html$Html$Events$onClick = function (msg) {
+	return A2(
+		$elm$html$Html$Events$on,
+		'click',
+		$elm$json$Json$Decode$succeed(msg));
+};
 var $elm$html$Html$table = _VirtualDom_node('table');
 var $elm$html$Html$td = _VirtualDom_node('td');
 var $elm$html$Html$tr = _VirtualDom_node('tr');
@@ -8004,13 +8136,6 @@ var $author$project$Page$Admin$viewList = function (bieter) {
 		_List_Nil,
 		_List_fromArray(
 			[
-				A2(
-				$elm$html$Html$h1,
-				_List_Nil,
-				_List_fromArray(
-					[
-						$elm$html$Html$text('Bieter')
-					])),
 				$elm$html$Html$text(
 				'Anzahl:' + $elm$core$String$fromInt(
 					$elm$core$List$length(bieter))),
@@ -8023,13 +8148,18 @@ var $author$project$Page$Admin$viewList = function (bieter) {
 					A2($elm$core$List$map, $author$project$Page$Admin$viewBieterLine, bieter)))
 			]));
 };
-var $author$project$Page$Admin$LoginFormGoBack = {$: 'LoginFormGoBack'};
-var $author$project$Page$Admin$LoginFormSavePassword = function (a) {
-	return {$: 'LoginFormSavePassword', a: a};
+var $author$project$Page$Admin$SetState = function (a) {
+	return {$: 'SetState', a: a};
 };
-var $author$project$Page$Admin$LoginFormSubmit = {$: 'LoginFormSubmit'};
-var $elm$html$Html$button = _VirtualDom_node('button');
-var $elm$html$Html$input = _VirtualDom_node('input');
+var $elm$json$Json$Encode$bool = _Json_wrap;
+var $elm$html$Html$Attributes$boolProperty = F2(
+	function (key, bool) {
+		return A2(
+			_VirtualDom_property,
+			key,
+			$elm$json$Json$Encode$bool(bool));
+	});
+var $elm$html$Html$Attributes$disabled = $elm$html$Html$Attributes$boolProperty('disabled');
 var $elm$html$Html$strong = _VirtualDom_node('strong');
 var $author$project$Page$Admin$maybeError = function (maybeStr) {
 	if (maybeStr.$ === 'Just') {
@@ -8051,23 +8181,6 @@ var $author$project$Page$Admin$maybeError = function (maybeStr) {
 	} else {
 		return $elm$html$Html$text('');
 	}
-};
-var $elm$virtual_dom$VirtualDom$Normal = function (a) {
-	return {$: 'Normal', a: a};
-};
-var $elm$virtual_dom$VirtualDom$on = _VirtualDom_on;
-var $elm$html$Html$Events$on = F2(
-	function (event, decoder) {
-		return A2(
-			$elm$virtual_dom$VirtualDom$on,
-			event,
-			$elm$virtual_dom$VirtualDom$Normal(decoder));
-	});
-var $elm$html$Html$Events$onClick = function (msg) {
-	return A2(
-		$elm$html$Html$Events$on,
-		'click',
-		$elm$json$Json$Decode$succeed(msg));
 };
 var $elm$html$Html$Events$alwaysStop = function (x) {
 	return _Utils_Tuple2(x, true);
@@ -8096,6 +8209,193 @@ var $elm$html$Html$Events$onInput = function (tagger) {
 			$elm$html$Html$Events$alwaysStop,
 			A2($elm$json$Json$Decode$map, tagger, $elm$html$Html$Events$targetValue)));
 };
+var $elm$html$Html$option = _VirtualDom_node('option');
+var $elm$html$Html$select = _VirtualDom_node('select');
+var $elm$html$Html$Attributes$selected = $elm$html$Html$Attributes$boolProperty('selected');
+var $author$project$State$unknown = 'Unbekannt';
+var $author$project$State$toString = function (state) {
+	switch (state.$) {
+		case 'Unknown':
+			return $author$project$State$unknown;
+		case 'Loading':
+			return $author$project$State$loading;
+		case 'Registration':
+			return $author$project$State$registration;
+		case 'Validation':
+			return $author$project$State$validation;
+		default:
+			return $author$project$State$offer;
+	}
+};
+var $author$project$Page$Admin$viewStatusSelect = function (model) {
+	var state = model.session.state;
+	var maybeOption = function () {
+		switch (state.$) {
+			case 'Loading':
+				return A2(
+					$elm$html$Html$option,
+					_List_fromArray(
+						[
+							$elm$html$Html$Attributes$selected(true),
+							$elm$html$Html$Attributes$disabled(true)
+						]),
+					_List_fromArray(
+						[
+							$elm$html$Html$text(
+							'--' + ($author$project$State$toString($author$project$State$Loading) + '--'))
+						]));
+			case 'Unknown':
+				return A2(
+					$elm$html$Html$option,
+					_List_fromArray(
+						[
+							$elm$html$Html$Attributes$selected(true),
+							$elm$html$Html$Attributes$disabled(true)
+						]),
+					_List_fromArray(
+						[
+							$elm$html$Html$text(
+							'--' + ($author$project$State$toString($author$project$State$Unknown) + '--'))
+						]));
+			default:
+				return $elm$html$Html$text('');
+		}
+	}();
+	return A2(
+		$elm$html$Html$div,
+		_List_Nil,
+		_List_fromArray(
+			[
+				$author$project$Page$Admin$maybeError(model.setStateErrorMsg),
+				A2(
+				$elm$html$Html$select,
+				_List_fromArray(
+					[
+						$elm$html$Html$Events$onInput($author$project$Page$Admin$SetState)
+					]),
+				_List_fromArray(
+					[
+						maybeOption,
+						A2(
+						$elm$html$Html$option,
+						_List_fromArray(
+							[
+								$elm$html$Html$Attributes$selected(
+								_Utils_eq(state, $author$project$State$Registration))
+							]),
+						_List_fromArray(
+							[
+								$elm$html$Html$text(
+								$author$project$State$toString($author$project$State$Registration))
+							])),
+						A2(
+						$elm$html$Html$option,
+						_List_fromArray(
+							[
+								$elm$html$Html$Attributes$selected(
+								_Utils_eq(state, $author$project$State$Validation))
+							]),
+						_List_fromArray(
+							[
+								$elm$html$Html$text(
+								$author$project$State$toString($author$project$State$Validation))
+							])),
+						A2(
+						$elm$html$Html$option,
+						_List_fromArray(
+							[
+								$elm$html$Html$Attributes$selected(
+								_Utils_eq(state, $author$project$State$Offer))
+							]),
+						_List_fromArray(
+							[
+								$elm$html$Html$text(
+								$author$project$State$toString($author$project$State$Offer))
+							]))
+					]))
+			]));
+};
+var $author$project$Page$Admin$viewAdmin = function (model) {
+	var bieterList = function () {
+		var _v0 = model.bieterList;
+		if (_v0.$ === 'Just') {
+			var bieter = _v0.a;
+			return $author$project$Page$Admin$viewList(bieter);
+		} else {
+			return A2(
+				$elm$html$Html$div,
+				_List_Nil,
+				_List_fromArray(
+					[
+						$elm$html$Html$text('Keine Bieter vorhanden')
+					]));
+		}
+	}();
+	return A2(
+		$elm$html$Html$div,
+		_List_Nil,
+		_List_fromArray(
+			[
+				A2(
+				$elm$html$Html$h1,
+				_List_Nil,
+				_List_fromArray(
+					[
+						$elm$html$Html$text('Admin')
+					])),
+				A2(
+				$elm$html$Html$button,
+				_List_fromArray(
+					[
+						$elm$html$Html$Events$onClick($author$project$Page$Admin$Reload)
+					]),
+				_List_fromArray(
+					[
+						$elm$html$Html$text('reload')
+					])),
+				$author$project$Page$Admin$viewStatusSelect(model),
+				bieterList,
+				A2(
+				$elm$html$Html$a,
+				_List_fromArray(
+					[
+						$author$project$Route$href($author$project$Route$Front)
+					]),
+				_List_fromArray(
+					[
+						$elm$html$Html$text('zurück')
+					]))
+			]));
+};
+var $author$project$Page$Admin$LoginFormSavePassword = function (a) {
+	return {$: 'LoginFormSavePassword', a: a};
+};
+var $author$project$Page$Admin$LoginFormSubmit = {$: 'LoginFormSubmit'};
+var $elm$html$Html$Attributes$autofocus = $elm$html$Html$Attributes$boolProperty('autofocus');
+var $elm$html$Html$form = _VirtualDom_node('form');
+var $elm$html$Html$input = _VirtualDom_node('input');
+var $elm$html$Html$Events$alwaysPreventDefault = function (msg) {
+	return _Utils_Tuple2(msg, true);
+};
+var $elm$virtual_dom$VirtualDom$MayPreventDefault = function (a) {
+	return {$: 'MayPreventDefault', a: a};
+};
+var $elm$html$Html$Events$preventDefaultOn = F2(
+	function (event, decoder) {
+		return A2(
+			$elm$virtual_dom$VirtualDom$on,
+			event,
+			$elm$virtual_dom$VirtualDom$MayPreventDefault(decoder));
+	});
+var $elm$html$Html$Events$onSubmit = function (msg) {
+	return A2(
+		$elm$html$Html$Events$preventDefaultOn,
+		'submit',
+		A2(
+			$elm$json$Json$Decode$map,
+			$elm$html$Html$Events$alwaysPreventDefault,
+			$elm$json$Json$Decode$succeed(msg)));
+};
 var $elm$html$Html$Attributes$type_ = $elm$html$Html$Attributes$stringProperty('type');
 var $elm$html$Html$Attributes$value = $elm$html$Html$Attributes$stringProperty('value');
 var $author$project$Page$Admin$viewLogin = function (model) {
@@ -8113,8 +8413,11 @@ var $author$project$Page$Admin$viewLogin = function (model) {
 					])),
 				$author$project$Page$Admin$maybeError(model.fetchErrorMsg),
 				A2(
-				$elm$html$Html$div,
-				_List_Nil,
+				$elm$html$Html$form,
+				_List_fromArray(
+					[
+						$elm$html$Html$Events$onSubmit($author$project$Page$Admin$LoginFormSubmit)
+					]),
 				_List_fromArray(
 					[
 						$elm$html$Html$text('Passwort'),
@@ -8124,7 +8427,8 @@ var $author$project$Page$Admin$viewLogin = function (model) {
 							[
 								$elm$html$Html$Attributes$type_('password'),
 								$elm$html$Html$Attributes$value(model.formPassword),
-								$elm$html$Html$Events$onInput($author$project$Page$Admin$LoginFormSavePassword)
+								$elm$html$Html$Events$onInput($author$project$Page$Admin$LoginFormSavePassword),
+								$elm$html$Html$Attributes$autofocus(true)
 							]),
 						_List_Nil),
 						A2(
@@ -8136,53 +8440,22 @@ var $author$project$Page$Admin$viewLogin = function (model) {
 								$elm$html$Html$button,
 								_List_fromArray(
 									[
-										$elm$html$Html$Events$onClick($author$project$Page$Admin$LoginFormSubmit)
+										$elm$html$Html$Attributes$type_('submit')
 									]),
 								_List_fromArray(
 									[
 										$elm$html$Html$text('Absenden')
-									])),
-								A2(
-								$elm$html$Html$button,
-								_List_fromArray(
-									[
-										$elm$html$Html$Events$onClick($author$project$Page$Admin$LoginFormGoBack)
-									]),
-								_List_fromArray(
-									[
-										$elm$html$Html$text('Zurück')
 									]))
 							]))
 					]))
 			]));
 };
 var $author$project$Page$Admin$view = function (model) {
-	var content = function () {
-		var _v0 = model.password;
-		if (_v0.$ === 'Nothing') {
-			return $author$project$Page$Admin$viewLogin(model);
-		} else {
-			var _v1 = model.bieter;
-			if (_v1.$ === 'Just') {
-				var bieter = _v1.a;
-				return $author$project$Page$Admin$viewList(bieter);
-			} else {
-				return $elm$html$Html$text('Keine Bieter vorhanden');
-			}
-		}
-	}();
+	var content = $author$project$Session$isAdmin(model.session) ? $author$project$Page$Admin$viewAdmin(model) : $author$project$Page$Admin$viewLogin(model);
 	return {content: content, title: 'Admin'};
 };
 var $author$project$Permission$CanEdit = {$: 'CanEdit'};
 var $author$project$Page$Front$GotoEditPage = {$: 'GotoEditPage'};
-var $author$project$Session$isAdmin = function (session) {
-	var _v0 = session.admin;
-	if (_v0.$ === 'IsAdmin') {
-		return true;
-	} else {
-		return false;
-	}
-};
 var $author$project$Permission$hasPerm = F2(
 	function (perm, session) {
 		var isAdmin = $author$project$Session$isAdmin(session);
@@ -12503,30 +12776,7 @@ var $author$project$Page$Front$RequestLogin = {$: 'RequestLogin'};
 var $author$project$Page$Front$SaveNumber = function (a) {
 	return {$: 'SaveNumber', a: a};
 };
-var $elm$html$Html$form = _VirtualDom_node('form');
 var $elm$html$Html$Attributes$id = $elm$html$Html$Attributes$stringProperty('id');
-var $elm$html$Html$Events$alwaysPreventDefault = function (msg) {
-	return _Utils_Tuple2(msg, true);
-};
-var $elm$virtual_dom$VirtualDom$MayPreventDefault = function (a) {
-	return {$: 'MayPreventDefault', a: a};
-};
-var $elm$html$Html$Events$preventDefaultOn = F2(
-	function (event, decoder) {
-		return A2(
-			$elm$virtual_dom$VirtualDom$on,
-			event,
-			$elm$virtual_dom$VirtualDom$MayPreventDefault(decoder));
-	});
-var $elm$html$Html$Events$onSubmit = function (msg) {
-	return A2(
-		$elm$html$Html$Events$preventDefaultOn,
-		'submit',
-		A2(
-			$elm$json$Json$Decode$map,
-			$elm$html$Html$Events$alwaysPreventDefault,
-			$elm$json$Json$Decode$succeed(msg)));
-};
 var $author$project$Permission$CanCreate = {$: 'CanCreate'};
 var $author$project$Page$Front$RequestCreate = {$: 'RequestCreate'};
 var $author$project$Page$Front$SaveName = function (a) {

@@ -112,7 +112,7 @@ update msg model =
                     )
 
         RequestCreate ->
-            ( model, createBieter model.loginFormBieterName )
+            ( model, createBieter model.session model.loginFormBieterName )
 
         ReceivedCreate response ->
             case response of
@@ -160,7 +160,7 @@ updateEditPage model editMsg =
 
                 FormSubmit ->
                     ( model
-                    , updateBieter bieter
+                    , updateBieter model.session bieter
                     )
 
                 FormReceived response ->
@@ -185,11 +185,11 @@ updateEditPage model editMsg =
                     )
 
 
-createBieter : String -> Cmd Msg
-createBieter name =
+createBieter : Session -> String -> Cmd Msg
+createBieter session name =
     Http.request
         { method = "POST"
-        , headers = []
+        , headers = Session.headers session
         , url = "/api/bieter"
         , body = Http.jsonBody (bieterNameEncoder name)
         , expect = Http.expectJson ReceivedCreate Bieter.bieterDecoder
@@ -198,11 +198,11 @@ createBieter name =
         }
 
 
-updateBieter : Bieter.Bieter -> Cmd Msg
-updateBieter bieter =
+updateBieter : Session -> Bieter.Bieter -> Cmd Msg
+updateBieter session bieter =
     Http.request
         { method = "PUT"
-        , headers = []
+        , headers = Session.headers session
         , url = "/api/bieter/" ++ Bieter.idToString bieter.id
         , body = Http.jsonBody (Bieter.bieterEncoder bieter)
         , expect = Http.expectJson FormReceived Bieter.bieterDecoder
