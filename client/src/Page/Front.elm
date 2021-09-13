@@ -7,10 +7,12 @@ import Html.Events exposing (..)
 import Http
 import IBAN
 import Json.Encode as Encode
+import Offer
 import Permission
 import QRCode
 import Route
 import Session exposing (Session)
+import State
 import Svg.Attributes as SvgA
 
 
@@ -23,6 +25,9 @@ type alias Model =
     , editErrorMsg : Maybe String
     , draftBieter : Maybe Bieter.Bieter
     , ibanValid : Bool
+    , draftOffer : String
+    , offerValid : Bool
+    , offerErrorMsg : Maybe String
     }
 
 
@@ -49,6 +54,9 @@ type Msg
     | ReceivedCreate (Result Http.Error Bieter.Bieter)
     | SaveNumber String
     | SaveName String
+    | SaveDraftOffer String
+    | SendOffer
+    | ReceiveOffer (Result Http.Error Offer.Offer)
 
 
 init : Session -> ( Model, Cmd Msg )
@@ -61,8 +69,16 @@ init session =
 
                 Just id ->
                     Bieter.idToString id
+
+        offer =
+            case Session.toBieter session of
+                Nothing ->
+                    ""
+
+                Just bieter ->
+                    Offer.toInputString bieter.offer
     in
-    ( Model session Show Nothing bieterID "" Nothing Nothing False, Cmd.none )
+    ( Model session Show Nothing bieterID "" Nothing Nothing False offer False Nothing, Cmd.none )
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -133,6 +149,59 @@ update msg model =
                             buildErrorMessage e
                     in
                     ( { model | loginErrorMsg = Just errMsg }
+                    , Cmd.none
+                    )
+
+        SaveDraftOffer draft ->
+            ( { model | offerValid = Offer.valid draft, draftOffer = draft }
+            , Cmd.none
+            )
+
+        SendOffer ->
+            let
+                maybeBieter =
+                    Session.toBieter model.session
+
+                offer =
+                    Offer.fromInputString model.draftOffer
+            in
+            case ( maybeBieter, offer ) of
+                ( Just bieter, Offer.Offer _ _ ) ->
+                    ( model
+                    , Offer.send ReceiveOffer (Session.headers model.session) (Bieter.idToString bieter.id) offer
+                    )
+
+                _ ->
+                    ( { model | offerErrorMsg = Just "Ungültiges Gebot" }
+                    , Cmd.none
+                    )
+
+        ReceiveOffer result ->
+            case result of
+                Ok offer ->
+                    let
+                        maybeBieter =
+                            Session.toBieter model.session
+
+                        newBieter =
+                            Maybe.andThen (\bieter -> Just { bieter | offer = offer }) maybeBieter
+
+                        maybeSessionCmd =
+                            Maybe.andThen (\bieter -> Just (Session.loggedIn model.session bieter)) newBieter
+                    in
+                    case maybeSessionCmd of
+                        Nothing ->
+                            ( model, Cmd.none )
+
+                        Just ( session, _ ) ->
+                            ( { model | session = session }, Cmd.none )
+
+                Err e ->
+                    let
+                        errMsg =
+                            buildErrorMessage e
+                    in
+                    ( { model | offerErrorMsg = Just errMsg }
                     , Cmd.none
                     )
 
@@ -266,7 +335,7 @@ view model =
         Just bieter ->
             case model.page of
                 Show ->
-                    viewBieter model.session model.session.baseURL bieter
+                    viewBieter model.session model.session.baseURL bieter model.draftOffer model.offerErrorMsg model.offerValid
 
                 Edit ->
                     let
@@ -345,8 +414,8 @@ maybeError errorMsg =
             text ""
 
 
-viewBieter : Session -> String -> Bieter.Bieter -> { title : String, content : Html Msg }
-viewBieter session baseURL bieter =
+viewBieter : Session -> String -> Bieter.Bieter -> String -> Maybe String -> Bool -> { title : String, content : Html Msg }
+viewBieter session baseURL bieter draftOffer error offerValid =
     let
         maybeEditButton =
             if Permission.hasPerm Permission.CanEdit session then
@@ -367,9 +436,39 @@ viewBieter session baseURL bieter =
             , div [] [ text ("Adresse: " ++ bieter.adresse) ]
             , div [] [ text ("IBAN: " ++ bieter.iban) ]
             , maybeEditButton
+            , viewOffer session bieter draftOffer error offerValid
             , viewQRCode baseURL bieter.id
             ]
     }
+
+
+viewOffer : Session -> Bieter.Bieter -> String -> Maybe String -> Bool -> Html Msg
+viewOffer session bieter draftOffer error offerValid =
+    div []
+        [ text (Offer.toString bieter.offer)
+        , case session.state of
+            State.Offer ->
+                Html.form [ onSubmit SendOffer ]
+                    [ maybeError error
+                    , input
+                        [ type_ "text"
+                        , value draftOffer
+                        , onInput SaveDraftOffer
+                        , class
+                            (if offerValid then
+                                ""
+
+                             else
+                                "error"
+                            )
+                        ]
+                        []
+                    , button [ type_ "submit" ] [ text "abgeben" ]
+                    ]
+
+            _ ->
+                text ""
+        ]
 
 
 viewQRCode : String -> Bieter.ID -> Html msg
@@ -378,14 +477,16 @@ viewQRCode baseURL id =
         message =
             baseURL ++ Route.routeToString (Route.Bieter id)
     in
-    QRCode.fromString message
-        |> Result.map
-            (QRCode.toSvg
-                [ SvgA.width "100px"
-                , SvgA.height "100px"
-                ]
-            )
-        |> Result.withDefault (Html.text "Error while encoding to QRCode.")
+    div []
+        [ QRCode.fromString message
+            |> Result.map
+                (QRCode.toSvg
+                    [ SvgA.width "100px"
+                    , SvgA.height "100px"
+                    ]
+                )
+            |> Result.withDefault (Html.text "Error while encoding to QRCode.")
+        ]
 
 
 viewEdit : Model -> { title : String, content : Html EditPageMsg }

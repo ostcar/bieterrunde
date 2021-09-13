@@ -234,6 +234,13 @@ func handleSetOffer(router *mux.Router, db *Database, config Config) {
 				handleError(w, fmt.Errorf("save offer: %w", err))
 				return
 			}
+
+			offer := db.Offer(bieterID)
+
+			if err := json.NewEncoder(w).Encode(offer); err != nil {
+				handleError(w, fmt.Errorf("encoding offer: %w", err))
+				return
+			}
 		})
 }
 

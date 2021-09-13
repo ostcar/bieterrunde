@@ -2,8 +2,9 @@ module Bieter exposing (Bieter, ID, bieterDecoder, bieterEncoder, bieterListDeco
 
 import Http
 import Json.Decode as Decode exposing (Decoder, list, string)
-import Json.Decode.Pipeline exposing (optionalAt, required)
+import Json.Decode.Pipeline exposing (optional, optionalAt, required)
 import Json.Encode as Encode
+import Offer
 import Url.Parser
 
 
@@ -12,6 +13,7 @@ type alias Bieter =
     , name : String
     , adresse : String
     , iban : String
+    , offer : Offer.Offer
     }
 
 
@@ -22,6 +24,7 @@ bieterDecoder =
         |> optionalAt [ "payload", "name" ] string ""
         |> optionalAt [ "payload", "adresse" ] string ""
         |> optionalAt [ "payload", "iban" ] string ""
+        |> optional "offer" Offer.decoder Offer.NoOffer
 
 
 bieterListDecoder : Decoder (List Bieter)

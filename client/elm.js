@@ -5722,21 +5722,33 @@ var $author$project$Page$Admin$Model = F5(
 var $author$project$Page$Admin$ReceivedBieter = function (a) {
 	return {$: 'ReceivedBieter', a: a};
 };
-var $author$project$Bieter$Bieter = F4(
-	function (id, name, adresse, iban) {
-		return {adresse: adresse, iban: iban, id: id, name: name};
+var $author$project$Bieter$Bieter = F5(
+	function (id, name, adresse, iban, offer) {
+		return {adresse: adresse, iban: iban, id: id, name: name, offer: offer};
 	});
+var $author$project$Offer$NoOffer = {$: 'NoOffer'};
+var $elm$json$Json$Decode$int = _Json_decodeInt;
+var $author$project$Offer$Offer = F2(
+	function (a, b) {
+		return {$: 'Offer', a: a, b: b};
+	});
+var $author$project$Offer$offerDecoder = function (n) {
+	if (!n) {
+		return $author$project$Offer$NoOffer;
+	} else {
+		var euro = (n / 100) | 0;
+		var cent = n % 100;
+		return A2($author$project$Offer$Offer, euro, cent);
+	}
+};
+var $author$project$Offer$decoder = A2($elm$json$Json$Decode$map, $author$project$Offer$offerDecoder, $elm$json$Json$Decode$int);
 var $author$project$Bieter$ID = function (a) {
 	return {$: 'ID', a: a};
 };
 var $elm$json$Json$Decode$string = _Json_decodeString;
 var $author$project$Bieter$idDecoder = A2($elm$json$Json$Decode$map, $author$project$Bieter$ID, $elm$json$Json$Decode$string);
-var $elm$json$Json$Decode$field = _Json_decodeField;
-var $elm$json$Json$Decode$at = F2(
-	function (fields, decoder) {
-		return A3($elm$core$List$foldr, $elm$json$Json$Decode$field, decoder, fields);
-	});
 var $NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$custom = $elm$json$Json$Decode$map2($elm$core$Basics$apR);
+var $elm$json$Json$Decode$field = _Json_decodeField;
 var $elm$json$Json$Decode$andThen = _Json_andThen;
 var $elm$json$Json$Decode$decodeValue = _Json_run;
 var $elm$json$Json$Decode$fail = _Json_fail;
@@ -5775,6 +5787,21 @@ var $NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$optionalDecoder = F3
 		};
 		return A2($elm$json$Json$Decode$andThen, handleResult, $elm$json$Json$Decode$value);
 	});
+var $NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$optional = F4(
+	function (key, valDecoder, fallback, decoder) {
+		return A2(
+			$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$custom,
+			A3(
+				$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$optionalDecoder,
+				A2($elm$json$Json$Decode$field, key, $elm$json$Json$Decode$value),
+				valDecoder,
+				fallback),
+			decoder);
+	});
+var $elm$json$Json$Decode$at = F2(
+	function (fields, decoder) {
+		return A3($elm$core$List$foldr, $elm$json$Json$Decode$field, decoder, fields);
+	});
 var $NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$optionalAt = F4(
 	function (path, valDecoder, fallback, decoder) {
 		return A2(
@@ -5794,28 +5821,33 @@ var $NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required = F3(
 			decoder);
 	});
 var $author$project$Bieter$bieterDecoder = A4(
-	$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$optionalAt,
-	_List_fromArray(
-		['payload', 'iban']),
-	$elm$json$Json$Decode$string,
-	'',
+	$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$optional,
+	'offer',
+	$author$project$Offer$decoder,
+	$author$project$Offer$NoOffer,
 	A4(
 		$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$optionalAt,
 		_List_fromArray(
-			['payload', 'adresse']),
+			['payload', 'iban']),
 		$elm$json$Json$Decode$string,
 		'',
 		A4(
 			$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$optionalAt,
 			_List_fromArray(
-				['payload', 'name']),
+				['payload', 'adresse']),
 			$elm$json$Json$Decode$string,
 			'',
-			A3(
-				$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
-				'id',
-				$author$project$Bieter$idDecoder,
-				$elm$json$Json$Decode$succeed($author$project$Bieter$Bieter)))));
+			A4(
+				$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$optionalAt,
+				_List_fromArray(
+					['payload', 'name']),
+				$elm$json$Json$Decode$string,
+				'',
+				A3(
+					$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
+					'id',
+					$author$project$Bieter$idDecoder,
+					$elm$json$Json$Decode$succeed($author$project$Bieter$Bieter))))));
 var $elm$json$Json$Decode$list = _Json_decodeList;
 var $author$project$Bieter$bieterListDecoder = $elm$json$Json$Decode$list($author$project$Bieter$bieterDecoder);
 var $elm$http$Http$BadStatus_ = F2(
@@ -6645,14 +6677,45 @@ var $author$project$Page$Admin$init = function (session) {
 		A5($author$project$Page$Admin$Model, session, $elm$core$Maybe$Nothing, '', $elm$core$Maybe$Nothing, $elm$core$Maybe$Nothing),
 		cmd);
 };
-var $author$project$Page$Front$Model = F8(
-	function (session, page, loginErrorMsg, loginFormBieterNr, loginFormBieterName, editErrorMsg, draftBieter, ibanValid) {
-		return {draftBieter: draftBieter, editErrorMsg: editErrorMsg, ibanValid: ibanValid, loginErrorMsg: loginErrorMsg, loginFormBieterName: loginFormBieterName, loginFormBieterNr: loginFormBieterNr, page: page, session: session};
-	});
+var $author$project$Page$Front$Model = function (session) {
+	return function (page) {
+		return function (loginErrorMsg) {
+			return function (loginFormBieterNr) {
+				return function (loginFormBieterName) {
+					return function (editErrorMsg) {
+						return function (draftBieter) {
+							return function (ibanValid) {
+								return function (draftOffer) {
+									return function (offerValid) {
+										return function (offerErrorMsg) {
+											return {draftBieter: draftBieter, draftOffer: draftOffer, editErrorMsg: editErrorMsg, ibanValid: ibanValid, loginErrorMsg: loginErrorMsg, loginFormBieterName: loginFormBieterName, loginFormBieterNr: loginFormBieterNr, offerErrorMsg: offerErrorMsg, offerValid: offerValid, page: page, session: session};
+										};
+									};
+								};
+							};
+						};
+					};
+				};
+			};
+		};
+	};
+};
 var $author$project$Page$Front$Show = {$: 'Show'};
 var $author$project$Bieter$idToString = function (_v0) {
 	var id = _v0.a;
 	return id;
+};
+var $author$project$Session$toBieter = function (s) {
+	var _v0 = s.viewer;
+	switch (_v0.$) {
+		case 'LoggedIn':
+			var b = _v0.a;
+			return $elm$core$Maybe$Just(b);
+		case 'Loading':
+			return $elm$core$Maybe$Nothing;
+		default:
+			return $elm$core$Maybe$Nothing;
+	}
 };
 var $author$project$Session$toBieterID = function (s) {
 	var _v0 = s.viewer;
@@ -6667,7 +6730,35 @@ var $author$project$Session$toBieterID = function (s) {
 			return $elm$core$Maybe$Nothing;
 	}
 };
+var $author$project$Offer$intToString2 = function (n) {
+	var str = $elm$core$String$fromInt(n);
+	var formatted = ($elm$core$String$length(str) < 2) ? ('0' + str) : str;
+	return formatted;
+};
+var $author$project$Offer$toInputString = function (maybeOffer) {
+	switch (maybeOffer.$) {
+		case 'NoOffer':
+			return '';
+		case 'Invalid':
+			var s = maybeOffer.a;
+			return s;
+		default:
+			var euro = maybeOffer.a;
+			var cent = maybeOffer.b;
+			var correctCent = $author$project$Offer$intToString2(cent);
+			return $elm$core$String$fromInt(euro) + ('.' + correctCent);
+	}
+};
 var $author$project$Page$Front$init = function (session) {
+	var offer = function () {
+		var _v1 = $author$project$Session$toBieter(session);
+		if (_v1.$ === 'Nothing') {
+			return '';
+		} else {
+			var bieter = _v1.a;
+			return $author$project$Offer$toInputString(bieter.offer);
+		}
+	}();
 	var bieterID = function () {
 		var _v0 = $author$project$Session$toBieterID(session);
 		if (_v0.$ === 'Nothing') {
@@ -6678,7 +6769,7 @@ var $author$project$Page$Front$init = function (session) {
 		}
 	}();
 	return _Utils_Tuple2(
-		A8($author$project$Page$Front$Model, session, $author$project$Page$Front$Show, $elm$core$Maybe$Nothing, bieterID, '', $elm$core$Maybe$Nothing, $elm$core$Maybe$Nothing, false),
+		$author$project$Page$Front$Model(session)($author$project$Page$Front$Show)($elm$core$Maybe$Nothing)(bieterID)('')($elm$core$Maybe$Nothing)($elm$core$Maybe$Nothing)(false)(offer)(false)($elm$core$Maybe$Nothing),
 		$elm$core$Platform$Cmd$none);
 };
 var $author$project$Session$Loading = function (a) {
@@ -7154,7 +7245,6 @@ var $author$project$Route$fromUrl = function (url) {
 	return A2($elm$url$Url$Parser$parse, $author$project$Route$parser, url);
 };
 var $author$project$State$Loading = {$: 'Loading'};
-var $elm$json$Json$Decode$int = _Json_decodeInt;
 var $author$project$State$Offer = {$: 'Offer'};
 var $author$project$State$Registration = {$: 'Registration'};
 var $author$project$State$Validation = {$: 'Validation'};
@@ -7546,9 +7636,21 @@ var $author$project$Page$Admin$update = F2(
 		}
 	});
 var $author$project$Page$Front$Edit = {$: 'Edit'};
+var $author$project$Page$Front$ReceiveOffer = function (a) {
+	return {$: 'ReceiveOffer', a: a};
+};
 var $author$project$Page$Front$ReceivedLogin = function (a) {
 	return {$: 'ReceivedLogin', a: a};
 };
+var $elm$core$Maybe$andThen = F2(
+	function (callback, maybeValue) {
+		if (maybeValue.$ === 'Just') {
+			var value = maybeValue.a;
+			return callback(value);
+		} else {
+			return $elm$core$Maybe$Nothing;
+		}
+	});
 var $author$project$Page$Front$buildErrorMessage = function (httpError) {
 	switch (httpError.$) {
 		case 'BadUrl':
@@ -7596,18 +7698,88 @@ var $author$project$Page$Front$createBieter = F2(
 				url: '/api/bieter'
 			});
 	});
-var $author$project$Session$toBieter = function (s) {
-	var _v0 = s.viewer;
-	switch (_v0.$) {
-		case 'LoggedIn':
-			var b = _v0.a;
-			return $elm$core$Maybe$Just(b);
-		case 'Loading':
-			return $elm$core$Maybe$Nothing;
-		default:
-			return $elm$core$Maybe$Nothing;
+var $author$project$Offer$Invalid = function (a) {
+	return {$: 'Invalid', a: a};
+};
+var $author$project$Offer$stringToInt2 = function (s) {
+	var realS = ($elm$core$String$length(s) > 2) ? A2($elm$core$String$left, 2, s) : s;
+	var n = $elm$core$String$toInt(realS);
+	return A2(
+		$elm$core$Maybe$andThen,
+		function (m) {
+			return ($elm$core$String$length(s) === 1) ? $elm$core$Maybe$Just(m * 10) : $elm$core$Maybe$Just(m);
+		},
+		n);
+};
+var $author$project$Offer$fromInputString = function (input) {
+	var _v0 = function () {
+		var _v1 = A2($elm$core$String$split, ',', input);
+		if (_v1.b) {
+			if (_v1.b.b) {
+				var a = _v1.a;
+				var _v2 = _v1.b;
+				var b = _v2.a;
+				var rest = _v2.b;
+				return ($elm$core$List$length(rest) > 0) ? _Utils_Tuple2($elm$core$Maybe$Nothing, $elm$core$Maybe$Nothing) : _Utils_Tuple2(
+					$elm$core$String$toInt(a),
+					$author$project$Offer$stringToInt2(b));
+			} else {
+				var a = _v1.a;
+				return _Utils_Tuple2(
+					$elm$core$String$toInt(a),
+					$elm$core$Maybe$Just(0));
+			}
+		} else {
+			return _Utils_Tuple2($elm$core$Maybe$Nothing, $elm$core$Maybe$Nothing);
+		}
+	}();
+	var maybeEuro = _v0.a;
+	var maybeCent = _v0.b;
+	var _v3 = _Utils_Tuple2(maybeEuro, maybeCent);
+	if ((_v3.a.$ === 'Just') && (_v3.b.$ === 'Just')) {
+		var euro = _v3.a.a;
+		var cent = _v3.b.a;
+		return A2($author$project$Offer$Offer, euro, cent);
+	} else {
+		return $author$project$Offer$Invalid(input);
 	}
 };
+var $author$project$Offer$toInt = function (maybeOffer) {
+	switch (maybeOffer.$) {
+		case 'NoOffer':
+			return 0;
+		case 'Invalid':
+			return 0;
+		default:
+			var euro = maybeOffer.a;
+			var cent = maybeOffer.b;
+			return (euro * 100) + cent;
+	}
+};
+var $author$project$Offer$encoder = function (offer) {
+	return $elm$json$Json$Encode$object(
+		_List_fromArray(
+			[
+				_Utils_Tuple2(
+				'offer',
+				$elm$json$Json$Encode$int(
+					$author$project$Offer$toInt(offer)))
+			]));
+};
+var $author$project$Offer$send = F4(
+	function (result, header, bieterID, offer) {
+		return $elm$http$Http$request(
+			{
+				body: $elm$http$Http$jsonBody(
+					$author$project$Offer$encoder(offer)),
+				expect: A2($elm$http$Http$expectJson, result, $author$project$Offer$decoder),
+				headers: header,
+				method: 'PUT',
+				timeout: $elm$core$Maybe$Nothing,
+				tracker: $elm$core$Maybe$Nothing,
+				url: '/api/offer/' + bieterID
+			});
+	});
 var $elm$core$Result$andThen = F2(
 	function (callback, result) {
 		if (result.$ === 'Ok') {
@@ -8753,6 +8925,14 @@ var $author$project$Page$Front$updateEditPage = F2(
 			}
 		}
 	});
+var $author$project$Offer$valid = function (input) {
+	var offer = $author$project$Offer$fromInputString(input);
+	if (offer.$ === 'Offer') {
+		return true;
+	} else {
+		return false;
+	}
+};
 var $author$project$Page$Front$update = F2(
 	function (msg, model) {
 		switch (msg.$) {
@@ -8822,7 +9002,7 @@ var $author$project$Page$Front$update = F2(
 				return _Utils_Tuple2(
 					model,
 					A2($author$project$Page$Front$createBieter, model.session, model.loginFormBieterName));
-			default:
+			case 'ReceivedCreate':
 				var response = msg.a;
 				if (response.$ === 'Ok') {
 					var bieter = response.a;
@@ -8842,6 +9022,83 @@ var $author$project$Page$Front$update = F2(
 							model,
 							{
 								loginErrorMsg: $elm$core$Maybe$Just(errMsg)
+							}),
+						$elm$core$Platform$Cmd$none);
+				}
+			case 'SaveDraftOffer':
+				var draft = msg.a;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{
+							draftOffer: draft,
+							offerValid: $author$project$Offer$valid(draft)
+						}),
+					$elm$core$Platform$Cmd$none);
+			case 'SendOffer':
+				var offer = $author$project$Offer$fromInputString(model.draftOffer);
+				var maybeBieter = $author$project$Session$toBieter(model.session);
+				var _v6 = _Utils_Tuple2(maybeBieter, offer);
+				if ((_v6.a.$ === 'Just') && (_v6.b.$ === 'Offer')) {
+					var bieter = _v6.a.a;
+					var _v7 = _v6.b;
+					return _Utils_Tuple2(
+						model,
+						A4(
+							$author$project$Offer$send,
+							$author$project$Page$Front$ReceiveOffer,
+							$author$project$Session$headers(model.session),
+							$author$project$Bieter$idToString(bieter.id),
+							offer));
+				} else {
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{
+								offerErrorMsg: $elm$core$Maybe$Just('Ungültiges Gebot')
+							}),
+						$elm$core$Platform$Cmd$none);
+				}
+			default:
+				var result = msg.a;
+				if (result.$ === 'Ok') {
+					var offer = result.a;
+					var maybeBieter = $author$project$Session$toBieter(model.session);
+					var newBieter = A2(
+						$elm$core$Maybe$andThen,
+						function (bieter) {
+							return $elm$core$Maybe$Just(
+								_Utils_update(
+									bieter,
+									{offer: offer}));
+						},
+						maybeBieter);
+					var maybeSessionCmd = A2(
+						$elm$core$Maybe$andThen,
+						function (bieter) {
+							return $elm$core$Maybe$Just(
+								A2($author$project$Session$loggedIn, model.session, bieter));
+						},
+						newBieter);
+					if (maybeSessionCmd.$ === 'Nothing') {
+						return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+					} else {
+						var _v10 = maybeSessionCmd.a;
+						var session = _v10.a;
+						return _Utils_Tuple2(
+							_Utils_update(
+								model,
+								{session: session}),
+							$elm$core$Platform$Cmd$none);
+					}
+				} else {
+					var e = result.a;
+					var errMsg = $author$project$Page$Front$buildErrorMessage(e);
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{
+								offerErrorMsg: $elm$core$Maybe$Just(errMsg)
 							}),
 						$elm$core$Platform$Cmd$none);
 				}
@@ -9526,6 +9783,94 @@ var $author$project$Permission$hasPerm = F2(
 					return _Utils_eq(session.state, $author$project$State$Offer);
 			}
 		}
+	});
+var $author$project$Page$Front$SaveDraftOffer = function (a) {
+	return {$: 'SaveDraftOffer', a: a};
+};
+var $author$project$Page$Front$SendOffer = {$: 'SendOffer'};
+var $elm$html$Html$Attributes$class = $elm$html$Html$Attributes$stringProperty('className');
+var $author$project$Page$Front$maybeError = function (errorMsg) {
+	if (errorMsg.$ === 'Just') {
+		var message = errorMsg.a;
+		return A2(
+			$elm$html$Html$div,
+			_List_Nil,
+			_List_fromArray(
+				[
+					A2(
+					$elm$html$Html$strong,
+					_List_Nil,
+					_List_fromArray(
+						[
+							$elm$html$Html$text('Fehler:')
+						])),
+					$elm$html$Html$text(' ' + message)
+				]));
+	} else {
+		return $elm$html$Html$text('');
+	}
+};
+var $author$project$Offer$toString = function (maybeOffer) {
+	switch (maybeOffer.$) {
+		case 'NoOffer':
+			return 'Noch kein Gebot abgegeben';
+		case 'Invalid':
+			var s = maybeOffer.a;
+			return 'Ungültiges Gebot: ' + s;
+		default:
+			var euro = maybeOffer.a;
+			var cent = maybeOffer.b;
+			return $elm$core$String$fromInt(euro) + (',' + ($author$project$Offer$intToString2(cent) + ' €'));
+	}
+};
+var $author$project$Page$Front$viewOffer = F5(
+	function (session, bieter, draftOffer, error, offerValid) {
+		return A2(
+			$elm$html$Html$div,
+			_List_Nil,
+			_List_fromArray(
+				[
+					$elm$html$Html$text(
+					$author$project$Offer$toString(bieter.offer)),
+					function () {
+					var _v0 = session.state;
+					if (_v0.$ === 'Offer') {
+						return A2(
+							$elm$html$Html$form,
+							_List_fromArray(
+								[
+									$elm$html$Html$Events$onSubmit($author$project$Page$Front$SendOffer)
+								]),
+							_List_fromArray(
+								[
+									$author$project$Page$Front$maybeError(error),
+									A2(
+									$elm$html$Html$input,
+									_List_fromArray(
+										[
+											$elm$html$Html$Attributes$type_('text'),
+											$elm$html$Html$Attributes$value(draftOffer),
+											$elm$html$Html$Events$onInput($author$project$Page$Front$SaveDraftOffer),
+											$elm$html$Html$Attributes$class(
+											offerValid ? '' : 'error')
+										]),
+									_List_Nil),
+									A2(
+									$elm$html$Html$button,
+									_List_fromArray(
+										[
+											$elm$html$Html$Attributes$type_('submit')
+										]),
+									_List_fromArray(
+										[
+											$elm$html$Html$text('abgeben')
+										]))
+								]));
+					} else {
+						return $elm$html$Html$text('');
+					}
+				}()
+				]));
 	});
 var $pablohirafuji$elm_qrcode$QRCode$Quartile = {$: 'Quartile'};
 var $pablohirafuji$elm_qrcode$QRCode$QRCode = function (a) {
@@ -13437,20 +13782,26 @@ var $author$project$Page$Front$viewQRCode = F2(
 			$author$project$Route$routeToString(
 				$author$project$Route$Bieter(id)));
 		return A2(
-			$elm$core$Result$withDefault,
-			$elm$html$Html$text('Error while encoding to QRCode.'),
-			A2(
-				$elm$core$Result$map,
-				$pablohirafuji$elm_qrcode$QRCode$toSvg(
-					_List_fromArray(
-						[
-							$elm$svg$Svg$Attributes$width('100px'),
-							$elm$svg$Svg$Attributes$height('100px')
-						])),
-				$pablohirafuji$elm_qrcode$QRCode$fromString(message)));
+			$elm$html$Html$div,
+			_List_Nil,
+			_List_fromArray(
+				[
+					A2(
+					$elm$core$Result$withDefault,
+					$elm$html$Html$text('Error while encoding to QRCode.'),
+					A2(
+						$elm$core$Result$map,
+						$pablohirafuji$elm_qrcode$QRCode$toSvg(
+							_List_fromArray(
+								[
+									$elm$svg$Svg$Attributes$width('100px'),
+									$elm$svg$Svg$Attributes$height('100px')
+								])),
+						$pablohirafuji$elm_qrcode$QRCode$fromString(message)))
+				]));
 	});
-var $author$project$Page$Front$viewBieter = F3(
-	function (session, baseURL, bieter) {
+var $author$project$Page$Front$viewBieter = F6(
+	function (session, baseURL, bieter, draftOffer, error, offerValid) {
 		var maybeEditButton = A2($author$project$Permission$hasPerm, $author$project$Permission$CanEdit, session) ? A2(
 			$elm$html$Html$div,
 			_List_Nil,
@@ -13511,6 +13862,7 @@ var $author$project$Page$Front$viewBieter = F3(
 								$elm$html$Html$text('IBAN: ' + bieter.iban)
 							])),
 						maybeEditButton,
+						A5($author$project$Page$Front$viewOffer, session, bieter, draftOffer, error, offerValid),
 						A2($author$project$Page$Front$viewQRCode, baseURL, bieter.id)
 					])),
 			title: 'Bieter'
@@ -13527,28 +13879,6 @@ var $author$project$Page$Front$FormSaveName = function (a) {
 	return {$: 'FormSaveName', a: a};
 };
 var $author$project$Page$Front$FormSubmit = {$: 'FormSubmit'};
-var $elm$html$Html$Attributes$class = $elm$html$Html$Attributes$stringProperty('className');
-var $author$project$Page$Front$maybeError = function (errorMsg) {
-	if (errorMsg.$ === 'Just') {
-		var message = errorMsg.a;
-		return A2(
-			$elm$html$Html$div,
-			_List_Nil,
-			_List_fromArray(
-				[
-					A2(
-					$elm$html$Html$strong,
-					_List_Nil,
-					_List_fromArray(
-						[
-							$elm$html$Html$text('Fehler:')
-						])),
-					$elm$html$Html$text(' ' + message)
-				]));
-	} else {
-		return $elm$html$Html$text('');
-	}
-};
 var $author$project$Page$Front$viewEdit = function (model) {
 	var _v0 = model.draftBieter;
 	if (_v0.$ === 'Nothing') {
@@ -13783,7 +14113,7 @@ var $author$project$Page$Front$view = function (model) {
 		var bieter = maybeBieter.a;
 		var _v1 = model.page;
 		if (_v1.$ === 'Show') {
-			return A3($author$project$Page$Front$viewBieter, model.session, model.session.baseURL, bieter);
+			return A6($author$project$Page$Front$viewBieter, model.session, model.session.baseURL, bieter, model.draftOffer, model.offerErrorMsg, model.offerValid);
 		} else {
 			var _v2 = $author$project$Page$Front$viewEdit(model);
 			var title = _v2.title;

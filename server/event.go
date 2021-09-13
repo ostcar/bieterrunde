@@ -164,7 +164,7 @@ type eventOffer struct {
 
 func newEventOffer(id string, offer int, asAdmin bool) (eventOffer, error) {
 	if int(offer) < lowestOffer {
-		return eventOffer{}, validationError{fmt.Sprintf("Das Gebot muss mindestens %d sein", lowestOffer)}
+		return eventOffer{}, validationError{fmt.Sprintf("Das Gebot muss mindestens %d sein, nicht %q", lowestOffer, offer)}
 	}
 	return eventOffer{id, offer, asAdmin}, nil
 }
@@ -198,6 +198,10 @@ type validationError struct {
 
 func (e validationError) Error() string {
 	return e.msg
+}
+
+func (e validationError) forClient() string {
+	return "Ungültige Daten: " + e.msg
 }
 
 var errIDExists = validationError{"Bieter ID existiert bereits"}
