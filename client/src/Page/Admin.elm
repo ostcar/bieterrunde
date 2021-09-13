@@ -26,6 +26,7 @@ type Msg
     | LoginFormSubmit
     | SetState String
     | SetStateResult (Result Http.Error State.State)
+    | SelectBieter Bieter.Bieter
 
 
 init : Session -> ( Model, Cmd Msg )
@@ -47,12 +48,11 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         Reload ->
-            -- TODO reset state
             let
                 ( newSession, cmdSetState ) =
                     Session.loadState model.session SetStateResult
             in
-            ( { model | session = newSession }
+            ( { model | session = newSession, setStateErrorMsg = Nothing, fetchErrorMsg = Nothing }
             , Cmd.batch [ fetchBieterList model.session, cmdSetState ]
             )
 
@@ -101,6 +101,13 @@ update msg model =
                     ( { model | setStateErrorMsg = Just (buildErrorMessage e) }
                     , Cmd.none
                     )
+
+        SelectBieter bieter ->
+            let
+                ( newSession, _ ) =
+                    Session.loggedIn model.session bieter
+            in
+            ( { model | session = newSession }, Route.replaceUrl (Session.navKey newSession) Route.Front )
 
 
 fetchBieterList : Session -> Cmd Msg
@@ -253,7 +260,7 @@ viewBieterTableHeader =
 viewBieterLine : Bieter.Bieter -> Html Msg
 viewBieterLine bieter =
     tr []
-        [ td [] [ text (Bieter.idToString bieter.id) ]
+        [ td [] [ button [ onClick (SelectBieter bieter) ] [ text (Bieter.idToString bieter.id) ] ]
         , td [] [ text bieter.name ]
         , td [] [ text bieter.adresse ]
         , td [] [ text bieter.iban ]

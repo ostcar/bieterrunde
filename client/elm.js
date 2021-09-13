@@ -7467,7 +7467,7 @@ var $author$project$Page$Admin$update = F2(
 				return _Utils_Tuple2(
 					_Utils_update(
 						model,
-						{session: newSession}),
+						{fetchErrorMsg: $elm$core$Maybe$Nothing, session: newSession, setStateErrorMsg: $elm$core$Maybe$Nothing}),
 					$elm$core$Platform$Cmd$batch(
 						_List_fromArray(
 							[
@@ -7510,7 +7510,7 @@ var $author$project$Page$Admin$update = F2(
 						$author$project$Page$Admin$SetStateResult,
 						$author$project$Session$headers(model.session),
 						$author$project$State$fromString(state)));
-			default:
+			case 'SetStateResult':
 				var result = msg.a;
 				if (result.$ === 'Ok') {
 					var state = result.a;
@@ -7531,6 +7531,18 @@ var $author$project$Page$Admin$update = F2(
 							}),
 						$elm$core$Platform$Cmd$none);
 				}
+			default:
+				var bieter = msg.a;
+				var _v3 = A2($author$project$Session$loggedIn, model.session, bieter);
+				var newSession = _v3.a;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{session: newSession}),
+					A2(
+						$author$project$Route$replaceUrl,
+						$author$project$Session$navKey(newSession),
+						$author$project$Route$Front));
 		}
 	});
 var $author$project$Page$Front$Edit = {$: 'Edit'};
@@ -8056,6 +8068,9 @@ var $elm$html$Html$Events$onClick = function (msg) {
 		$elm$json$Json$Decode$succeed(msg));
 };
 var $elm$html$Html$table = _VirtualDom_node('table');
+var $author$project$Page$Admin$SelectBieter = function (a) {
+	return {$: 'SelectBieter', a: a};
+};
 var $elm$html$Html$td = _VirtualDom_node('td');
 var $elm$html$Html$tr = _VirtualDom_node('tr');
 var $author$project$Page$Admin$viewBieterLine = function (bieter) {
@@ -8069,8 +8084,18 @@ var $author$project$Page$Admin$viewBieterLine = function (bieter) {
 				_List_Nil,
 				_List_fromArray(
 					[
-						$elm$html$Html$text(
-						$author$project$Bieter$idToString(bieter.id))
+						A2(
+						$elm$html$Html$button,
+						_List_fromArray(
+							[
+								$elm$html$Html$Events$onClick(
+								$author$project$Page$Admin$SelectBieter(bieter))
+							]),
+						_List_fromArray(
+							[
+								$elm$html$Html$text(
+								$author$project$Bieter$idToString(bieter.id))
+							]))
 					])),
 				A2(
 				$elm$html$Html$td,
