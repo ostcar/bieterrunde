@@ -31,6 +31,7 @@ func registerHandlers(router *mux.Router, config Config, db *Database, defaultFi
 
 	handleState(router, db, config)
 	handleSetOffer(router, db, config)
+	handleClearOffer(router, db, config)
 
 	handleStatic(router, defaultFiles.Static)
 }
@@ -224,7 +225,15 @@ func handleState(router *mux.Router, db *Database, config Config) {
 				return
 			}
 		})
+}
 
+func handleClearOffer(router *mux.Router, db *Database, config Config) {
+	router.Path(pathPrefixAPI + "/offer").Methods("DELETE").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := db.ClearOffer(isAdmin(r, config)); err != nil {
+			handleError(w, fmt.Errorf("clear offers: %w", err))
+			return
+		}
+	})
 }
 
 func handleSetOffer(router *mux.Router, db *Database, config Config) {

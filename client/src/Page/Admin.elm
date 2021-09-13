@@ -17,6 +17,7 @@ type alias Model =
     , formPassword : String
     , fetchErrorMsg : Maybe String
     , setStateErrorMsg : Maybe String
+    , resetOffenErrorMsg : Maybe String
     }
 
 
@@ -28,6 +29,8 @@ type Msg
     | SetState String
     | SetStateResult (Result Http.Error State.State)
     | SelectBieter Bieter.Bieter
+    | ResetOffer
+    | ReceiveResetOffer (Result Http.Error ())
 
 
 init : Session -> ( Model, Cmd Msg )
@@ -40,7 +43,7 @@ init session =
             else
                 Cmd.none
     in
-    ( Model session Nothing "" Nothing Nothing
+    ( Model session Nothing "" Nothing Nothing Nothing
     , cmd
     )
 
@@ -49,13 +52,7 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         Reload ->
-            let
-                ( newSession, cmdSetState ) =
-                    Session.loadState model.session SetStateResult
-            in
-            ( { model | session = newSession, setStateErrorMsg = Nothing, fetchErrorMsg = Nothing }
-            , Cmd.batch [ fetchBieterList model.session, cmdSetState ]
-            )
+            reload model
 
         ReceivedBieter response ->
             fetchBieterResponse model response
@@ -109,6 +106,32 @@ update msg model =
                     Session.loggedIn model.session bieter
             in
             ( { model | session = newSession }, Route.replaceUrl (Session.navKey newSession) Route.Front )
+
+        ResetOffer ->
+            ( model
+            , Offer.reset ReceiveResetOffer (Session.headers model.session)
+            )
+
+        ReceiveResetOffer result ->
+            case result of
+                Ok _ ->
+                    reload model
+
+                Err e ->
+                    ( { model | resetOffenErrorMsg = Just (buildErrorMessage e) }
+                    , Cmd.none
+                    )
+
+
+reload : Model -> ( Model, Cmd Msg )
+reload model =
+    let
+        ( newSession, cmdSetState ) =
+            Session.loadState model.session SetStateResult
+    in
+    ( { model | session = newSession, setStateErrorMsg = Nothing, fetchErrorMsg = Nothing }
+    , Cmd.batch [ fetchBieterList model.session, cmdSetState ]
+    )
 
 
 fetchBieterList : Session -> Cmd Msg
@@ -205,6 +228,7 @@ viewAdmin model =
     div []
         [ h1 [] [ text "Admin" ]
         , button [ onClick Reload ] [ text "reload" ]
+        , button [ onClick ResetOffer ] [ text "reset offers - Achtung, Datenverlust" ]
         , viewStatusSelect model
         , bieterList
         , a [ Route.href Route.Front ] [ text "zurück" ]

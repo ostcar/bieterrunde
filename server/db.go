@@ -297,3 +297,19 @@ func (db *Database) UpdateOffer(id string, r io.Reader, asAdmin bool) error {
 
 	return nil
 }
+
+// ClearOffer creates an event to remove all offers
+func (db *Database) ClearOffer(asAdmin bool) error {
+	if !asAdmin {
+		// TODO: Create other error
+		return validationError{"Not allowed"}
+	}
+
+	event := newEventOfferClear()
+
+	if err := db.writeEvent(event); err != nil {
+		return fmt.Errorf("writing offer event clear: %w", err)
+	}
+
+	return nil
+}

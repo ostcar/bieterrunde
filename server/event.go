@@ -23,6 +23,9 @@ func getEvent(eventType string) Event {
 	case "offer":
 		return &eventOffer{}
 
+	case "offer-clear":
+		return &eventOfferClear{}
+
 	default:
 		return nil
 	}
@@ -189,6 +192,29 @@ func (e eventOffer) validate(db *Database) error {
 
 func (e eventOffer) execute(db *Database) error {
 	db.offer[e.ID] = e.Offer
+	return nil
+}
+
+type eventOfferClear struct{}
+
+func newEventOfferClear() eventOfferClear {
+	return eventOfferClear{}
+}
+
+func (e eventOfferClear) String() string {
+	return fmt.Sprintf("Clear all offers")
+}
+
+func (e eventOfferClear) Name() string {
+	return "offer-clear"
+}
+
+func (e eventOfferClear) validate(db *Database) error {
+	return nil
+}
+
+func (e eventOfferClear) execute(db *Database) error {
+	db.offer = make(map[string]int)
 	return nil
 }
 

@@ -5715,9 +5715,9 @@ var $author$project$Main$NotFound = function (a) {
 var $author$project$Main$Redirect = function (a) {
 	return {$: 'Redirect', a: a};
 };
-var $author$project$Page$Admin$Model = F5(
-	function (session, bieterList, formPassword, fetchErrorMsg, setStateErrorMsg) {
-		return {bieterList: bieterList, fetchErrorMsg: fetchErrorMsg, formPassword: formPassword, session: session, setStateErrorMsg: setStateErrorMsg};
+var $author$project$Page$Admin$Model = F6(
+	function (session, bieterList, formPassword, fetchErrorMsg, setStateErrorMsg, resetOffenErrorMsg) {
+		return {bieterList: bieterList, fetchErrorMsg: fetchErrorMsg, formPassword: formPassword, resetOffenErrorMsg: resetOffenErrorMsg, session: session, setStateErrorMsg: setStateErrorMsg};
 	});
 var $author$project$Page$Admin$ReceivedBieter = function (a) {
 	return {$: 'ReceivedBieter', a: a};
@@ -6673,7 +6673,7 @@ var $elm$core$Platform$Cmd$none = $elm$core$Platform$Cmd$batch(_List_Nil);
 var $author$project$Page$Admin$init = function (session) {
 	var cmd = $author$project$Session$isAdmin(session) ? $author$project$Page$Admin$fetchBieterList(session) : $elm$core$Platform$Cmd$none;
 	return _Utils_Tuple2(
-		A5($author$project$Page$Admin$Model, session, $elm$core$Maybe$Nothing, '', $elm$core$Maybe$Nothing, $elm$core$Maybe$Nothing),
+		A6($author$project$Page$Admin$Model, session, $elm$core$Maybe$Nothing, '', $elm$core$Maybe$Nothing, $elm$core$Maybe$Nothing, $elm$core$Maybe$Nothing),
 		cmd);
 };
 var $author$project$Page$Front$Model = function (session) {
@@ -7420,6 +7420,9 @@ var $elm$url$Url$toString = function (url) {
 					_Utils_ap(http, url.host)),
 				url.path)));
 };
+var $author$project$Page$Admin$ReceiveResetOffer = function (a) {
+	return {$: 'ReceiveResetOffer', a: a};
+};
 var $author$project$Page$Admin$SetStateResult = function (a) {
 	return {$: 'SetStateResult', a: a};
 };
@@ -7504,6 +7507,51 @@ var $author$project$State$validation = 'Überprüfung';
 var $author$project$State$fromString = function (state) {
 	return _Utils_eq(state, $author$project$State$loading) ? $author$project$State$Loading : (_Utils_eq(state, $author$project$State$registration) ? $author$project$State$Registration : (_Utils_eq(state, $author$project$State$validation) ? $author$project$State$Validation : (_Utils_eq(state, $author$project$State$offer) ? $author$project$State$Offer : $author$project$State$Unknown)));
 };
+var $author$project$Page$Admin$reload = function (model) {
+	var _v0 = A2($author$project$Session$loadState, model.session, $author$project$Page$Admin$SetStateResult);
+	var newSession = _v0.a;
+	var cmdSetState = _v0.b;
+	return _Utils_Tuple2(
+		_Utils_update(
+			model,
+			{fetchErrorMsg: $elm$core$Maybe$Nothing, session: newSession, setStateErrorMsg: $elm$core$Maybe$Nothing}),
+		$elm$core$Platform$Cmd$batch(
+			_List_fromArray(
+				[
+					$author$project$Page$Admin$fetchBieterList(model.session),
+					cmdSetState
+				])));
+};
+var $elm$http$Http$expectBytesResponse = F2(
+	function (toMsg, toResult) {
+		return A3(
+			_Http_expect,
+			'arraybuffer',
+			_Http_toDataView,
+			A2($elm$core$Basics$composeR, toResult, toMsg));
+	});
+var $elm$http$Http$expectWhatever = function (toMsg) {
+	return A2(
+		$elm$http$Http$expectBytesResponse,
+		toMsg,
+		$elm$http$Http$resolve(
+			function (_v0) {
+				return $elm$core$Result$Ok(_Utils_Tuple0);
+			}));
+};
+var $author$project$Offer$reset = F2(
+	function (result, header) {
+		return $elm$http$Http$request(
+			{
+				body: $elm$http$Http$emptyBody,
+				expect: $elm$http$Http$expectWhatever(result),
+				headers: header,
+				method: 'DELETE',
+				timeout: $elm$core$Maybe$Nothing,
+				tracker: $elm$core$Maybe$Nothing,
+				url: '/api/offer'
+			});
+	});
 var $elm$http$Http$jsonBody = function (value) {
 	return A2(
 		_Http_pair,
@@ -7550,19 +7598,7 @@ var $author$project$Page$Admin$update = F2(
 	function (msg, model) {
 		switch (msg.$) {
 			case 'Reload':
-				var _v1 = A2($author$project$Session$loadState, model.session, $author$project$Page$Admin$SetStateResult);
-				var newSession = _v1.a;
-				var cmdSetState = _v1.b;
-				return _Utils_Tuple2(
-					_Utils_update(
-						model,
-						{fetchErrorMsg: $elm$core$Maybe$Nothing, session: newSession, setStateErrorMsg: $elm$core$Maybe$Nothing}),
-					$elm$core$Platform$Cmd$batch(
-						_List_fromArray(
-							[
-								$author$project$Page$Admin$fetchBieterList(model.session),
-								cmdSetState
-							])));
+				return $author$project$Page$Admin$reload(model);
 			case 'ReceivedBieter':
 				var response = msg.a;
 				return A2($author$project$Page$Admin$fetchBieterResponse, model, response);
@@ -7620,10 +7656,10 @@ var $author$project$Page$Admin$update = F2(
 							}),
 						$elm$core$Platform$Cmd$none);
 				}
-			default:
+			case 'SelectBieter':
 				var bieter = msg.a;
-				var _v3 = A2($author$project$Session$loggedIn, model.session, bieter);
-				var newSession = _v3.a;
+				var _v2 = A2($author$project$Session$loggedIn, model.session, bieter);
+				var newSession = _v2.a;
 				return _Utils_Tuple2(
 					_Utils_update(
 						model,
@@ -7632,6 +7668,28 @@ var $author$project$Page$Admin$update = F2(
 						$author$project$Route$replaceUrl,
 						$author$project$Session$navKey(newSession),
 						$author$project$Route$Front));
+			case 'ResetOffer':
+				return _Utils_Tuple2(
+					model,
+					A2(
+						$author$project$Offer$reset,
+						$author$project$Page$Admin$ReceiveResetOffer,
+						$author$project$Session$headers(model.session)));
+			default:
+				var result = msg.a;
+				if (result.$ === 'Ok') {
+					return $author$project$Page$Admin$reload(model);
+				} else {
+					var e = result.a;
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{
+								resetOffenErrorMsg: $elm$core$Maybe$Just(
+									$author$project$Page$Admin$buildErrorMessage(e))
+							}),
+						$elm$core$Platform$Cmd$none);
+				}
 		}
 	});
 var $author$project$Page$Front$Edit = {$: 'Edit'};
@@ -9333,6 +9391,7 @@ var $author$project$Page$view = F2(
 		};
 	});
 var $author$project$Page$Admin$Reload = {$: 'Reload'};
+var $author$project$Page$Admin$ResetOffer = {$: 'ResetOffer'};
 var $elm$html$Html$button = _VirtualDom_node('button');
 var $elm$virtual_dom$VirtualDom$Normal = function (a) {
 	return {$: 'Normal', a: a};
@@ -9709,6 +9768,16 @@ var $author$project$Page$Admin$viewAdmin = function (model) {
 				_List_fromArray(
 					[
 						$elm$html$Html$text('reload')
+					])),
+				A2(
+				$elm$html$Html$button,
+				_List_fromArray(
+					[
+						$elm$html$Html$Events$onClick($author$project$Page$Admin$ResetOffer)
+					]),
+				_List_fromArray(
+					[
+						$elm$html$Html$text('reset offers - Achtung, Datenverlust')
 					])),
 				$author$project$Page$Admin$viewStatusSelect(model),
 				bieterList,

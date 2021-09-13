@@ -1,4 +1,4 @@
-module Offer exposing (Offer(..), decoder, fromInputString, fullOffer, send, toInputString, toString, valid)
+module Offer exposing (Offer(..), decoder, fromInputString, fullOffer, reset, send, toInputString, toString, valid)
 
 import Html exposing (input)
 import Http
@@ -187,6 +187,19 @@ send result header bieterID offer =
         , url = "/api/offer/" ++ bieterID
         , body = Http.jsonBody (encoder offer)
         , expect = decoder |> Http.expectJson result
+        , timeout = Nothing
+        , tracker = Nothing
+        }
+
+
+reset : (Result Http.Error () -> msg) -> List Http.Header -> Cmd msg
+reset result header =
+    Http.request
+        { method = "DELETE"
+        , headers = header
+        , url = "/api/offer"
+        , body = Http.emptyBody
+        , expect = Http.expectWhatever result
         , timeout = Nothing
         , tracker = Nothing
         }
