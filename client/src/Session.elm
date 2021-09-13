@@ -1,9 +1,10 @@
-module Session exposing (Session, anonymous, headers, loadBieter, loggedIn, loggedOut, navKey, toBieter, toBieterID)
+module Session exposing (Session, anonymous, headers, isAdmin, loadBieter, loadState, loggedIn, loggedOut, navKey, stateChanged, toBieter, toBieterID)
 
 import Bieter
 import Browser.Navigation as Navigation
 import Http
 import Ports
+import State
 
 
 type alias Session =
@@ -11,6 +12,7 @@ type alias Session =
     , baseURL : String
     , viewer : Viewer
     , admin : Admin
+    , state : State.State
     }
 
 
@@ -24,28 +26,26 @@ type Admin
     = IsAdmin String
     | NoAdmin
 
+
 {-| loadBieter requests a bieter and sets the session in the loading state.
 -}
 loadBieter : Session -> (Result Http.Error Bieter.Bieter -> msg) -> Bieter.ID -> ( Session, Cmd msg )
 loadBieter session m bieterID =
     ( { session | viewer = Loading bieterID }
-    , fetchBieter m (Bieter.idToString bieterID)
+    , Bieter.fetch m (Bieter.idToString bieterID)
     )
 
 
-fetchBieter : (Result Http.Error Bieter.Bieter -> msg) -> String -> Cmd msg
-fetchBieter m id =
-    Http.get
-        { url = "/api/bieter/" ++ id
-        , expect =
-            Bieter.bieterDecoder
-                |> Http.expectJson m
-        }
+loadState : Session -> (Result Http.Error State.State -> msg) -> ( Session, Cmd msg )
+loadState session m =
+    ( { session | state = State.Loading }
+    , State.fetch m
+    )
 
 
 anonymous : Navigation.Key -> String -> Session
 anonymous key baseURL =
-    Session key baseURL Guest NoAdmin
+    Session key baseURL Guest NoAdmin State.Unknown
 
 
 navKey : Session -> Navigation.Key
@@ -101,3 +101,18 @@ loggedOut session =
     ( { session | viewer = Guest }
     , Ports.send Ports.RemoveBieterID
     )
+
+
+stateChanged : Session -> State.State -> Session
+stateChanged session state =
+    { session | state = state }
+
+
+isAdmin : Session -> Bool
+isAdmin session =
+    case session.admin of
+        IsAdmin _ ->
+            True
+
+        NoAdmin ->
+            False

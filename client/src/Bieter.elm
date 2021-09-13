@@ -1,5 +1,6 @@
-module Bieter exposing (Bieter, ID, bieterDecoder, bieterEncoder, bieterListDecoder, idDecoder, idFromString, idToString, urlParser)
+module Bieter exposing (Bieter, ID, bieterDecoder, bieterEncoder, bieterListDecoder, fetch, idDecoder, idFromString, idToString, urlParser)
 
+import Http
 import Json.Decode as Decode exposing (Decoder, list, string)
 import Json.Decode.Pipeline exposing (optionalAt, required)
 import Json.Encode as Encode
@@ -59,3 +60,13 @@ idFromString sid =
 urlParser : Url.Parser.Parser (ID -> a) a
 urlParser =
     Url.Parser.custom "BIETER" (idFromString >> Just)
+
+
+fetch : (Result Http.Error Bieter -> msg) -> String -> Cmd msg
+fetch m id =
+    Http.get
+        { url = "/api/bieter/" ++ id
+        , expect =
+            bieterDecoder
+                |> Http.expectJson m
+        }

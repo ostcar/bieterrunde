@@ -29,7 +29,7 @@ func registerHandlers(router *mux.Router, config Config, db *Database, defaultFi
 	handleBieterCreate(router, db, config)
 	handleBieterList(router, db, config)
 
-	handleStatus(router, db, config)
+	handleState(router, db, config)
 	handleSetOffer(router, db, config)
 
 	handleStatic(router, defaultFiles.Static)
@@ -192,9 +192,9 @@ func handleBieterList(router *mux.Router, db *Database, config Config) {
 	})
 }
 
-// handleStatus gets or sets the service status.
-func handleStatus(router *mux.Router, db *Database, config Config) {
-	router.Path(pathPrefixAPI + "/status").Methods("GET").
+// handleState gets or sets the service status.
+func handleState(router *mux.Router, db *Database, config Config) {
+	router.Path(pathPrefixAPI + "/state").Methods("GET").
 		HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			s := db.State()
 			response := struct {
@@ -213,6 +213,10 @@ func handleStatus(router *mux.Router, db *Database, config Config) {
 
 	router.Path(pathPrefixAPI + "/status").Methods("PUT").
 		HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if !isAdmin(r, config) {
+				handleError(w, clientError{msg: "not allowed", status: 403})
+			}
+
 			if err := db.SetState(r.Body); err != nil {
 				handleError(w, fmt.Errorf("set state: %w", err))
 			}

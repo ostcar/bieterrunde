@@ -6,6 +6,7 @@ import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Http
 import Json.Encode as Encode
+import Permission
 import QRCode
 import Route
 import Session exposing (Session)
@@ -254,7 +255,7 @@ view model =
         Just bieter ->
             case model.page of
                 Show ->
-                    viewBieter model.session.baseURL bieter
+                    viewBieter model.session model.session.baseURL bieter
 
                 Edit ->
                     let
@@ -290,14 +291,23 @@ viewLogin loginData =
                         [ text "Anmelden" ]
                     ]
                 ]
-            , h1 [] [ text "Neue Bieternummer anlegen" ]
+            , viewCreateForm loginData
+            ]
+    }
+
+
+viewCreateForm : Model -> Html Msg
+viewCreateForm model =
+    if Permission.hasPerm Permission.CanCreate model.session then
+        div []
+            [ h1 [] [ text "Neue Bieternummer anlegen" ]
             , Html.form [ onSubmit RequestCreate ]
                 [ div []
                     [ text "Bieternummer"
                     , input
                         [ id "name"
                         , type_ "text"
-                        , value loginData.loginFormBieterName
+                        , value model.loginFormBieterName
                         , onInput SaveName
                         ]
                         []
@@ -309,7 +319,9 @@ viewLogin loginData =
                     ]
                 ]
             ]
-    }
+
+    else
+        text ""
 
 
 maybeError : Maybe String -> Html msg
@@ -322,8 +334,16 @@ maybeError errorMsg =
             text ""
 
 
-viewBieter : String -> Bieter.Bieter -> { title : String, content : Html Msg }
-viewBieter baseURL bieter =
+viewBieter : Session -> String -> Bieter.Bieter -> { title : String, content : Html Msg }
+viewBieter session baseURL bieter =
+    let
+        maybeEditButton =
+            if Permission.hasPerm Permission.CanEdit session then
+                div [] [ button [ onClick GotoEditPage ] [ text "Bearbeiten" ] ]
+
+            else
+                text ""
+    in
     { title = "Bieter"
     , content =
         div []
@@ -335,7 +355,7 @@ viewBieter baseURL bieter =
                 ]
             , div [] [ text ("Adresse: " ++ bieter.adresse) ]
             , div [] [ text ("IBAN: " ++ bieter.iban) ]
-            , div [] [ button [ onClick GotoEditPage ] [ text "Bearbeiten" ] ]
+            , maybeEditButton
             , viewQRCode baseURL bieter.id
             ]
     }

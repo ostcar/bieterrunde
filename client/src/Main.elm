@@ -11,6 +11,7 @@ import Page.Admin as Admin
 import Page.Front as Front
 import Route exposing (Route(..))
 import Session exposing (Session, navKey)
+import State
 import Url exposing (Url)
 
 
@@ -37,6 +38,7 @@ type Msg
     = LinkClicked UrlRequest
     | UrlChanged Url
     | ReceivedBieter (Result Http.Error Bieter.Bieter)
+    | ReceivedState (Result Http.Error State.State)
     | GotAdminMsg Admin.Msg
     | GotFrontMsg Front.Msg
 
@@ -76,18 +78,24 @@ updateSession model newSession =
 init : Maybe String -> Url -> Nav.Key -> ( Model, Cmd Msg )
 init flags url navKey =
     let
-        ( session, cmd ) =
+        session =
+            Session.anonymous navKey (absUrl url)
+
+        ( sessionBieter, cmdLoadBieter ) =
             case parseFlags flags of
                 Nothing ->
-                    ( Session.anonymous navKey (absUrl url), Cmd.none )
+                    ( session, Cmd.none )
 
                 Just bieterID ->
-                    Session.loadBieter (Session.anonymous navKey (absUrl url)) ReceivedBieter bieterID
+                    Session.loadBieter session ReceivedBieter bieterID
+
+        ( sessionState, cmdState ) =
+            Session.loadState sessionBieter ReceivedState
 
         ( model, changePageCmd ) =
-            changeRouteTo (Route.fromUrl url) session
+            changeRouteTo (Route.fromUrl url) sessionState
     in
-    ( model, Cmd.batch [ cmd, changePageCmd ] )
+    ( model, Cmd.batch [ cmdLoadBieter, changePageCmd, cmdState ] )
 
 
 absUrl : Url -> String
@@ -133,6 +141,21 @@ update msg model =
 
                 Err _ ->
                     -- Ignore an the error. The user will land on the login page with the bieter nr typed in.
+                    ( model, Cmd.none )
+
+        ( ReceivedState response, _ ) ->
+            case response of
+                Ok state ->
+                    let
+                        newSession =
+                            Session.stateChanged (toSession model) state
+                    in
+                    ( updateSession model newSession
+                    , Cmd.none
+                    )
+
+                Err _ ->
+                    -- Ignore an the error.
                     ( model, Cmd.none )
 
         ( LinkClicked urlRequest, _ ) ->
