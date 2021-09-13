@@ -5,6 +5,7 @@ import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Http
+import IBAN
 import Json.Encode as Encode
 import Permission
 import QRCode
@@ -21,6 +22,7 @@ type alias Model =
     , loginFormBieterName : String
     , editErrorMsg : Maybe String
     , draftBieter : Maybe Bieter.Bieter
+    , ibanValid : Bool
     }
 
 
@@ -60,7 +62,7 @@ init session =
                 Just id ->
                     Bieter.idToString id
     in
-    ( Model session Show Nothing bieterID "" Nothing Nothing, Cmd.none )
+    ( Model session Show Nothing bieterID "" Nothing Nothing False, Cmd.none )
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -154,7 +156,16 @@ updateEditPage model editMsg =
                     )
 
                 FormSaveIBAN iban ->
-                    ( { model | draftBieter = Just { bieter | iban = iban } }
+                    let
+                        valid =
+                            case IBAN.fromString iban of
+                                Ok _ ->
+                                    True
+
+                                Err _ ->
+                                    False
+                    in
+                    ( { model | ibanValid = valid, draftBieter = Just { bieter | iban = iban } }
                     , Cmd.none
                     )
 
@@ -410,6 +421,13 @@ viewEdit model =
                         [ text "IBAN"
                         , input
                             [ type_ "text"
+                            , class
+                                (if model.ibanValid then
+                                    ""
+
+                                 else
+                                    "error"
+                                )
                             , value bieter.iban
                             , onInput FormSaveIBAN
                             ]

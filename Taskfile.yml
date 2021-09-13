@@ -47,6 +47,7 @@ tasks:
     sources:
       - config.toml
       - client/index.html
+      - static/*
 
     method: none
 

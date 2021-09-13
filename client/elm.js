@@ -6645,9 +6645,9 @@ var $author$project$Page$Admin$init = function (session) {
 		A5($author$project$Page$Admin$Model, session, $elm$core$Maybe$Nothing, '', $elm$core$Maybe$Nothing, $elm$core$Maybe$Nothing),
 		cmd);
 };
-var $author$project$Page$Front$Model = F7(
-	function (session, page, loginErrorMsg, loginFormBieterNr, loginFormBieterName, editErrorMsg, draftBieter) {
-		return {draftBieter: draftBieter, editErrorMsg: editErrorMsg, loginErrorMsg: loginErrorMsg, loginFormBieterName: loginFormBieterName, loginFormBieterNr: loginFormBieterNr, page: page, session: session};
+var $author$project$Page$Front$Model = F8(
+	function (session, page, loginErrorMsg, loginFormBieterNr, loginFormBieterName, editErrorMsg, draftBieter, ibanValid) {
+		return {draftBieter: draftBieter, editErrorMsg: editErrorMsg, ibanValid: ibanValid, loginErrorMsg: loginErrorMsg, loginFormBieterName: loginFormBieterName, loginFormBieterNr: loginFormBieterNr, page: page, session: session};
 	});
 var $author$project$Page$Front$Show = {$: 'Show'};
 var $author$project$Bieter$idToString = function (_v0) {
@@ -6678,7 +6678,7 @@ var $author$project$Page$Front$init = function (session) {
 		}
 	}();
 	return _Utils_Tuple2(
-		A7($author$project$Page$Front$Model, session, $author$project$Page$Front$Show, $elm$core$Maybe$Nothing, bieterID, '', $elm$core$Maybe$Nothing, $elm$core$Maybe$Nothing),
+		A8($author$project$Page$Front$Model, session, $author$project$Page$Front$Show, $elm$core$Maybe$Nothing, bieterID, '', $elm$core$Maybe$Nothing, $elm$core$Maybe$Nothing, false),
 		$elm$core$Platform$Cmd$none);
 };
 var $author$project$Session$Loading = function (a) {
@@ -7608,6 +7608,1025 @@ var $author$project$Session$toBieter = function (s) {
 			return $elm$core$Maybe$Nothing;
 	}
 };
+var $elm$core$Result$andThen = F2(
+	function (callback, result) {
+		if (result.$ === 'Ok') {
+			var value = result.a;
+			return callback(value);
+		} else {
+			var msg = result.a;
+			return $elm$core$Result$Err(msg);
+		}
+	});
+var $groteck$elm_iban$IBAN$Types$IBAN = F3(
+	function (a, b, c) {
+		return {$: 'IBAN', a: a, b: b, c: c};
+	});
+var $groteck$elm_iban$IBAN$apply = F2(
+	function (value, callback) {
+		return callback(value);
+	});
+var $groteck$elm_iban$IBAN$Types$Albania = {$: 'Albania'};
+var $groteck$elm_iban$IBAN$Types$Algeria = {$: 'Algeria'};
+var $groteck$elm_iban$IBAN$Types$Andorra = {$: 'Andorra'};
+var $groteck$elm_iban$IBAN$Types$Angola = {$: 'Angola'};
+var $groteck$elm_iban$IBAN$Types$Austria = {$: 'Austria'};
+var $groteck$elm_iban$IBAN$Types$Azerbaijan = {$: 'Azerbaijan'};
+var $groteck$elm_iban$IBAN$Types$Bahrain = {$: 'Bahrain'};
+var $groteck$elm_iban$IBAN$Types$Belarus = {$: 'Belarus'};
+var $groteck$elm_iban$IBAN$Types$Belgium = {$: 'Belgium'};
+var $groteck$elm_iban$IBAN$Types$Benin = {$: 'Benin'};
+var $groteck$elm_iban$IBAN$Types$BosniaHerzegovina = {$: 'BosniaHerzegovina'};
+var $groteck$elm_iban$IBAN$Types$Brazil = {$: 'Brazil'};
+var $groteck$elm_iban$IBAN$Types$BritishVirginIslands = {$: 'BritishVirginIslands'};
+var $groteck$elm_iban$IBAN$Types$Bulgaria = {$: 'Bulgaria'};
+var $groteck$elm_iban$IBAN$Types$BurkinaFaso = {$: 'BurkinaFaso'};
+var $groteck$elm_iban$IBAN$Types$Burundi = {$: 'Burundi'};
+var $groteck$elm_iban$IBAN$Types$Cameroon = {$: 'Cameroon'};
+var $groteck$elm_iban$IBAN$Types$CapeVerde = {$: 'CapeVerde'};
+var $groteck$elm_iban$IBAN$Types$CostaRica = {$: 'CostaRica'};
+var $groteck$elm_iban$IBAN$Types$Croatia = {$: 'Croatia'};
+var $groteck$elm_iban$IBAN$Types$Cyprus = {$: 'Cyprus'};
+var $groteck$elm_iban$IBAN$Types$CzechRepublic = {$: 'CzechRepublic'};
+var $groteck$elm_iban$IBAN$Types$Denmark = {$: 'Denmark'};
+var $groteck$elm_iban$IBAN$Types$DominicanRepublic = {$: 'DominicanRepublic'};
+var $groteck$elm_iban$IBAN$Types$EastTimor = {$: 'EastTimor'};
+var $groteck$elm_iban$IBAN$Types$ElSalvador = {$: 'ElSalvador'};
+var $groteck$elm_iban$IBAN$Types$Estonia = {$: 'Estonia'};
+var $groteck$elm_iban$IBAN$Types$FaroeIslands = {$: 'FaroeIslands'};
+var $groteck$elm_iban$IBAN$Types$Finland = {$: 'Finland'};
+var $groteck$elm_iban$IBAN$Types$France = {$: 'France'};
+var $groteck$elm_iban$IBAN$Types$Georgia = {$: 'Georgia'};
+var $groteck$elm_iban$IBAN$Types$Germany = {$: 'Germany'};
+var $groteck$elm_iban$IBAN$Types$Gibraltar = {$: 'Gibraltar'};
+var $groteck$elm_iban$IBAN$Types$Greece = {$: 'Greece'};
+var $groteck$elm_iban$IBAN$Types$Greenland = {$: 'Greenland'};
+var $groteck$elm_iban$IBAN$Types$Guatemala = {$: 'Guatemala'};
+var $groteck$elm_iban$IBAN$Types$Hungary = {$: 'Hungary'};
+var $groteck$elm_iban$IBAN$Types$Iceland = {$: 'Iceland'};
+var $groteck$elm_iban$IBAN$Types$Iran = {$: 'Iran'};
+var $groteck$elm_iban$IBAN$Types$Iraq = {$: 'Iraq'};
+var $groteck$elm_iban$IBAN$Types$Ireland = {$: 'Ireland'};
+var $groteck$elm_iban$IBAN$Types$Israel = {$: 'Israel'};
+var $groteck$elm_iban$IBAN$Types$Italy = {$: 'Italy'};
+var $groteck$elm_iban$IBAN$Types$IvoryCoast = {$: 'IvoryCoast'};
+var $groteck$elm_iban$IBAN$Types$Jordan = {$: 'Jordan'};
+var $groteck$elm_iban$IBAN$Types$Kazakhstan = {$: 'Kazakhstan'};
+var $groteck$elm_iban$IBAN$Types$Kosovo = {$: 'Kosovo'};
+var $groteck$elm_iban$IBAN$Types$Kuwait = {$: 'Kuwait'};
+var $groteck$elm_iban$IBAN$Types$Latvia = {$: 'Latvia'};
+var $groteck$elm_iban$IBAN$Types$Lebanon = {$: 'Lebanon'};
+var $groteck$elm_iban$IBAN$Types$Liechtenstein = {$: 'Liechtenstein'};
+var $groteck$elm_iban$IBAN$Types$Lithuania = {$: 'Lithuania'};
+var $groteck$elm_iban$IBAN$Types$Luxembourg = {$: 'Luxembourg'};
+var $groteck$elm_iban$IBAN$Types$Macedonia = {$: 'Macedonia'};
+var $groteck$elm_iban$IBAN$Types$Madagascar = {$: 'Madagascar'};
+var $groteck$elm_iban$IBAN$Types$Mali = {$: 'Mali'};
+var $groteck$elm_iban$IBAN$Types$Malta = {$: 'Malta'};
+var $groteck$elm_iban$IBAN$Types$Mauritania = {$: 'Mauritania'};
+var $groteck$elm_iban$IBAN$Types$Mauritius = {$: 'Mauritius'};
+var $groteck$elm_iban$IBAN$Types$Moldova = {$: 'Moldova'};
+var $groteck$elm_iban$IBAN$Types$Monaco = {$: 'Monaco'};
+var $groteck$elm_iban$IBAN$Types$Montenegro = {$: 'Montenegro'};
+var $groteck$elm_iban$IBAN$Types$Mozambique = {$: 'Mozambique'};
+var $groteck$elm_iban$IBAN$Types$Netherlands = {$: 'Netherlands'};
+var $groteck$elm_iban$IBAN$Types$Norway = {$: 'Norway'};
+var $groteck$elm_iban$IBAN$Types$Pakistan = {$: 'Pakistan'};
+var $groteck$elm_iban$IBAN$Types$PalestinianTerritories = {$: 'PalestinianTerritories'};
+var $groteck$elm_iban$IBAN$Types$Poland = {$: 'Poland'};
+var $groteck$elm_iban$IBAN$Types$Portugal = {$: 'Portugal'};
+var $groteck$elm_iban$IBAN$Types$Qatar = {$: 'Qatar'};
+var $groteck$elm_iban$IBAN$Types$Romania = {$: 'Romania'};
+var $groteck$elm_iban$IBAN$Types$SaintLucia = {$: 'SaintLucia'};
+var $groteck$elm_iban$IBAN$Types$SanMarino = {$: 'SanMarino'};
+var $groteck$elm_iban$IBAN$Types$SaoTomeAndPrincipe = {$: 'SaoTomeAndPrincipe'};
+var $groteck$elm_iban$IBAN$Types$SaudiArabia = {$: 'SaudiArabia'};
+var $groteck$elm_iban$IBAN$Types$Senegal = {$: 'Senegal'};
+var $groteck$elm_iban$IBAN$Types$Serbia = {$: 'Serbia'};
+var $groteck$elm_iban$IBAN$Types$Seychelles = {$: 'Seychelles'};
+var $groteck$elm_iban$IBAN$Types$Slovakia = {$: 'Slovakia'};
+var $groteck$elm_iban$IBAN$Types$Slovenia = {$: 'Slovenia'};
+var $groteck$elm_iban$IBAN$Types$Spain = {$: 'Spain'};
+var $groteck$elm_iban$IBAN$Types$Sweden = {$: 'Sweden'};
+var $groteck$elm_iban$IBAN$Types$Switzerland = {$: 'Switzerland'};
+var $groteck$elm_iban$IBAN$Types$Tunisia = {$: 'Tunisia'};
+var $groteck$elm_iban$IBAN$Types$Turkey = {$: 'Turkey'};
+var $groteck$elm_iban$IBAN$Types$Ukraine = {$: 'Ukraine'};
+var $groteck$elm_iban$IBAN$Types$UnitedArabEmirates = {$: 'UnitedArabEmirates'};
+var $groteck$elm_iban$IBAN$Types$UnitedKingdom = {$: 'UnitedKingdom'};
+var $groteck$elm_iban$IBAN$Types$UnknownCountryCode = function (a) {
+	return {$: 'UnknownCountryCode', a: a};
+};
+var $groteck$elm_iban$IBAN$Country$fromString = function (code) {
+	switch (code) {
+		case 'AL':
+			return $elm$core$Result$Ok($groteck$elm_iban$IBAN$Types$Albania);
+		case 'DZ':
+			return $elm$core$Result$Ok($groteck$elm_iban$IBAN$Types$Algeria);
+		case 'AD':
+			return $elm$core$Result$Ok($groteck$elm_iban$IBAN$Types$Andorra);
+		case 'AO':
+			return $elm$core$Result$Ok($groteck$elm_iban$IBAN$Types$Angola);
+		case 'AT':
+			return $elm$core$Result$Ok($groteck$elm_iban$IBAN$Types$Austria);
+		case 'AZ':
+			return $elm$core$Result$Ok($groteck$elm_iban$IBAN$Types$Azerbaijan);
+		case 'BH':
+			return $elm$core$Result$Ok($groteck$elm_iban$IBAN$Types$Bahrain);
+		case 'BY':
+			return $elm$core$Result$Ok($groteck$elm_iban$IBAN$Types$Belarus);
+		case 'BE':
+			return $elm$core$Result$Ok($groteck$elm_iban$IBAN$Types$Belgium);
+		case 'BJ':
+			return $elm$core$Result$Ok($groteck$elm_iban$IBAN$Types$Benin);
+		case 'BA':
+			return $elm$core$Result$Ok($groteck$elm_iban$IBAN$Types$BosniaHerzegovina);
+		case 'BR':
+			return $elm$core$Result$Ok($groteck$elm_iban$IBAN$Types$Brazil);
+		case 'VG':
+			return $elm$core$Result$Ok($groteck$elm_iban$IBAN$Types$BritishVirginIslands);
+		case 'BG':
+			return $elm$core$Result$Ok($groteck$elm_iban$IBAN$Types$Bulgaria);
+		case 'BF':
+			return $elm$core$Result$Ok($groteck$elm_iban$IBAN$Types$BurkinaFaso);
+		case 'BI':
+			return $elm$core$Result$Ok($groteck$elm_iban$IBAN$Types$Burundi);
+		case 'CM':
+			return $elm$core$Result$Ok($groteck$elm_iban$IBAN$Types$Cameroon);
+		case 'CV':
+			return $elm$core$Result$Ok($groteck$elm_iban$IBAN$Types$CapeVerde);
+		case 'CR':
+			return $elm$core$Result$Ok($groteck$elm_iban$IBAN$Types$CostaRica);
+		case 'HR':
+			return $elm$core$Result$Ok($groteck$elm_iban$IBAN$Types$Croatia);
+		case 'CY':
+			return $elm$core$Result$Ok($groteck$elm_iban$IBAN$Types$Cyprus);
+		case 'CZ':
+			return $elm$core$Result$Ok($groteck$elm_iban$IBAN$Types$CzechRepublic);
+		case 'DK':
+			return $elm$core$Result$Ok($groteck$elm_iban$IBAN$Types$Denmark);
+		case 'DO':
+			return $elm$core$Result$Ok($groteck$elm_iban$IBAN$Types$DominicanRepublic);
+		case 'TL':
+			return $elm$core$Result$Ok($groteck$elm_iban$IBAN$Types$EastTimor);
+		case 'SV':
+			return $elm$core$Result$Ok($groteck$elm_iban$IBAN$Types$ElSalvador);
+		case 'EE':
+			return $elm$core$Result$Ok($groteck$elm_iban$IBAN$Types$Estonia);
+		case 'FO':
+			return $elm$core$Result$Ok($groteck$elm_iban$IBAN$Types$FaroeIslands);
+		case 'FI':
+			return $elm$core$Result$Ok($groteck$elm_iban$IBAN$Types$Finland);
+		case 'FR':
+			return $elm$core$Result$Ok($groteck$elm_iban$IBAN$Types$France);
+		case 'GE':
+			return $elm$core$Result$Ok($groteck$elm_iban$IBAN$Types$Georgia);
+		case 'DE':
+			return $elm$core$Result$Ok($groteck$elm_iban$IBAN$Types$Germany);
+		case 'GI':
+			return $elm$core$Result$Ok($groteck$elm_iban$IBAN$Types$Gibraltar);
+		case 'GR':
+			return $elm$core$Result$Ok($groteck$elm_iban$IBAN$Types$Greece);
+		case 'GL':
+			return $elm$core$Result$Ok($groteck$elm_iban$IBAN$Types$Greenland);
+		case 'GT':
+			return $elm$core$Result$Ok($groteck$elm_iban$IBAN$Types$Guatemala);
+		case 'HU':
+			return $elm$core$Result$Ok($groteck$elm_iban$IBAN$Types$Hungary);
+		case 'IS':
+			return $elm$core$Result$Ok($groteck$elm_iban$IBAN$Types$Iceland);
+		case 'IR':
+			return $elm$core$Result$Ok($groteck$elm_iban$IBAN$Types$Iran);
+		case 'IQ':
+			return $elm$core$Result$Ok($groteck$elm_iban$IBAN$Types$Iraq);
+		case 'IE':
+			return $elm$core$Result$Ok($groteck$elm_iban$IBAN$Types$Ireland);
+		case 'IL':
+			return $elm$core$Result$Ok($groteck$elm_iban$IBAN$Types$Israel);
+		case 'IT':
+			return $elm$core$Result$Ok($groteck$elm_iban$IBAN$Types$Italy);
+		case 'IC':
+			return $elm$core$Result$Ok($groteck$elm_iban$IBAN$Types$IvoryCoast);
+		case 'JO':
+			return $elm$core$Result$Ok($groteck$elm_iban$IBAN$Types$Jordan);
+		case 'KZ':
+			return $elm$core$Result$Ok($groteck$elm_iban$IBAN$Types$Kazakhstan);
+		case 'XK':
+			return $elm$core$Result$Ok($groteck$elm_iban$IBAN$Types$Kosovo);
+		case 'KW':
+			return $elm$core$Result$Ok($groteck$elm_iban$IBAN$Types$Kuwait);
+		case 'LV':
+			return $elm$core$Result$Ok($groteck$elm_iban$IBAN$Types$Latvia);
+		case 'LB':
+			return $elm$core$Result$Ok($groteck$elm_iban$IBAN$Types$Lebanon);
+		case 'LI':
+			return $elm$core$Result$Ok($groteck$elm_iban$IBAN$Types$Liechtenstein);
+		case 'LT':
+			return $elm$core$Result$Ok($groteck$elm_iban$IBAN$Types$Lithuania);
+		case 'LU':
+			return $elm$core$Result$Ok($groteck$elm_iban$IBAN$Types$Luxembourg);
+		case 'MK':
+			return $elm$core$Result$Ok($groteck$elm_iban$IBAN$Types$Macedonia);
+		case 'MG':
+			return $elm$core$Result$Ok($groteck$elm_iban$IBAN$Types$Madagascar);
+		case 'ML':
+			return $elm$core$Result$Ok($groteck$elm_iban$IBAN$Types$Mali);
+		case 'MT':
+			return $elm$core$Result$Ok($groteck$elm_iban$IBAN$Types$Malta);
+		case 'MR':
+			return $elm$core$Result$Ok($groteck$elm_iban$IBAN$Types$Mauritania);
+		case 'MU':
+			return $elm$core$Result$Ok($groteck$elm_iban$IBAN$Types$Mauritius);
+		case 'MC':
+			return $elm$core$Result$Ok($groteck$elm_iban$IBAN$Types$Monaco);
+		case 'MD':
+			return $elm$core$Result$Ok($groteck$elm_iban$IBAN$Types$Moldova);
+		case 'ME':
+			return $elm$core$Result$Ok($groteck$elm_iban$IBAN$Types$Montenegro);
+		case 'MZ':
+			return $elm$core$Result$Ok($groteck$elm_iban$IBAN$Types$Mozambique);
+		case 'NL':
+			return $elm$core$Result$Ok($groteck$elm_iban$IBAN$Types$Netherlands);
+		case 'NO':
+			return $elm$core$Result$Ok($groteck$elm_iban$IBAN$Types$Norway);
+		case 'PK':
+			return $elm$core$Result$Ok($groteck$elm_iban$IBAN$Types$Pakistan);
+		case 'PS':
+			return $elm$core$Result$Ok($groteck$elm_iban$IBAN$Types$PalestinianTerritories);
+		case 'PL':
+			return $elm$core$Result$Ok($groteck$elm_iban$IBAN$Types$Poland);
+		case 'PT':
+			return $elm$core$Result$Ok($groteck$elm_iban$IBAN$Types$Portugal);
+		case 'QA':
+			return $elm$core$Result$Ok($groteck$elm_iban$IBAN$Types$Qatar);
+		case 'RO':
+			return $elm$core$Result$Ok($groteck$elm_iban$IBAN$Types$Romania);
+		case 'LC':
+			return $elm$core$Result$Ok($groteck$elm_iban$IBAN$Types$SaintLucia);
+		case 'SM':
+			return $elm$core$Result$Ok($groteck$elm_iban$IBAN$Types$SanMarino);
+		case 'ST':
+			return $elm$core$Result$Ok($groteck$elm_iban$IBAN$Types$SaoTomeAndPrincipe);
+		case 'SA':
+			return $elm$core$Result$Ok($groteck$elm_iban$IBAN$Types$SaudiArabia);
+		case 'SN':
+			return $elm$core$Result$Ok($groteck$elm_iban$IBAN$Types$Senegal);
+		case 'SC':
+			return $elm$core$Result$Ok($groteck$elm_iban$IBAN$Types$Seychelles);
+		case 'RS':
+			return $elm$core$Result$Ok($groteck$elm_iban$IBAN$Types$Serbia);
+		case 'SK':
+			return $elm$core$Result$Ok($groteck$elm_iban$IBAN$Types$Slovakia);
+		case 'SI':
+			return $elm$core$Result$Ok($groteck$elm_iban$IBAN$Types$Slovenia);
+		case 'ES':
+			return $elm$core$Result$Ok($groteck$elm_iban$IBAN$Types$Spain);
+		case 'SE':
+			return $elm$core$Result$Ok($groteck$elm_iban$IBAN$Types$Sweden);
+		case 'CH':
+			return $elm$core$Result$Ok($groteck$elm_iban$IBAN$Types$Switzerland);
+		case 'TN':
+			return $elm$core$Result$Ok($groteck$elm_iban$IBAN$Types$Tunisia);
+		case 'TR':
+			return $elm$core$Result$Ok($groteck$elm_iban$IBAN$Types$Turkey);
+		case 'UA':
+			return $elm$core$Result$Ok($groteck$elm_iban$IBAN$Types$Ukraine);
+		case 'AE':
+			return $elm$core$Result$Ok($groteck$elm_iban$IBAN$Types$UnitedArabEmirates);
+		case 'GB':
+			return $elm$core$Result$Ok($groteck$elm_iban$IBAN$Types$UnitedKingdom);
+		default:
+			return $elm$core$Result$Err(
+				$groteck$elm_iban$IBAN$Types$UnknownCountryCode(code));
+	}
+};
+var $elm$core$Result$map = F2(
+	function (func, ra) {
+		if (ra.$ === 'Ok') {
+			var a = ra.a;
+			return $elm$core$Result$Ok(
+				func(a));
+		} else {
+			var e = ra.a;
+			return $elm$core$Result$Err(e);
+		}
+	});
+var $groteck$elm_iban$IBAN$build = function (string) {
+	var country = $groteck$elm_iban$IBAN$Country$fromString(
+		A2($elm$core$String$left, 2, string));
+	var checkCode = A3($elm$core$String$slice, 2, 4, string);
+	var bban = A2($elm$core$String$dropLeft, 4, string);
+	return A2(
+		$elm$core$Result$map,
+		$groteck$elm_iban$IBAN$apply(bban),
+		A2(
+			$elm$core$Result$map,
+			$groteck$elm_iban$IBAN$apply(checkCode),
+			A2($elm$core$Result$map, $groteck$elm_iban$IBAN$Types$IBAN, country)));
+};
+var $elm$core$String$filter = _String_filter;
+var $elm$core$Basics$neq = _Utils_notEqual;
+var $elm$core$String$toUpper = _String_toUpper;
+var $groteck$elm_iban$IBAN$sanitize = A2(
+	$elm$core$Basics$composeR,
+	$elm$core$String$filter(
+		$elm$core$Basics$neq(
+			_Utils_chr(' '))),
+	$elm$core$String$toUpper);
+var $groteck$elm_iban$IBAN$Types$Electronic = {$: 'Electronic'};
+var $elm$core$Basics$always = F2(
+	function (a, _v0) {
+		return a;
+	});
+var $groteck$elm_iban$IBAN$Types$InvalidCharacter = {$: 'InvalidCharacter'};
+var $groteck$elm_iban$IBAN$Validate$isAlphaNumeric = function (c) {
+	return $elm$core$Char$isDigit(c) || $elm$core$Char$isUpper(c);
+};
+var $groteck$elm_iban$IBAN$Validate$chars = function (string) {
+	return A2($elm$core$String$all, $groteck$elm_iban$IBAN$Validate$isAlphaNumeric, string) ? $elm$core$Result$Ok(string) : $elm$core$Result$Err($groteck$elm_iban$IBAN$Types$InvalidCharacter);
+};
+var $groteck$elm_iban$IBAN$Validate$ibanLength = function (country) {
+	switch (country.$) {
+		case 'Albania':
+			return 28;
+		case 'Andorra':
+			return 24;
+		case 'Austria':
+			return 20;
+		case 'Azerbaijan':
+			return 28;
+		case 'Bahrain':
+			return 22;
+		case 'Belarus':
+			return 28;
+		case 'Belgium':
+			return 16;
+		case 'BosniaHerzegovina':
+			return 20;
+		case 'Brazil':
+			return 29;
+		case 'Bulgaria':
+			return 22;
+		case 'CostaRica':
+			return 22;
+		case 'Croatia':
+			return 21;
+		case 'Cyprus':
+			return 28;
+		case 'CzechRepublic':
+			return 24;
+		case 'Denmark':
+			return 18;
+		case 'DominicanRepublic':
+			return 28;
+		case 'EastTimor':
+			return 23;
+		case 'Estonia':
+			return 20;
+		case 'FaroeIslands':
+			return 18;
+		case 'Finland':
+			return 18;
+		case 'France':
+			return 27;
+		case 'Georgia':
+			return 22;
+		case 'Germany':
+			return 22;
+		case 'Gibraltar':
+			return 23;
+		case 'Greece':
+			return 27;
+		case 'Greenland':
+			return 18;
+		case 'Guatemala':
+			return 28;
+		case 'Hungary':
+			return 28;
+		case 'Iceland':
+			return 26;
+		case 'Ireland':
+			return 22;
+		case 'Israel':
+			return 23;
+		case 'Italy':
+			return 27;
+		case 'Jordan':
+			return 30;
+		case 'Kazakhstan':
+			return 20;
+		case 'Kosovo':
+			return 20;
+		case 'Kuwait':
+			return 30;
+		case 'Latvia':
+			return 21;
+		case 'Lebanon':
+			return 28;
+		case 'Liechtenstein':
+			return 21;
+		case 'Lithuania':
+			return 20;
+		case 'Luxembourg':
+			return 20;
+		case 'Macedonia':
+			return 19;
+		case 'Malta':
+			return 31;
+		case 'Mauritania':
+			return 27;
+		case 'Mauritius':
+			return 30;
+		case 'Monaco':
+			return 27;
+		case 'Moldova':
+			return 24;
+		case 'Montenegro':
+			return 22;
+		case 'Netherlands':
+			return 18;
+		case 'Norway':
+			return 15;
+		case 'Pakistan':
+			return 24;
+		case 'PalestinianTerritories':
+			return 29;
+		case 'Poland':
+			return 28;
+		case 'Portugal':
+			return 25;
+		case 'Qatar':
+			return 29;
+		case 'Romania':
+			return 24;
+		case 'SanMarino':
+			return 27;
+		case 'SaudiArabia':
+			return 24;
+		case 'Serbia':
+			return 22;
+		case 'Slovakia':
+			return 24;
+		case 'Slovenia':
+			return 19;
+		case 'Spain':
+			return 24;
+		case 'Sweden':
+			return 24;
+		case 'Switzerland':
+			return 21;
+		case 'Tunisia':
+			return 24;
+		case 'Turkey':
+			return 26;
+		case 'UnitedArabEmirates':
+			return 23;
+		case 'UnitedKingdom':
+			return 22;
+		case 'BritishVirginIslands':
+			return 24;
+		case 'Algeria':
+			return 24;
+		case 'Angola':
+			return 25;
+		case 'Benin':
+			return 28;
+		case 'BurkinaFaso':
+			return 28;
+		case 'Burundi':
+			return 16;
+		case 'Cameroon':
+			return 28;
+		case 'CapeVerde':
+			return 25;
+		case 'Iran':
+			return 26;
+		case 'IvoryCoast':
+			return 28;
+		case 'Madagascar':
+			return 27;
+		case 'Mali':
+			return 28;
+		case 'Mozambique':
+			return 25;
+		case 'Senegal':
+			return 28;
+		case 'Ukraine':
+			return 29;
+		case 'ElSalvador':
+			return 28;
+		case 'SaoTomeAndPrincipe':
+			return 25;
+		case 'Seychelles':
+			return 31;
+		case 'SaintLucia':
+			return 32;
+		default:
+			return 23;
+	}
+};
+var $groteck$elm_iban$IBAN$Types$IBANLengthError = F2(
+	function (a, b) {
+		return {$: 'IBANLengthError', a: a, b: b};
+	});
+var $groteck$elm_iban$IBAN$Validate$lengthErr = F3(
+	function (country, actual, expected) {
+		return A2(
+			$groteck$elm_iban$IBAN$Types$IBANLengthError,
+			country,
+			{actual: actual, expected: expected});
+	});
+var $groteck$elm_iban$IBAN$Validate$length = F2(
+	function (country, string) {
+		var expected = $groteck$elm_iban$IBAN$Validate$ibanLength(country);
+		var actual = $elm$core$String$length(string);
+		return _Utils_eq(expected, actual) ? $elm$core$Result$Ok(string) : $elm$core$Result$Err(
+			A3($groteck$elm_iban$IBAN$Validate$lengthErr, country, actual, expected));
+	});
+var $groteck$elm_iban$IBAN$Types$SanityCheckFailed = {$: 'SanityCheckFailed'};
+var $groteck$elm_iban$IBAN$Validate$base0 = $elm$core$Char$toCode(
+	_Utils_chr('0'));
+var $groteck$elm_iban$IBAN$Validate$digitToInt = A2(
+	$elm$core$Basics$composeR,
+	$elm$core$Char$toCode,
+	function (a) {
+		return a - $groteck$elm_iban$IBAN$Validate$base0;
+	});
+var $elm$core$Basics$modBy = _Basics_modBy;
+var $groteck$elm_iban$IBAN$Validate$folder = F3(
+	function (div, digit, total) {
+		return A2($elm$core$Basics$modBy, div, (total * 10) + digit);
+	});
+var $groteck$elm_iban$IBAN$Validate$modulo = function (div) {
+	return A2(
+		$elm$core$List$foldl,
+		$groteck$elm_iban$IBAN$Validate$folder(div),
+		0);
+};
+var $elm$core$String$concat = function (strings) {
+	return A2($elm$core$String$join, '', strings);
+};
+var $groteck$elm_iban$IBAN$Validate$baseA = $elm$core$Char$toCode(
+	_Utils_chr('A'));
+var $elm$core$String$cons = _String_cons;
+var $elm$core$String$fromChar = function (_char) {
+	return A2($elm$core$String$cons, _char, '');
+};
+var $groteck$elm_iban$IBAN$Validate$convert = function (_char) {
+	return $elm$core$Char$isDigit(_char) ? $elm$core$String$fromChar(_char) : $elm$core$String$fromInt(
+		($elm$core$Char$toCode(_char) - $groteck$elm_iban$IBAN$Validate$baseA) + 10);
+};
+var $elm$core$String$foldr = _String_foldr;
+var $elm$core$String$toList = function (string) {
+	return A3($elm$core$String$foldr, $elm$core$List$cons, _List_Nil, string);
+};
+var $groteck$elm_iban$IBAN$Validate$prepare = A2(
+	$elm$core$Basics$composeR,
+	$elm$core$String$toList,
+	A2(
+		$elm$core$Basics$composeR,
+		$elm$core$List$map($groteck$elm_iban$IBAN$Validate$convert),
+		$elm$core$String$concat));
+var $groteck$elm_iban$IBAN$Validate$rotate = F2(
+	function (n, string) {
+		return _Utils_ap(
+			A2($elm$core$String$dropLeft, n, string),
+			A2($elm$core$String$left, n, string));
+	});
+var $groteck$elm_iban$IBAN$Validate$performSanityCheck = A2(
+	$elm$core$Basics$composeR,
+	$groteck$elm_iban$IBAN$Validate$rotate(4),
+	A2(
+		$elm$core$Basics$composeR,
+		$groteck$elm_iban$IBAN$Validate$prepare,
+		A2(
+			$elm$core$Basics$composeR,
+			$elm$core$String$toList,
+			A2(
+				$elm$core$Basics$composeR,
+				$elm$core$List$map($groteck$elm_iban$IBAN$Validate$digitToInt),
+				A2(
+					$elm$core$Basics$composeR,
+					$groteck$elm_iban$IBAN$Validate$modulo(97),
+					$elm$core$Basics$eq(1))))));
+var $groteck$elm_iban$IBAN$Validate$sanityCheck = function (string) {
+	return $groteck$elm_iban$IBAN$Validate$performSanityCheck(string) ? $elm$core$Result$Ok(string) : $elm$core$Result$Err($groteck$elm_iban$IBAN$Types$SanityCheckFailed);
+};
+var $groteck$elm_iban$IBAN$Country$toString = function (country) {
+	switch (country.$) {
+		case 'Albania':
+			return 'AL';
+		case 'Algeria':
+			return 'DZ';
+		case 'Andorra':
+			return 'AD';
+		case 'Angola':
+			return 'AO';
+		case 'Austria':
+			return 'AT';
+		case 'Azerbaijan':
+			return 'AZ';
+		case 'Bahrain':
+			return 'BH';
+		case 'Belarus':
+			return 'BY';
+		case 'Belgium':
+			return 'BE';
+		case 'Benin':
+			return 'BJ';
+		case 'BosniaHerzegovina':
+			return 'BA';
+		case 'BritishVirginIslands':
+			return 'VG';
+		case 'Brazil':
+			return 'BR';
+		case 'Bulgaria':
+			return 'BG';
+		case 'BurkinaFaso':
+			return 'BF';
+		case 'Burundi':
+			return 'BI';
+		case 'Cameroon':
+			return 'CM';
+		case 'CapeVerde':
+			return 'CV';
+		case 'CostaRica':
+			return 'CR';
+		case 'Croatia':
+			return 'HR';
+		case 'Cyprus':
+			return 'CY';
+		case 'CzechRepublic':
+			return 'CZ';
+		case 'Denmark':
+			return 'DK';
+		case 'DominicanRepublic':
+			return 'DO';
+		case 'EastTimor':
+			return 'TL';
+		case 'ElSalvador':
+			return 'SV';
+		case 'Estonia':
+			return 'EE';
+		case 'FaroeIslands':
+			return 'FO';
+		case 'Finland':
+			return 'FI';
+		case 'France':
+			return 'FR';
+		case 'Georgia':
+			return 'GE';
+		case 'Germany':
+			return 'DE';
+		case 'Gibraltar':
+			return 'GI';
+		case 'Greece':
+			return 'GR';
+		case 'Greenland':
+			return 'GL';
+		case 'Guatemala':
+			return 'GT';
+		case 'Hungary':
+			return 'HU';
+		case 'Iceland':
+			return 'IS';
+		case 'Iran':
+			return 'IR';
+		case 'Iraq':
+			return 'IQ';
+		case 'Ireland':
+			return 'IE';
+		case 'Israel':
+			return 'IL';
+		case 'Italy':
+			return 'IT';
+		case 'IvoryCoast':
+			return 'IC';
+		case 'Jordan':
+			return 'JO';
+		case 'Kazakhstan':
+			return 'KZ';
+		case 'Kosovo':
+			return 'XK';
+		case 'Kuwait':
+			return 'KW';
+		case 'Latvia':
+			return 'LV';
+		case 'Lebanon':
+			return 'LB';
+		case 'Liechtenstein':
+			return 'LI';
+		case 'Lithuania':
+			return 'LT';
+		case 'Luxembourg':
+			return 'LU';
+		case 'Macedonia':
+			return 'MK';
+		case 'Madagascar':
+			return 'MG';
+		case 'Mali':
+			return 'ML';
+		case 'Malta':
+			return 'MT';
+		case 'Mauritania':
+			return 'MR';
+		case 'Mauritius':
+			return 'MU';
+		case 'Monaco':
+			return 'MC';
+		case 'Moldova':
+			return 'MD';
+		case 'Montenegro':
+			return 'ME';
+		case 'Mozambique':
+			return 'MZ';
+		case 'Netherlands':
+			return 'NL';
+		case 'Norway':
+			return 'NO';
+		case 'Pakistan':
+			return 'PK';
+		case 'PalestinianTerritories':
+			return 'PS';
+		case 'Poland':
+			return 'PL';
+		case 'Portugal':
+			return 'PT';
+		case 'Qatar':
+			return 'QA';
+		case 'Romania':
+			return 'RO';
+		case 'SaintLucia':
+			return 'LC';
+		case 'SanMarino':
+			return 'SM';
+		case 'SaoTomeAndPrincipe':
+			return 'ST';
+		case 'SaudiArabia':
+			return 'SA';
+		case 'Senegal':
+			return 'SN';
+		case 'Seychelles':
+			return 'SC';
+		case 'Serbia':
+			return 'RS';
+		case 'Slovakia':
+			return 'SK';
+		case 'Slovenia':
+			return 'SI';
+		case 'Spain':
+			return 'ES';
+		case 'Sweden':
+			return 'SE';
+		case 'Switzerland':
+			return 'CH';
+		case 'Tunisia':
+			return 'TN';
+		case 'Turkey':
+			return 'TR';
+		case 'Ukraine':
+			return 'UA';
+		case 'UnitedArabEmirates':
+			return 'AE';
+		default:
+			return 'GB';
+	}
+};
+var $groteck$elm_iban$IBAN$toElectronicString = function (_v0) {
+	var country = _v0.a;
+	var checkCode = _v0.b;
+	var bban = _v0.c;
+	return _Utils_ap(
+		$groteck$elm_iban$IBAN$Country$toString(country),
+		_Utils_ap(checkCode, bban));
+};
+var $elm$core$String$fromList = _String_fromList;
+var $elm$core$List$intersperse = F2(
+	function (sep, xs) {
+		if (!xs.b) {
+			return _List_Nil;
+		} else {
+			var hd = xs.a;
+			var tl = xs.b;
+			var step = F2(
+				function (x, rest) {
+					return A2(
+						$elm$core$List$cons,
+						sep,
+						A2($elm$core$List$cons, x, rest));
+				});
+			var spersed = A3($elm$core$List$foldr, step, _List_Nil, tl);
+			return A2($elm$core$List$cons, hd, spersed);
+		}
+	});
+var $elm$core$List$drop = F2(
+	function (n, list) {
+		drop:
+		while (true) {
+			if (n <= 0) {
+				return list;
+			} else {
+				if (!list.b) {
+					return list;
+				} else {
+					var x = list.a;
+					var xs = list.b;
+					var $temp$n = n - 1,
+						$temp$list = xs;
+					n = $temp$n;
+					list = $temp$list;
+					continue drop;
+				}
+			}
+		}
+	});
+var $elm$core$List$takeReverse = F3(
+	function (n, list, kept) {
+		takeReverse:
+		while (true) {
+			if (n <= 0) {
+				return kept;
+			} else {
+				if (!list.b) {
+					return kept;
+				} else {
+					var x = list.a;
+					var xs = list.b;
+					var $temp$n = n - 1,
+						$temp$list = xs,
+						$temp$kept = A2($elm$core$List$cons, x, kept);
+					n = $temp$n;
+					list = $temp$list;
+					kept = $temp$kept;
+					continue takeReverse;
+				}
+			}
+		}
+	});
+var $elm$core$List$takeTailRec = F2(
+	function (n, list) {
+		return $elm$core$List$reverse(
+			A3($elm$core$List$takeReverse, n, list, _List_Nil));
+	});
+var $elm$core$List$takeFast = F3(
+	function (ctr, n, list) {
+		if (n <= 0) {
+			return _List_Nil;
+		} else {
+			var _v0 = _Utils_Tuple2(n, list);
+			_v0$1:
+			while (true) {
+				_v0$5:
+				while (true) {
+					if (!_v0.b.b) {
+						return list;
+					} else {
+						if (_v0.b.b.b) {
+							switch (_v0.a) {
+								case 1:
+									break _v0$1;
+								case 2:
+									var _v2 = _v0.b;
+									var x = _v2.a;
+									var _v3 = _v2.b;
+									var y = _v3.a;
+									return _List_fromArray(
+										[x, y]);
+								case 3:
+									if (_v0.b.b.b.b) {
+										var _v4 = _v0.b;
+										var x = _v4.a;
+										var _v5 = _v4.b;
+										var y = _v5.a;
+										var _v6 = _v5.b;
+										var z = _v6.a;
+										return _List_fromArray(
+											[x, y, z]);
+									} else {
+										break _v0$5;
+									}
+								default:
+									if (_v0.b.b.b.b && _v0.b.b.b.b.b) {
+										var _v7 = _v0.b;
+										var x = _v7.a;
+										var _v8 = _v7.b;
+										var y = _v8.a;
+										var _v9 = _v8.b;
+										var z = _v9.a;
+										var _v10 = _v9.b;
+										var w = _v10.a;
+										var tl = _v10.b;
+										return (ctr > 1000) ? A2(
+											$elm$core$List$cons,
+											x,
+											A2(
+												$elm$core$List$cons,
+												y,
+												A2(
+													$elm$core$List$cons,
+													z,
+													A2(
+														$elm$core$List$cons,
+														w,
+														A2($elm$core$List$takeTailRec, n - 4, tl))))) : A2(
+											$elm$core$List$cons,
+											x,
+											A2(
+												$elm$core$List$cons,
+												y,
+												A2(
+													$elm$core$List$cons,
+													z,
+													A2(
+														$elm$core$List$cons,
+														w,
+														A3($elm$core$List$takeFast, ctr + 1, n - 4, tl)))));
+									} else {
+										break _v0$5;
+									}
+							}
+						} else {
+							if (_v0.a === 1) {
+								break _v0$1;
+							} else {
+								break _v0$5;
+							}
+						}
+					}
+				}
+				return list;
+			}
+			var _v1 = _v0.b;
+			var x = _v1.a;
+			return _List_fromArray(
+				[x]);
+		}
+	});
+var $elm$core$List$take = F2(
+	function (n, list) {
+		return A3($elm$core$List$takeFast, 0, n, list);
+	});
+var $groteck$elm_iban$IBAN$partitionAll = F2(
+	function (n, coll) {
+		if (!coll.b) {
+			return _List_Nil;
+		} else {
+			return A2(
+				$elm$core$List$cons,
+				A2($elm$core$List$take, n, coll),
+				A2(
+					$groteck$elm_iban$IBAN$partitionAll,
+					n,
+					A2($elm$core$List$drop, n, coll)));
+		}
+	});
+var $groteck$elm_iban$IBAN$groupByGroupsOf = function (n) {
+	return A2(
+		$elm$core$Basics$composeR,
+		$elm$core$String$toList,
+		A2(
+			$elm$core$Basics$composeR,
+			$groteck$elm_iban$IBAN$partitionAll(4),
+			A2(
+				$elm$core$Basics$composeR,
+				$elm$core$List$map($elm$core$String$fromList),
+				A2(
+					$elm$core$Basics$composeR,
+					$elm$core$List$intersperse(' '),
+					$elm$core$String$concat))));
+};
+var $groteck$elm_iban$IBAN$toTextualString = A2(
+	$elm$core$Basics$composeR,
+	$groteck$elm_iban$IBAN$toElectronicString,
+	$groteck$elm_iban$IBAN$groupByGroupsOf(4));
+var $groteck$elm_iban$IBAN$toString = function (t) {
+	if (t.$ === 'Textual') {
+		return $groteck$elm_iban$IBAN$toTextualString;
+	} else {
+		return $groteck$elm_iban$IBAN$toElectronicString;
+	}
+};
+var $groteck$elm_iban$IBAN$validate = function (iban) {
+	var country = iban.a;
+	return A2(
+		$elm$core$Result$map,
+		$elm$core$Basics$always(iban),
+		A2(
+			$elm$core$Result$andThen,
+			$groteck$elm_iban$IBAN$Validate$sanityCheck,
+			A2(
+				$elm$core$Result$andThen,
+				$groteck$elm_iban$IBAN$Validate$length(country),
+				$groteck$elm_iban$IBAN$Validate$chars(
+					A2($groteck$elm_iban$IBAN$toString, $groteck$elm_iban$IBAN$Types$Electronic, iban)))));
+};
+var $groteck$elm_iban$IBAN$fromString = A2(
+	$elm$core$Basics$composeR,
+	$groteck$elm_iban$IBAN$sanitize,
+	A2(
+		$elm$core$Basics$composeR,
+		$groteck$elm_iban$IBAN$build,
+		$elm$core$Result$andThen($groteck$elm_iban$IBAN$validate)));
 var $author$project$Page$Front$FormReceived = function (a) {
 	return {$: 'FormReceived', a: a};
 };
@@ -7680,6 +8699,14 @@ var $author$project$Page$Front$updateEditPage = F2(
 						$elm$core$Platform$Cmd$none);
 				case 'FormSaveIBAN':
 					var iban = editMsg.a;
+					var valid = function () {
+						var _v2 = $groteck$elm_iban$IBAN$fromString(iban);
+						if (_v2.$ === 'Ok') {
+							return true;
+						} else {
+							return false;
+						}
+					}();
 					return _Utils_Tuple2(
 						_Utils_update(
 							model,
@@ -7687,7 +8714,8 @@ var $author$project$Page$Front$updateEditPage = F2(
 								draftBieter: $elm$core$Maybe$Just(
 									_Utils_update(
 										bieter,
-										{iban: iban}))
+										{iban: iban})),
+								ibanValid: valid
 							}),
 						$elm$core$Platform$Cmd$none);
 				case 'FormSubmit':
@@ -7697,9 +8725,9 @@ var $author$project$Page$Front$updateEditPage = F2(
 				case 'FormReceived':
 					var response = editMsg.a;
 					if (response.$ === 'Ok') {
-						var _v3 = A2($author$project$Session$loggedIn, model.session, bieter);
-						var newSession = _v3.a;
-						var cmd = _v3.b;
+						var _v4 = A2($author$project$Session$loggedIn, model.session, bieter);
+						var newSession = _v4.a;
+						var cmd = _v4.b;
 						return _Utils_Tuple2(
 							_Utils_update(
 								model,
@@ -8503,16 +9531,6 @@ var $pablohirafuji$elm_qrcode$QRCode$Quartile = {$: 'Quartile'};
 var $pablohirafuji$elm_qrcode$QRCode$QRCode = function (a) {
 	return {$: 'QRCode', a: a};
 };
-var $elm$core$Result$andThen = F2(
-	function (callback, result) {
-		if (result.$ === 'Ok') {
-			var value = result.a;
-			return callback(value);
-		} else {
-			var msg = result.a;
-			return $elm$core$Result$Err(msg);
-		}
-	});
 var $elm$core$Basics$ge = _Utils_ge;
 var $elm$core$Bitwise$and = _Bitwise_and;
 var $elm$core$Bitwise$shiftRightZfBy = _Bitwise_shiftRightZfBy;
@@ -8875,17 +9893,6 @@ var $elm$core$Result$fromMaybe = F2(
 			return $elm$core$Result$Err(err);
 		}
 	});
-var $elm$core$Result$map = F2(
-	function (func, ra) {
-		if (ra.$ === 'Ok') {
-			var a = ra.a;
-			return $elm$core$Result$Ok(
-				func(a));
-		} else {
-			var e = ra.a;
-			return $elm$core$Result$Err(e);
-		}
-	});
 var $elm$core$List$filter = F2(
 	function (isGood, list) {
 		return A3(
@@ -8976,10 +9983,6 @@ var $pablohirafuji$elm_qrcode$QRCode$Matrix$alignmentPattern = F3(
 				$pablohirafuji$elm_qrcode$QRCode$Error$AlignmentPatternNotFound,
 				A2($elm$core$Array$get, version - 1, $pablohirafuji$elm_qrcode$QRCode$Matrix$alignmentPatternData)));
 	});
-var $elm$core$Basics$always = F2(
-	function (a, _v0) {
-		return a;
-	});
 var $pablohirafuji$elm_qrcode$QRCode$Matrix$darkModule = F2(
 	function (version, size) {
 		return A2(
@@ -9032,7 +10035,6 @@ var $pablohirafuji$elm_qrcode$QRCode$Matrix$applyMaskColor = F2(
 			return maybeModule;
 		}
 	});
-var $elm$core$Basics$modBy = _Basics_modBy;
 var $pablohirafuji$elm_qrcode$QRCode$Matrix$getCoord = F2(
 	function (size, index) {
 		return _Utils_Tuple2(
@@ -9153,153 +10155,6 @@ var $pablohirafuji$elm_qrcode$QRCode$Matrix$applyMask = F3(
 				$pablohirafuji$elm_qrcode$QRCode$Matrix$maskFunction(mask),
 				size),
 			matrix);
-	});
-var $elm$core$List$drop = F2(
-	function (n, list) {
-		drop:
-		while (true) {
-			if (n <= 0) {
-				return list;
-			} else {
-				if (!list.b) {
-					return list;
-				} else {
-					var x = list.a;
-					var xs = list.b;
-					var $temp$n = n - 1,
-						$temp$list = xs;
-					n = $temp$n;
-					list = $temp$list;
-					continue drop;
-				}
-			}
-		}
-	});
-var $elm$core$List$takeReverse = F3(
-	function (n, list, kept) {
-		takeReverse:
-		while (true) {
-			if (n <= 0) {
-				return kept;
-			} else {
-				if (!list.b) {
-					return kept;
-				} else {
-					var x = list.a;
-					var xs = list.b;
-					var $temp$n = n - 1,
-						$temp$list = xs,
-						$temp$kept = A2($elm$core$List$cons, x, kept);
-					n = $temp$n;
-					list = $temp$list;
-					kept = $temp$kept;
-					continue takeReverse;
-				}
-			}
-		}
-	});
-var $elm$core$List$takeTailRec = F2(
-	function (n, list) {
-		return $elm$core$List$reverse(
-			A3($elm$core$List$takeReverse, n, list, _List_Nil));
-	});
-var $elm$core$List$takeFast = F3(
-	function (ctr, n, list) {
-		if (n <= 0) {
-			return _List_Nil;
-		} else {
-			var _v0 = _Utils_Tuple2(n, list);
-			_v0$1:
-			while (true) {
-				_v0$5:
-				while (true) {
-					if (!_v0.b.b) {
-						return list;
-					} else {
-						if (_v0.b.b.b) {
-							switch (_v0.a) {
-								case 1:
-									break _v0$1;
-								case 2:
-									var _v2 = _v0.b;
-									var x = _v2.a;
-									var _v3 = _v2.b;
-									var y = _v3.a;
-									return _List_fromArray(
-										[x, y]);
-								case 3:
-									if (_v0.b.b.b.b) {
-										var _v4 = _v0.b;
-										var x = _v4.a;
-										var _v5 = _v4.b;
-										var y = _v5.a;
-										var _v6 = _v5.b;
-										var z = _v6.a;
-										return _List_fromArray(
-											[x, y, z]);
-									} else {
-										break _v0$5;
-									}
-								default:
-									if (_v0.b.b.b.b && _v0.b.b.b.b.b) {
-										var _v7 = _v0.b;
-										var x = _v7.a;
-										var _v8 = _v7.b;
-										var y = _v8.a;
-										var _v9 = _v8.b;
-										var z = _v9.a;
-										var _v10 = _v9.b;
-										var w = _v10.a;
-										var tl = _v10.b;
-										return (ctr > 1000) ? A2(
-											$elm$core$List$cons,
-											x,
-											A2(
-												$elm$core$List$cons,
-												y,
-												A2(
-													$elm$core$List$cons,
-													z,
-													A2(
-														$elm$core$List$cons,
-														w,
-														A2($elm$core$List$takeTailRec, n - 4, tl))))) : A2(
-											$elm$core$List$cons,
-											x,
-											A2(
-												$elm$core$List$cons,
-												y,
-												A2(
-													$elm$core$List$cons,
-													z,
-													A2(
-														$elm$core$List$cons,
-														w,
-														A3($elm$core$List$takeFast, ctr + 1, n - 4, tl)))));
-									} else {
-										break _v0$5;
-									}
-							}
-						} else {
-							if (_v0.a === 1) {
-								break _v0$1;
-							} else {
-								break _v0$5;
-							}
-						}
-					}
-				}
-				return list;
-			}
-			var _v1 = _v0.b;
-			var x = _v1.a;
-			return _List_fromArray(
-				[x]);
-		}
-	});
-var $elm$core$List$take = F2(
-	function (n, list) {
-		return A3($elm$core$List$takeFast, 0, n, list);
 	});
 var $pablohirafuji$elm_qrcode$QRCode$Matrix$breakList = F3(
 	function (width, list, acc) {
@@ -9602,7 +10457,6 @@ var $pablohirafuji$elm_qrcode$QRCode$Matrix$getMaskScore = F2(
 		}(
 			A2($pablohirafuji$elm_qrcode$QRCode$Matrix$rule4Score, size, list) + ($pablohirafuji$elm_qrcode$QRCode$Matrix$rule3Score(transposedRowList) + ($pablohirafuji$elm_qrcode$QRCode$Matrix$rule3Score(rowList) + (A2($pablohirafuji$elm_qrcode$QRCode$Matrix$rule2Score, rowList, 0) + ($pablohirafuji$elm_qrcode$QRCode$Matrix$rule1Score(transposedRowList) + $pablohirafuji$elm_qrcode$QRCode$Matrix$rule1Score(rowList))))));
 	});
-var $elm$core$Basics$neq = _Utils_notEqual;
 var $pablohirafuji$elm_qrcode$QRCode$Matrix$ecLevelToInt = function (ecLevel) {
 	switch (ecLevel.$) {
 		case 'L':
@@ -10424,10 +11278,6 @@ var $pablohirafuji$elm_qrcode$QRCode$Encode$Alphanumeric$toBinary = function (ch
 	}
 	return $elm$core$Result$Err($pablohirafuji$elm_qrcode$QRCode$Error$InvalidAlphanumericChar);
 };
-var $elm$core$String$foldr = _String_foldr;
-var $elm$core$String$toList = function (string) {
-	return A3($elm$core$String$foldr, $elm$core$List$cons, _List_Nil, string);
-};
 var $pablohirafuji$elm_qrcode$QRCode$Encode$Alphanumeric$encode = function (str) {
 	return A3(
 		$elm$core$List$foldr,
@@ -10453,7 +11303,6 @@ var $pablohirafuji$elm_qrcode$QRCode$Encode$Byte$encode = function (str) {
 			$elm$core$String$toList(str)));
 };
 var $pablohirafuji$elm_qrcode$QRCode$Error$InvalidNumericChar = {$: 'InvalidNumericChar'};
-var $elm$core$String$fromList = _String_fromList;
 var $pablohirafuji$elm_qrcode$QRCode$Encode$Numeric$numericLength = function (str) {
 	var _v0 = $elm$core$String$length(str);
 	switch (_v0) {
@@ -12467,9 +13316,6 @@ var $pablohirafuji$elm_qrcode$QRCode$Render$Svg$appendLastRect = function (_v0) 
 		'h' + $elm$core$String$fromInt(lastRect.width * $pablohirafuji$elm_qrcode$QRCode$Render$Svg$moduleSize),
 		rowLines);
 };
-var $elm$core$String$concat = function (strings) {
-	return A2($elm$core$String$join, '', strings);
-};
 var $elm$svg$Svg$Attributes$d = _VirtualDom_attribute('d');
 var $elm$core$String$fromFloat = _String_fromNumber;
 var $elm$svg$Svg$trustedNode = _VirtualDom_nodeNS('http://www.w3.org/2000/svg');
@@ -12681,6 +13527,7 @@ var $author$project$Page$Front$FormSaveName = function (a) {
 	return {$: 'FormSaveName', a: a};
 };
 var $author$project$Page$Front$FormSubmit = {$: 'FormSubmit'};
+var $elm$html$Html$Attributes$class = $elm$html$Html$Attributes$stringProperty('className');
 var $author$project$Page$Front$maybeError = function (errorMsg) {
 	if (errorMsg.$ === 'Just') {
 		var message = errorMsg.a;
@@ -12761,6 +13608,8 @@ var $author$project$Page$Front$viewEdit = function (model) {
 								_List_fromArray(
 									[
 										$elm$html$Html$Attributes$type_('text'),
+										$elm$html$Html$Attributes$class(
+										model.ibanValid ? '' : 'error'),
 										$elm$html$Html$Attributes$value(bieter.iban),
 										$elm$html$Html$Events$onInput($author$project$Page$Front$FormSaveIBAN)
 									]),
