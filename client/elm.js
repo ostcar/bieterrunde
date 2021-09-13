@@ -5732,14 +5732,13 @@ var $author$project$Offer$Offer = F2(
 	function (a, b) {
 		return {$: 'Offer', a: a, b: b};
 	});
+var $author$project$Offer$fromInt = function (n) {
+	var euro = (n / 100) | 0;
+	var cent = n % 100;
+	return A2($author$project$Offer$Offer, euro, cent);
+};
 var $author$project$Offer$offerDecoder = function (n) {
-	if (!n) {
-		return $author$project$Offer$NoOffer;
-	} else {
-		var euro = (n / 100) | 0;
-		var cent = n % 100;
-		return A2($author$project$Offer$Offer, euro, cent);
-	}
+	return (!n) ? $author$project$Offer$NoOffer : $author$project$Offer$fromInt(n);
 };
 var $author$project$Offer$decoder = A2($elm$json$Json$Decode$map, $author$project$Offer$offerDecoder, $elm$json$Json$Decode$int);
 var $author$project$Bieter$ID = function (a) {
@@ -9352,7 +9351,37 @@ var $elm$html$Html$Events$onClick = function (msg) {
 		'click',
 		$elm$json$Json$Decode$succeed(msg));
 };
+var $author$project$Offer$combine = F2(
+	function (a, b) {
+		return $author$project$Offer$fromInt(
+			$author$project$Offer$toInt(a) + $author$project$Offer$toInt(b));
+	});
+var $author$project$Offer$fullOffer = function (offerList) {
+	return A3($elm$core$List$foldl, $author$project$Offer$combine, $author$project$Offer$NoOffer, offerList);
+};
+var $author$project$Page$Admin$fullOffer = function (bieterList) {
+	return $author$project$Offer$fullOffer(
+		A2(
+			$elm$core$List$map,
+			function (bieter) {
+				return bieter.offer;
+			},
+			bieterList));
+};
 var $elm$html$Html$table = _VirtualDom_node('table');
+var $author$project$Offer$toString = function (maybeOffer) {
+	switch (maybeOffer.$) {
+		case 'NoOffer':
+			return '---';
+		case 'Invalid':
+			var s = maybeOffer.a;
+			return 'Ungültiges Gebot: ' + s;
+		default:
+			var euro = maybeOffer.a;
+			var cent = maybeOffer.b;
+			return $elm$core$String$fromInt(euro) + (',' + ($author$project$Offer$intToString2(cent) + ' €'));
+	}
+};
 var $author$project$Page$Admin$SelectBieter = function (a) {
 	return {$: 'SelectBieter', a: a};
 };
@@ -9402,6 +9431,14 @@ var $author$project$Page$Admin$viewBieterLine = function (bieter) {
 				_List_fromArray(
 					[
 						$elm$html$Html$text(bieter.iban)
+					])),
+				A2(
+				$elm$html$Html$td,
+				_List_Nil,
+				_List_fromArray(
+					[
+						$elm$html$Html$text(
+						$author$project$Offer$toString(bieter.offer))
 					]))
 			]));
 };
@@ -9438,6 +9475,13 @@ var $author$project$Page$Admin$viewBieterTableHeader = A2(
 			_List_fromArray(
 				[
 					$elm$html$Html$text('IBAN')
+				])),
+			A2(
+			$elm$html$Html$th,
+			_List_Nil,
+			_List_fromArray(
+				[
+					$elm$html$Html$text('Gebot')
 				]))
 		]));
 var $author$project$Page$Admin$viewList = function (bieter) {
@@ -9455,7 +9499,10 @@ var $author$project$Page$Admin$viewList = function (bieter) {
 				A2(
 					$elm$core$List$cons,
 					$author$project$Page$Admin$viewBieterTableHeader,
-					A2($elm$core$List$map, $author$project$Page$Admin$viewBieterLine, bieter)))
+					A2($elm$core$List$map, $author$project$Page$Admin$viewBieterLine, bieter))),
+				$elm$html$Html$text(
+				'Gesamtes Gebot: ' + $author$project$Offer$toString(
+					$author$project$Page$Admin$fullOffer(bieter)))
 			]));
 };
 var $author$project$Page$Admin$SetState = function (a) {
@@ -9808,19 +9855,6 @@ var $author$project$Page$Front$maybeError = function (errorMsg) {
 				]));
 	} else {
 		return $elm$html$Html$text('');
-	}
-};
-var $author$project$Offer$toString = function (maybeOffer) {
-	switch (maybeOffer.$) {
-		case 'NoOffer':
-			return 'Noch kein Gebot abgegeben';
-		case 'Invalid':
-			var s = maybeOffer.a;
-			return 'Ungültiges Gebot: ' + s;
-		default:
-			var euro = maybeOffer.a;
-			var cent = maybeOffer.b;
-			return $elm$core$String$fromInt(euro) + (',' + ($author$project$Offer$intToString2(cent) + ' €'));
 	}
 };
 var $author$project$Page$Front$viewOffer = F5(

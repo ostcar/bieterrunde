@@ -5,6 +5,7 @@ import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Http
+import Offer
 import Route
 import Session exposing (Session)
 import State exposing (State(..))
@@ -244,7 +245,14 @@ viewList bieter =
         [ text ("Anzahl:" ++ String.fromInt (List.length bieter))
         , table []
             (viewBieterTableHeader :: List.map viewBieterLine bieter)
+        , text ("Gesamtes Gebot: " ++ Offer.toString (fullOffer bieter))
         ]
+
+
+fullOffer : List Bieter.Bieter -> Offer.Offer
+fullOffer bieterList =
+    List.map (\bieter -> bieter.offer) bieterList
+        |> Offer.fullOffer
 
 
 viewBieterTableHeader : Html Msg
@@ -254,6 +262,7 @@ viewBieterTableHeader =
         , th [] [ text "Name" ]
         , th [] [ text "Adresse" ]
         , th [] [ text "IBAN" ]
+        , th [] [ text "Gebot" ]
         ]
 
 
@@ -264,6 +273,7 @@ viewBieterLine bieter =
         , td [] [ text bieter.name ]
         , td [] [ text bieter.adresse ]
         , td [] [ text bieter.iban ]
+        , td [] [ text (Offer.toString bieter.offer) ]
         ]
 
 

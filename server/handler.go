@@ -183,7 +183,9 @@ func handleBieterList(router *mux.Router, db *Database, config Config) {
 			bieter = append(bieter, ViewBieter{
 				ID:      id,
 				Payload: payload,
+				Offer:   db.Offer(id), // TODO: This has to be returned from db.BieterList!
 			})
+
 		}
 
 		if err := json.NewEncoder(w).Encode(bieter); err != nil {

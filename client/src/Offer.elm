@@ -1,4 +1,4 @@
-module Offer exposing (Offer(..), decoder, fromInputString, send, toInputString, toString, valid)
+module Offer exposing (Offer(..), decoder, fromInputString, fullOffer, send, toInputString, toString, valid)
 
 import Html exposing (input)
 import Http
@@ -12,11 +12,21 @@ type Offer
     | Invalid String
 
 
+combine : Offer -> Offer -> Offer
+combine a b =
+    fromInt (toInt a + toInt b)
+
+
+fullOffer : List Offer -> Offer
+fullOffer offerList =
+    List.foldl combine NoOffer offerList
+
+
 toString : Offer -> String
 toString maybeOffer =
     case maybeOffer of
         NoOffer ->
-            "Noch kein Gebot abgegeben"
+            "---"
 
         Invalid s ->
             "Ungültiges Gebot: " ++ s
@@ -137,6 +147,18 @@ toInt maybeOffer =
             euro * 100 + cent
 
 
+fromInt : Int -> Offer
+fromInt n =
+    let
+        euro =
+            n // 100
+
+        cent =
+            remainderBy 100 n
+    in
+    Offer euro cent
+
+
 decoder : Decoder Offer
 decoder =
     Decode.map offerDecoder int
@@ -154,14 +176,7 @@ offerDecoder n =
         NoOffer
 
     else
-        let
-            euro =
-                n // 100
-
-            cent =
-                remainderBy 100 n
-        in
-        Offer euro cent
+        fromInt n
 
 
 send : (Result Http.Error Offer -> msg) -> List Http.Header -> String -> Offer -> Cmd msg
