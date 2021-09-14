@@ -12,6 +12,7 @@ import Page.Front as Front
 import Route exposing (Route(..))
 import Session exposing (Session, navKey)
 import State
+import Time
 import Url exposing (Url)
 
 
@@ -41,6 +42,7 @@ type Msg
     | ReceivedState (Result Http.Error State.State)
     | GotAdminMsg Admin.Msg
     | GotFrontMsg Front.Msg
+    | GotTick Time.Posix
 
 
 toSession : Model -> Session
@@ -128,6 +130,25 @@ parseFlags maybeFlags =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case ( msg, model ) of
+        ( GotTick _, _ ) ->
+            -- TODO Load state
+            let
+                session =
+                    toSession model
+
+                ( _, cmdLoadBieter ) =
+                    case Session.toBieter session of
+                        Nothing ->
+                            ( session, Cmd.none )
+
+                        Just bieter ->
+                            Session.loadBieter session ReceivedBieter bieter.id
+
+                ( _, cmdState ) =
+                    Session.loadState session ReceivedState
+            in
+            ( model, Cmd.batch [ cmdLoadBieter, cmdState ] )
+
         ( ReceivedBieter response, _ ) ->
             case response of
                 Ok bieter ->
@@ -202,7 +223,7 @@ update msg model =
 
 subscriptions : Model -> Sub Msg
 subscriptions _ =
-    Sub.none
+    Time.every 5000 GotTick
 
 
 changeRouteTo : Maybe Route -> Session -> ( Model, Cmd Msg )

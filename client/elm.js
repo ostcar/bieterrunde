@@ -4550,6 +4550,52 @@ function _Url_percentDecode(string)
 }
 
 
+function _Time_now(millisToPosix)
+{
+	return _Scheduler_binding(function(callback)
+	{
+		callback(_Scheduler_succeed(millisToPosix(Date.now())));
+	});
+}
+
+var _Time_setInterval = F2(function(interval, task)
+{
+	return _Scheduler_binding(function(callback)
+	{
+		var id = setInterval(function() { _Scheduler_rawSpawn(task); }, interval);
+		return function() { clearInterval(id); };
+	});
+});
+
+function _Time_here()
+{
+	return _Scheduler_binding(function(callback)
+	{
+		callback(_Scheduler_succeed(
+			A2($elm$time$Time$customZone, -(new Date().getTimezoneOffset()), _List_Nil)
+		));
+	});
+}
+
+
+function _Time_getZoneName()
+{
+	return _Scheduler_binding(function(callback)
+	{
+		try
+		{
+			var name = $elm$time$Time$Name(Intl.DateTimeFormat().resolvedOptions().timeZone);
+		}
+		catch (e)
+		{
+			var name = $elm$time$Time$Offset(new Date().getTimezoneOffset());
+		}
+		callback(_Scheduler_succeed(name));
+	});
+}
+
+
+
 var _Bitwise_and = F2(function(a, b)
 {
 	return a & b;
@@ -7324,10 +7370,281 @@ var $author$project$Main$init = F3(
 				_List_fromArray(
 					[cmdLoadBieter, changePageCmd, cmdState])));
 	});
-var $elm$core$Platform$Sub$batch = _Platform_batch;
-var $elm$core$Platform$Sub$none = $elm$core$Platform$Sub$batch(_List_Nil);
+var $author$project$Main$GotTick = function (a) {
+	return {$: 'GotTick', a: a};
+};
+var $elm$time$Time$Every = F2(
+	function (a, b) {
+		return {$: 'Every', a: a, b: b};
+	});
+var $elm$time$Time$State = F2(
+	function (taggers, processes) {
+		return {processes: processes, taggers: taggers};
+	});
+var $elm$time$Time$init = $elm$core$Task$succeed(
+	A2($elm$time$Time$State, $elm$core$Dict$empty, $elm$core$Dict$empty));
+var $elm$time$Time$addMySub = F2(
+	function (_v0, state) {
+		var interval = _v0.a;
+		var tagger = _v0.b;
+		var _v1 = A2($elm$core$Dict$get, interval, state);
+		if (_v1.$ === 'Nothing') {
+			return A3(
+				$elm$core$Dict$insert,
+				interval,
+				_List_fromArray(
+					[tagger]),
+				state);
+		} else {
+			var taggers = _v1.a;
+			return A3(
+				$elm$core$Dict$insert,
+				interval,
+				A2($elm$core$List$cons, tagger, taggers),
+				state);
+		}
+	});
+var $elm$core$Dict$foldl = F3(
+	function (func, acc, dict) {
+		foldl:
+		while (true) {
+			if (dict.$ === 'RBEmpty_elm_builtin') {
+				return acc;
+			} else {
+				var key = dict.b;
+				var value = dict.c;
+				var left = dict.d;
+				var right = dict.e;
+				var $temp$func = func,
+					$temp$acc = A3(
+					func,
+					key,
+					value,
+					A3($elm$core$Dict$foldl, func, acc, left)),
+					$temp$dict = right;
+				func = $temp$func;
+				acc = $temp$acc;
+				dict = $temp$dict;
+				continue foldl;
+			}
+		}
+	});
+var $elm$core$Dict$merge = F6(
+	function (leftStep, bothStep, rightStep, leftDict, rightDict, initialResult) {
+		var stepState = F3(
+			function (rKey, rValue, _v0) {
+				stepState:
+				while (true) {
+					var list = _v0.a;
+					var result = _v0.b;
+					if (!list.b) {
+						return _Utils_Tuple2(
+							list,
+							A3(rightStep, rKey, rValue, result));
+					} else {
+						var _v2 = list.a;
+						var lKey = _v2.a;
+						var lValue = _v2.b;
+						var rest = list.b;
+						if (_Utils_cmp(lKey, rKey) < 0) {
+							var $temp$rKey = rKey,
+								$temp$rValue = rValue,
+								$temp$_v0 = _Utils_Tuple2(
+								rest,
+								A3(leftStep, lKey, lValue, result));
+							rKey = $temp$rKey;
+							rValue = $temp$rValue;
+							_v0 = $temp$_v0;
+							continue stepState;
+						} else {
+							if (_Utils_cmp(lKey, rKey) > 0) {
+								return _Utils_Tuple2(
+									list,
+									A3(rightStep, rKey, rValue, result));
+							} else {
+								return _Utils_Tuple2(
+									rest,
+									A4(bothStep, lKey, lValue, rValue, result));
+							}
+						}
+					}
+				}
+			});
+		var _v3 = A3(
+			$elm$core$Dict$foldl,
+			stepState,
+			_Utils_Tuple2(
+				$elm$core$Dict$toList(leftDict),
+				initialResult),
+			rightDict);
+		var leftovers = _v3.a;
+		var intermediateResult = _v3.b;
+		return A3(
+			$elm$core$List$foldl,
+			F2(
+				function (_v4, result) {
+					var k = _v4.a;
+					var v = _v4.b;
+					return A3(leftStep, k, v, result);
+				}),
+			intermediateResult,
+			leftovers);
+	});
+var $elm$time$Time$Name = function (a) {
+	return {$: 'Name', a: a};
+};
+var $elm$time$Time$Offset = function (a) {
+	return {$: 'Offset', a: a};
+};
+var $elm$time$Time$Zone = F2(
+	function (a, b) {
+		return {$: 'Zone', a: a, b: b};
+	});
+var $elm$time$Time$customZone = $elm$time$Time$Zone;
+var $elm$time$Time$setInterval = _Time_setInterval;
+var $elm$time$Time$spawnHelp = F3(
+	function (router, intervals, processes) {
+		if (!intervals.b) {
+			return $elm$core$Task$succeed(processes);
+		} else {
+			var interval = intervals.a;
+			var rest = intervals.b;
+			var spawnTimer = $elm$core$Process$spawn(
+				A2(
+					$elm$time$Time$setInterval,
+					interval,
+					A2($elm$core$Platform$sendToSelf, router, interval)));
+			var spawnRest = function (id) {
+				return A3(
+					$elm$time$Time$spawnHelp,
+					router,
+					rest,
+					A3($elm$core$Dict$insert, interval, id, processes));
+			};
+			return A2($elm$core$Task$andThen, spawnRest, spawnTimer);
+		}
+	});
+var $elm$time$Time$onEffects = F3(
+	function (router, subs, _v0) {
+		var processes = _v0.processes;
+		var rightStep = F3(
+			function (_v6, id, _v7) {
+				var spawns = _v7.a;
+				var existing = _v7.b;
+				var kills = _v7.c;
+				return _Utils_Tuple3(
+					spawns,
+					existing,
+					A2(
+						$elm$core$Task$andThen,
+						function (_v5) {
+							return kills;
+						},
+						$elm$core$Process$kill(id)));
+			});
+		var newTaggers = A3($elm$core$List$foldl, $elm$time$Time$addMySub, $elm$core$Dict$empty, subs);
+		var leftStep = F3(
+			function (interval, taggers, _v4) {
+				var spawns = _v4.a;
+				var existing = _v4.b;
+				var kills = _v4.c;
+				return _Utils_Tuple3(
+					A2($elm$core$List$cons, interval, spawns),
+					existing,
+					kills);
+			});
+		var bothStep = F4(
+			function (interval, taggers, id, _v3) {
+				var spawns = _v3.a;
+				var existing = _v3.b;
+				var kills = _v3.c;
+				return _Utils_Tuple3(
+					spawns,
+					A3($elm$core$Dict$insert, interval, id, existing),
+					kills);
+			});
+		var _v1 = A6(
+			$elm$core$Dict$merge,
+			leftStep,
+			bothStep,
+			rightStep,
+			newTaggers,
+			processes,
+			_Utils_Tuple3(
+				_List_Nil,
+				$elm$core$Dict$empty,
+				$elm$core$Task$succeed(_Utils_Tuple0)));
+		var spawnList = _v1.a;
+		var existingDict = _v1.b;
+		var killTask = _v1.c;
+		return A2(
+			$elm$core$Task$andThen,
+			function (newProcesses) {
+				return $elm$core$Task$succeed(
+					A2($elm$time$Time$State, newTaggers, newProcesses));
+			},
+			A2(
+				$elm$core$Task$andThen,
+				function (_v2) {
+					return A3($elm$time$Time$spawnHelp, router, spawnList, existingDict);
+				},
+				killTask));
+	});
+var $elm$time$Time$Posix = function (a) {
+	return {$: 'Posix', a: a};
+};
+var $elm$time$Time$millisToPosix = $elm$time$Time$Posix;
+var $elm$time$Time$now = _Time_now($elm$time$Time$millisToPosix);
+var $elm$time$Time$onSelfMsg = F3(
+	function (router, interval, state) {
+		var _v0 = A2($elm$core$Dict$get, interval, state.taggers);
+		if (_v0.$ === 'Nothing') {
+			return $elm$core$Task$succeed(state);
+		} else {
+			var taggers = _v0.a;
+			var tellTaggers = function (time) {
+				return $elm$core$Task$sequence(
+					A2(
+						$elm$core$List$map,
+						function (tagger) {
+							return A2(
+								$elm$core$Platform$sendToApp,
+								router,
+								tagger(time));
+						},
+						taggers));
+			};
+			return A2(
+				$elm$core$Task$andThen,
+				function (_v1) {
+					return $elm$core$Task$succeed(state);
+				},
+				A2($elm$core$Task$andThen, tellTaggers, $elm$time$Time$now));
+		}
+	});
+var $elm$core$Basics$composeL = F3(
+	function (g, f, x) {
+		return g(
+			f(x));
+	});
+var $elm$time$Time$subMap = F2(
+	function (f, _v0) {
+		var interval = _v0.a;
+		var tagger = _v0.b;
+		return A2(
+			$elm$time$Time$Every,
+			interval,
+			A2($elm$core$Basics$composeL, f, tagger));
+	});
+_Platform_effectManagers['Time'] = _Platform_createManager($elm$time$Time$init, $elm$time$Time$onEffects, $elm$time$Time$onSelfMsg, 0, $elm$time$Time$subMap);
+var $elm$time$Time$subscription = _Platform_leaf('Time');
+var $elm$time$Time$every = F2(
+	function (interval, tagger) {
+		return $elm$time$Time$subscription(
+			A2($elm$time$Time$Every, interval, tagger));
+	});
 var $author$project$Main$subscriptions = function (_v0) {
-	return $elm$core$Platform$Sub$none;
+	return A2($elm$time$Time$every, 5000, $author$project$Main$GotTick);
 };
 var $elm$browser$Browser$Navigation$load = _Browser_load;
 var $author$project$Session$LoggedIn = function (a) {
@@ -9193,19 +9510,38 @@ var $author$project$Main$updateSession = F2(
 var $author$project$Main$update = F2(
 	function (msg, model) {
 		var _v0 = _Utils_Tuple2(msg, model);
-		_v0$6:
+		_v0$7:
 		while (true) {
 			switch (_v0.a.$) {
+				case 'GotTick':
+					var session = $author$project$Main$toSession(model);
+					var _v1 = A2($author$project$Session$loadState, session, $author$project$Main$ReceivedState);
+					var cmdState = _v1.b;
+					var _v2 = function () {
+						var _v3 = $author$project$Session$toBieter(session);
+						if (_v3.$ === 'Nothing') {
+							return _Utils_Tuple2(session, $elm$core$Platform$Cmd$none);
+						} else {
+							var bieter = _v3.a;
+							return A3($author$project$Session$loadBieter, session, $author$project$Main$ReceivedBieter, bieter.id);
+						}
+					}();
+					var cmdLoadBieter = _v2.b;
+					return _Utils_Tuple2(
+						model,
+						$elm$core$Platform$Cmd$batch(
+							_List_fromArray(
+								[cmdLoadBieter, cmdState])));
 				case 'ReceivedBieter':
 					var response = _v0.a.a;
 					if (response.$ === 'Ok') {
 						var bieter = response.a;
-						var _v2 = A2(
+						var _v5 = A2(
 							$author$project$Session$loggedIn,
 							$author$project$Main$toSession(model),
 							bieter);
-						var newSession = _v2.a;
-						var cmd = _v2.b;
+						var newSession = _v5.a;
+						var cmd = _v5.b;
 						return _Utils_Tuple2(
 							A2($author$project$Main$updateSession, model, newSession),
 							cmd);
@@ -9233,10 +9569,10 @@ var $author$project$Main$update = F2(
 						if (_Utils_eq(
 							$author$project$Route$fromUrl(url),
 							$elm$core$Maybe$Just($author$project$Route$Logout))) {
-							var _v5 = $author$project$Session$loggedOut(
+							var _v8 = $author$project$Session$loggedOut(
 								$author$project$Main$toSession(model));
-							var newSession = _v5.a;
-							var cmd = _v5.b;
+							var newSession = _v8.a;
+							var cmd = _v8.b;
 							return _Utils_Tuple2(
 								$author$project$Main$Redirect(newSession),
 								$elm$core$Platform$Cmd$batch(
@@ -9283,7 +9619,7 @@ var $author$project$Main$update = F2(
 							$author$project$Main$GotFrontMsg,
 							A2($author$project$Page$Front$update, subMsg, pageModel));
 					} else {
-						break _v0$6;
+						break _v0$7;
 					}
 				default:
 					if (_v0.b.$ === 'Admin') {
@@ -9295,7 +9631,7 @@ var $author$project$Main$update = F2(
 							$author$project$Main$GotAdminMsg,
 							A2($author$project$Page$Admin$update, subMsg, pageModel));
 					} else {
-						break _v0$6;
+						break _v0$7;
 					}
 			}
 		}
@@ -9900,6 +10236,7 @@ var $author$project$Permission$hasPerm = F2(
 			}
 		}
 	});
+var $author$project$Permission$CanOffer = {$: 'CanOffer'};
 var $author$project$Page$Front$SaveDraftOffer = function (a) {
 	return {$: 'SaveDraftOffer', a: a};
 };
@@ -9935,44 +10272,37 @@ var $author$project$Page$Front$viewOffer = F5(
 				[
 					$elm$html$Html$text(
 					$author$project$Offer$toString(bieter.offer)),
-					function () {
-					var _v0 = session.state;
-					if (_v0.$ === 'Offer') {
-						return A2(
-							$elm$html$Html$form,
+					A2($author$project$Permission$hasPerm, $author$project$Permission$CanOffer, session) ? A2(
+					$elm$html$Html$form,
+					_List_fromArray(
+						[
+							$elm$html$Html$Events$onSubmit($author$project$Page$Front$SendOffer)
+						]),
+					_List_fromArray(
+						[
+							$author$project$Page$Front$maybeError(error),
+							A2(
+							$elm$html$Html$input,
 							_List_fromArray(
 								[
-									$elm$html$Html$Events$onSubmit($author$project$Page$Front$SendOffer)
+									$elm$html$Html$Attributes$type_('text'),
+									$elm$html$Html$Attributes$value(draftOffer),
+									$elm$html$Html$Events$onInput($author$project$Page$Front$SaveDraftOffer),
+									$elm$html$Html$Attributes$class(
+									offerValid ? '' : 'error')
+								]),
+							_List_Nil),
+							A2(
+							$elm$html$Html$button,
+							_List_fromArray(
+								[
+									$elm$html$Html$Attributes$type_('submit')
 								]),
 							_List_fromArray(
 								[
-									$author$project$Page$Front$maybeError(error),
-									A2(
-									$elm$html$Html$input,
-									_List_fromArray(
-										[
-											$elm$html$Html$Attributes$type_('text'),
-											$elm$html$Html$Attributes$value(draftOffer),
-											$elm$html$Html$Events$onInput($author$project$Page$Front$SaveDraftOffer),
-											$elm$html$Html$Attributes$class(
-											offerValid ? '' : 'error')
-										]),
-									_List_Nil),
-									A2(
-									$elm$html$Html$button,
-									_List_fromArray(
-										[
-											$elm$html$Html$Attributes$type_('submit')
-										]),
-									_List_fromArray(
-										[
-											$elm$html$Html$text('abgeben')
-										]))
-								]));
-					} else {
-						return $elm$html$Html$text('');
-					}
-				}()
+									$elm$html$Html$text('abgeben')
+								]))
+						])) : $elm$html$Html$text('')
 				]));
 	});
 var $pablohirafuji$elm_qrcode$QRCode$Quartile = {$: 'Quartile'};

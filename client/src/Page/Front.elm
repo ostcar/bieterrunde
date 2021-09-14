@@ -446,28 +446,27 @@ viewOffer : Session -> Bieter.Bieter -> String -> Maybe String -> Bool -> Html M
 viewOffer session bieter draftOffer error offerValid =
     div []
         [ text (Offer.toString bieter.offer)
-        , case session.state of
-            State.Offer ->
-                Html.form [ onSubmit SendOffer ]
-                    [ maybeError error
-                    , input
-                        [ type_ "text"
-                        , value draftOffer
-                        , onInput SaveDraftOffer
-                        , class
-                            (if offerValid then
-                                ""
+        , if Permission.hasPerm Permission.CanOffer session then
+            Html.form [ onSubmit SendOffer ]
+                [ maybeError error
+                , input
+                    [ type_ "text"
+                    , value draftOffer
+                    , onInput SaveDraftOffer
+                    , class
+                        (if offerValid then
+                            ""
 
-                             else
-                                "error"
-                            )
-                        ]
-                        []
-                    , button [ type_ "submit" ] [ text "abgeben" ]
+                         else
+                            "error"
+                        )
                     ]
+                    []
+                , button [ type_ "submit" ] [ text "abgeben" ]
+                ]
 
-            _ ->
-                text ""
+          else
+            text ""
         ]
 
 
