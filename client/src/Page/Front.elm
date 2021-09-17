@@ -10,9 +10,8 @@ import Json.Encode as Encode
 import Offer
 import Permission
 import QRCode
-import Route
+import Route exposing (Route(..))
 import Session exposing (Session)
-import State
 import Svg.Attributes as SvgA
 
 
@@ -37,12 +36,17 @@ type Page
 
 
 type EditPageMsg
-    = FormSaveName String
-    | FormSaveAdresse String
-    | FormSaveIBAN String
-    | FormSubmit
-    | FormReceived (Result Http.Error Bieter.Bieter)
-    | FormGoBack
+    = SaveName String
+    | SaveMail String
+    | SaveVerteilstelle String
+    | SaveKontoinhaber String
+    | SaveMitglied String
+    | SaveAdresse String
+    | SaveIBAN String
+    | SaveAbbuchung String
+    | Submit
+    | Received (Result Http.Error Bieter.Bieter)
+    | GoBack
 
 
 type Msg
@@ -53,7 +57,7 @@ type Msg
     | RequestCreate
     | ReceivedCreate (Result Http.Error Bieter.Bieter)
     | SaveNumber String
-    | SaveName String
+    | LoginSaveName String
     | SaveDraftOffer String
     | SendOffer
     | ReceiveOffer (Result Http.Error Offer.Offer)
@@ -97,7 +101,7 @@ update msg model =
             , Cmd.none
             )
 
-        SaveName name ->
+        LoginSaveName name ->
             ( { model | loginFormBieterName = name }
             , Cmd.none
             )
@@ -214,17 +218,42 @@ updateEditPage model editMsg =
 
         Just bieter ->
             case editMsg of
-                FormSaveName name ->
+                SaveName name ->
                     ( { model | draftBieter = Just { bieter | name = name } }
                     , Cmd.none
                     )
 
-                FormSaveAdresse addr ->
-                    ( { model | draftBieter = Just { bieter | adresse = addr } }
+                SaveMail mail ->
+                    ( { model | draftBieter = Just { bieter | mail = mail } }
                     , Cmd.none
                     )
 
-                FormSaveIBAN iban ->
+                SaveVerteilstelle verteiler ->
+                    ( { model | draftBieter = Just { bieter | verteilstelle = Bieter.verteilerFromString verteiler } }
+                    , Cmd.none
+                    )
+
+                SaveKontoinhaber kontoinhaber ->
+                    ( { model | draftBieter = Just { bieter | kontoinhaber = kontoinhaber } }
+                    , Cmd.none
+                    )
+
+                SaveMitglied mitglied ->
+                    ( { model | draftBieter = Just { bieter | mitglied = mitglied } }
+                    , Cmd.none
+                    )
+
+                SaveAdresse adresse ->
+                    ( { model | draftBieter = Just { bieter | adresse = adresse } }
+                    , Cmd.none
+                    )
+
+                SaveAbbuchung abbuchung ->
+                    ( { model | draftBieter = Just { bieter | abbuchung = Bieter.abbuchungFromString abbuchung } }
+                    , Cmd.none
+                    )
+
+                SaveIBAN iban ->
                     let
                         valid =
                             case IBAN.fromString iban of
@@ -238,12 +267,12 @@ updateEditPage model editMsg =
                     , Cmd.none
                     )
 
-                FormSubmit ->
+                Submit ->
                     ( model
                     , updateBieter model.session bieter
                     )
 
-                FormReceived response ->
+                Received response ->
                     case response of
                         Ok _ ->
                             let
@@ -259,7 +288,7 @@ updateEditPage model editMsg =
                             , Cmd.none
                             )
 
-                FormGoBack ->
+                GoBack ->
                     ( { model | page = Show }
                     , Cmd.none
                     )
@@ -285,7 +314,7 @@ updateBieter session bieter =
         , headers = Session.headers session
         , url = "/api/bieter/" ++ Bieter.idToString bieter.id
         , body = Http.jsonBody (Bieter.bieterEncoder bieter)
-        , expect = Http.expectJson FormReceived Bieter.bieterDecoder
+        , expect = Http.expectJson Received Bieter.bieterDecoder
         , timeout = Nothing
         , tracker = Nothing
         }
@@ -388,7 +417,7 @@ viewCreateForm model =
                         [ id "name"
                         , type_ "text"
                         , value model.loginFormBieterName
-                        , onInput SaveName
+                        , onInput LoginSaveName
                         ]
                         []
                     ]
@@ -433,7 +462,12 @@ viewBieter session baseURL bieter draftOffer error offerValid =
                 , strong [] [ text (Bieter.idToString bieter.id) ]
                 , text ". Merke sie dir gut. Du brauchst sie für die nächste anmeldung"
                 ]
+            , div [] [ text ("mail: " ++ bieter.mail) ]
+            , div [] [ text ("Verteilstelle: " ++ Bieter.verteilerToString bieter.verteilstelle) ]
+            , div [] [ text ("Kontoinhaber: " ++ bieter.kontoinhaber) ]
+            , div [] [ text ("Mitglied: " ++ bieter.mitglied) ]
             , div [] [ text ("Adresse: " ++ bieter.adresse) ]
+            , div [] [ text ("Abbuchung: " ++ (Bieter.abbuchungToString bieter.abbuchung)) ]
             , div [] [ text ("IBAN: " ++ bieter.iban) ]
             , maybeEditButton
             , viewOffer session bieter draftOffer error offerValid
@@ -498,48 +532,92 @@ viewEdit model =
             { title = "Edit Bieter " ++ bieter.name
             , content =
                 div []
-                    [ maybeError model.editErrorMsg
-                    , div []
-                        [ text "Name"
-                        , input
-                            [ type_ "text"
-                            , value bieter.name
-                            , onInput FormSaveName
+                    [ Html.form [ onSubmit Submit ]
+                        [ maybeError model.editErrorMsg
+                        , div []
+                            [ text "Name"
+                            , input
+                                [ type_ "text"
+                                , value bieter.name
+                                , onInput SaveName
+                                ]
+                                []
                             ]
-                            []
-                        ]
-                    , div []
-                        [ text "Adresse"
-                        , input
-                            [ type_ "text"
-                            , value bieter.adresse
-                            , onInput FormSaveAdresse
+                        , div []
+                            [ text "E-Mail"
+                            , input
+                                [ type_ "text"
+                                , value bieter.mail
+                                , onInput SaveMail
+                                ]
+                                []
                             ]
-                            []
-                        ]
-                    , div []
-                        [ text "IBAN"
-                        , input
-                            [ type_ "text"
-                            , class
-                                (if model.ibanValid then
-                                    ""
+                        , div []
+                            [ text "Verteilstelle"
+                            , select [ onInput SaveVerteilstelle ]
+                                [ option [ selected (bieter.verteilstelle == Just Bieter.Villingen) ] [ text "Villingen" ]
+                                , option [ selected (bieter.verteilstelle == Just Bieter.Schwenningen) ] [ text "Schwenningen" ]
+                                , option [ selected (bieter.verteilstelle == Just Bieter.Ueberauchen) ] [ text "Überauchen" ]
+                                ]
+                            ]
+                        , div []
+                            [ text "Kontoinhaber"
+                            , input
+                                [ type_ "text"
+                                , value bieter.kontoinhaber
+                                , onInput SaveKontoinhaber
+                                ]
+                                []
+                            ]
+                        , div []
+                            [ text "Mitglied"
+                            , input
+                                [ type_ "text"
+                                , value bieter.mitglied
+                                , onInput SaveMitglied
+                                ]
+                                []
+                            ]
+                        , div []
+                            [ text "Adresse"
+                            , input
+                                [ type_ "text"
+                                , value bieter.adresse
+                                , onInput SaveAdresse
+                                ]
+                                []
+                            ]
+                        , div []
+                            [ text "IBAN"
+                            , input
+                                [ type_ "text"
+                                , class
+                                    (if model.ibanValid then
+                                        ""
 
-                                 else
-                                    "error"
-                                )
-                            , value bieter.iban
-                            , onInput FormSaveIBAN
+                                     else
+                                        "error"
+                                    )
+                                , value bieter.iban
+                                , onInput SaveIBAN
+                                ]
+                                []
                             ]
-                            []
-                        ]
-                    , div []
-                        [ button
-                            [ onClick FormSubmit ]
-                            [ text "Speichern" ]
-                        , button
-                            [ onClick FormGoBack ]
-                            [ text "Zurück" ]
+                        , div []
+                            [ text "Abbuchung"
+                            , select [ onInput SaveAbbuchung ]
+                                [ option [ selected (bieter.abbuchung == Bieter.Jaehrlich) ] [ text "Jährlich" ]
+                                , option [ selected (bieter.abbuchung == Bieter.Monatlich) ] [ text "Monatlich" ]
+                                ]
+                            ]
+                        , div []
+                            [ button
+                                [ type_ "submit" ]
+                                [ text "Speichern" ]
+                            , button
+                                [ onClick GoBack ]
+                                [ text "Zurück" ]
+                            ]
                         ]
                     ]
             }

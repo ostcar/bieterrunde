@@ -295,7 +295,7 @@ viewBieterLine bieter =
     tr []
         [ td [] [ button [ onClick (SelectBieter bieter) ] [ text (Bieter.idToString bieter.id) ] ]
         , td [] [ text bieter.name ]
-        , td [] [ text bieter.adresse ]
+        , td [] [ text bieter.mail ]
         , td [] [ text bieter.iban ]
         , td [] [ text (Offer.toString bieter.offer) ]
         ]

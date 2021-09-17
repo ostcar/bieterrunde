@@ -5768,12 +5768,38 @@ var $author$project$Page$Admin$Model = F6(
 var $author$project$Page$Admin$ReceivedBieter = function (a) {
 	return {$: 'ReceivedBieter', a: a};
 };
-var $author$project$Bieter$Bieter = F5(
-	function (id, name, adresse, iban, offer) {
-		return {adresse: adresse, iban: iban, id: id, name: name, offer: offer};
-	});
+var $author$project$Bieter$Bieter = function (id) {
+	return function (name) {
+		return function (mail) {
+			return function (verteilstelle) {
+				return function (kontoinhaber) {
+					return function (mitglied) {
+						return function (adresse) {
+							return function (iban) {
+								return function (abbuchung) {
+									return function (offer) {
+										return {abbuchung: abbuchung, adresse: adresse, iban: iban, id: id, kontoinhaber: kontoinhaber, mail: mail, mitglied: mitglied, name: name, offer: offer, verteilstelle: verteilstelle};
+									};
+								};
+							};
+						};
+					};
+				};
+			};
+		};
+	};
+};
+var $author$project$Bieter$Monatlich = {$: 'Monatlich'};
 var $author$project$Offer$NoOffer = {$: 'NoOffer'};
+var $author$project$Bieter$Jaehrlich = {$: 'Jaehrlich'};
+var $elm$json$Json$Decode$andThen = _Json_andThen;
 var $elm$json$Json$Decode$int = _Json_decodeInt;
+var $author$project$Bieter$abbuchungDecoder = A2(
+	$elm$json$Json$Decode$andThen,
+	function (n) {
+		return (n === 1) ? $elm$json$Json$Decode$succeed($author$project$Bieter$Jaehrlich) : $elm$json$Json$Decode$succeed($author$project$Bieter$Monatlich);
+	},
+	$elm$json$Json$Decode$int);
 var $author$project$Offer$Offer = F2(
 	function (a, b) {
 		return {$: 'Offer', a: a, b: b};
@@ -5794,7 +5820,6 @@ var $elm$json$Json$Decode$string = _Json_decodeString;
 var $author$project$Bieter$idDecoder = A2($elm$json$Json$Decode$map, $author$project$Bieter$ID, $elm$json$Json$Decode$string);
 var $NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$custom = $elm$json$Json$Decode$map2($elm$core$Basics$apR);
 var $elm$json$Json$Decode$field = _Json_decodeField;
-var $elm$json$Json$Decode$andThen = _Json_andThen;
 var $elm$json$Json$Decode$decodeValue = _Json_run;
 var $elm$json$Json$Decode$fail = _Json_fail;
 var $elm$json$Json$Decode$null = _Json_decodeNull;
@@ -5865,6 +5890,28 @@ var $NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required = F3(
 			A2($elm$json$Json$Decode$field, key, valDecoder),
 			decoder);
 	});
+var $author$project$Bieter$Schwenningen = {$: 'Schwenningen'};
+var $author$project$Bieter$Ueberauchen = {$: 'Ueberauchen'};
+var $author$project$Bieter$Villingen = {$: 'Villingen'};
+var $author$project$Bieter$fromVerteilID = function (n) {
+	switch (n) {
+		case 0:
+			return $elm$json$Json$Decode$succeed($elm$core$Maybe$Nothing);
+		case 1:
+			return $elm$json$Json$Decode$succeed(
+				$elm$core$Maybe$Just($author$project$Bieter$Villingen));
+		case 2:
+			return $elm$json$Json$Decode$succeed(
+				$elm$core$Maybe$Just($author$project$Bieter$Schwenningen));
+		case 3:
+			return $elm$json$Json$Decode$succeed(
+				$elm$core$Maybe$Just($author$project$Bieter$Ueberauchen));
+		default:
+			return $elm$json$Json$Decode$fail(
+				'Unbekannte verteilstelle ' + $elm$core$String$fromInt(n));
+	}
+};
+var $author$project$Bieter$verteilDecoder = A2($elm$json$Json$Decode$andThen, $author$project$Bieter$fromVerteilID, $elm$json$Json$Decode$int);
 var $author$project$Bieter$bieterDecoder = A4(
 	$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$optional,
 	'offer',
@@ -5873,26 +5920,56 @@ var $author$project$Bieter$bieterDecoder = A4(
 	A4(
 		$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$optionalAt,
 		_List_fromArray(
-			['payload', 'iban']),
-		$elm$json$Json$Decode$string,
-		'',
+			['payload', 'abbuchung']),
+		$author$project$Bieter$abbuchungDecoder,
+		$author$project$Bieter$Monatlich,
 		A4(
 			$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$optionalAt,
 			_List_fromArray(
-				['payload', 'adresse']),
+				['payload', 'iban']),
 			$elm$json$Json$Decode$string,
 			'',
 			A4(
 				$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$optionalAt,
 				_List_fromArray(
-					['payload', 'name']),
+					['payload', 'adresse']),
 				$elm$json$Json$Decode$string,
 				'',
-				A3(
-					$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
-					'id',
-					$author$project$Bieter$idDecoder,
-					$elm$json$Json$Decode$succeed($author$project$Bieter$Bieter))))));
+				A4(
+					$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$optionalAt,
+					_List_fromArray(
+						['payload', 'mitglied']),
+					$elm$json$Json$Decode$string,
+					'',
+					A4(
+						$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$optionalAt,
+						_List_fromArray(
+							['payload', 'kontoinhaber']),
+						$elm$json$Json$Decode$string,
+						'',
+						A4(
+							$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$optionalAt,
+							_List_fromArray(
+								['payload', 'verteilstelle']),
+							$author$project$Bieter$verteilDecoder,
+							$elm$core$Maybe$Nothing,
+							A4(
+								$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$optionalAt,
+								_List_fromArray(
+									['payload', 'mail']),
+								$elm$json$Json$Decode$string,
+								'',
+								A4(
+									$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$optionalAt,
+									_List_fromArray(
+										['payload', 'name']),
+									$elm$json$Json$Decode$string,
+									'',
+									A3(
+										$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
+										'id',
+										$author$project$Bieter$idDecoder,
+										$elm$json$Json$Decode$succeed($author$project$Bieter$Bieter)))))))))));
 var $elm$json$Json$Decode$list = _Json_decodeList;
 var $author$project$Bieter$bieterListDecoder = $elm$json$Json$Decode$list($author$project$Bieter$bieterDecoder);
 var $elm$http$Http$BadStatus_ = F2(
@@ -8154,6 +8231,13 @@ var $author$project$Offer$send = F4(
 				url: '/api/offer/' + bieterID
 			});
 	});
+var $author$project$Bieter$abbuchungFromString = function (s) {
+	if (s === 'Jährlich') {
+		return $author$project$Bieter$Jaehrlich;
+	} else {
+		return $author$project$Bieter$Monatlich;
+	}
+};
 var $elm$core$Result$andThen = F2(
 	function (callback, result) {
 		if (result.$ === 'Ok') {
@@ -9173,11 +9257,11 @@ var $groteck$elm_iban$IBAN$fromString = A2(
 		$elm$core$Basics$composeR,
 		$groteck$elm_iban$IBAN$build,
 		$elm$core$Result$andThen($groteck$elm_iban$IBAN$validate)));
-var $author$project$Page$Front$FormReceived = function (a) {
-	return {$: 'FormReceived', a: a};
-};
 var $author$project$Page$Front$GotEditPageMsg = function (a) {
 	return {$: 'GotEditPageMsg', a: a};
+};
+var $author$project$Page$Front$Received = function (a) {
+	return {$: 'Received', a: a};
 };
 var $author$project$Bieter$bieterEncoder = function (bieter) {
 	return $elm$json$Json$Encode$object(
@@ -9188,7 +9272,7 @@ var $author$project$Bieter$bieterEncoder = function (bieter) {
 				$elm$json$Json$Encode$string(bieter.name)),
 				_Utils_Tuple2(
 				'adresse',
-				$elm$json$Json$Encode$string(bieter.adresse)),
+				$elm$json$Json$Encode$string(bieter.mail)),
 				_Utils_Tuple2(
 				'iban',
 				$elm$json$Json$Encode$string(bieter.iban))
@@ -9203,7 +9287,7 @@ var $author$project$Page$Front$updateBieter = F2(
 				{
 					body: $elm$http$Http$jsonBody(
 						$author$project$Bieter$bieterEncoder(bieter)),
-					expect: A2($elm$http$Http$expectJson, $author$project$Page$Front$FormReceived, $author$project$Bieter$bieterDecoder),
+					expect: A2($elm$http$Http$expectJson, $author$project$Page$Front$Received, $author$project$Bieter$bieterDecoder),
 					headers: $author$project$Session$headers(session),
 					method: 'PUT',
 					timeout: $elm$core$Maybe$Nothing,
@@ -9211,6 +9295,18 @@ var $author$project$Page$Front$updateBieter = F2(
 					url: '/api/bieter/' + $author$project$Bieter$idToString(bieter.id)
 				}));
 	});
+var $author$project$Bieter$verteilerFromString = function (s) {
+	switch (s) {
+		case 'Villingen':
+			return $elm$core$Maybe$Just($author$project$Bieter$Villingen);
+		case 'Schwenningen':
+			return $elm$core$Maybe$Just($author$project$Bieter$Schwenningen);
+		case 'Überauchen':
+			return $elm$core$Maybe$Just($author$project$Bieter$Ueberauchen);
+		default:
+			return $elm$core$Maybe$Nothing;
+	}
+};
 var $author$project$Page$Front$updateEditPage = F2(
 	function (model, editMsg) {
 		var _v0 = model.draftBieter;
@@ -9219,7 +9315,7 @@ var $author$project$Page$Front$updateEditPage = F2(
 		} else {
 			var bieter = _v0.a;
 			switch (editMsg.$) {
-				case 'FormSaveName':
+				case 'SaveName':
 					var name = editMsg.a;
 					return _Utils_Tuple2(
 						_Utils_update(
@@ -9231,8 +9327,8 @@ var $author$project$Page$Front$updateEditPage = F2(
 										{name: name}))
 							}),
 						$elm$core$Platform$Cmd$none);
-				case 'FormSaveAdresse':
-					var addr = editMsg.a;
+				case 'SaveMail':
+					var mail = editMsg.a;
 					return _Utils_Tuple2(
 						_Utils_update(
 							model,
@@ -9240,10 +9336,74 @@ var $author$project$Page$Front$updateEditPage = F2(
 								draftBieter: $elm$core$Maybe$Just(
 									_Utils_update(
 										bieter,
-										{adresse: addr}))
+										{mail: mail}))
 							}),
 						$elm$core$Platform$Cmd$none);
-				case 'FormSaveIBAN':
+				case 'SaveVerteilstelle':
+					var verteiler = editMsg.a;
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{
+								draftBieter: $elm$core$Maybe$Just(
+									_Utils_update(
+										bieter,
+										{
+											verteilstelle: $author$project$Bieter$verteilerFromString(verteiler)
+										}))
+							}),
+						$elm$core$Platform$Cmd$none);
+				case 'SaveKontoinhaber':
+					var kontoinhaber = editMsg.a;
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{
+								draftBieter: $elm$core$Maybe$Just(
+									_Utils_update(
+										bieter,
+										{kontoinhaber: kontoinhaber}))
+							}),
+						$elm$core$Platform$Cmd$none);
+				case 'SaveMitglied':
+					var mitglied = editMsg.a;
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{
+								draftBieter: $elm$core$Maybe$Just(
+									_Utils_update(
+										bieter,
+										{mitglied: mitglied}))
+							}),
+						$elm$core$Platform$Cmd$none);
+				case 'SaveAdresse':
+					var adresse = editMsg.a;
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{
+								draftBieter: $elm$core$Maybe$Just(
+									_Utils_update(
+										bieter,
+										{adresse: adresse}))
+							}),
+						$elm$core$Platform$Cmd$none);
+				case 'SaveAbbuchung':
+					var abbuchung = editMsg.a;
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{
+								draftBieter: $elm$core$Maybe$Just(
+									_Utils_update(
+										bieter,
+										{
+											abbuchung: $author$project$Bieter$abbuchungFromString(abbuchung)
+										}))
+							}),
+						$elm$core$Platform$Cmd$none);
+				case 'SaveIBAN':
 					var iban = editMsg.a;
 					var valid = function () {
 						var _v2 = $groteck$elm_iban$IBAN$fromString(iban);
@@ -9264,11 +9424,11 @@ var $author$project$Page$Front$updateEditPage = F2(
 								ibanValid: valid
 							}),
 						$elm$core$Platform$Cmd$none);
-				case 'FormSubmit':
+				case 'Submit':
 					return _Utils_Tuple2(
 						model,
 						A2($author$project$Page$Front$updateBieter, model.session, bieter));
-				case 'FormReceived':
+				case 'Received':
 					var response = editMsg.a;
 					if (response.$ === 'Ok') {
 						var _v4 = A2($author$project$Session$loggedIn, model.session, bieter);
@@ -9329,7 +9489,7 @@ var $author$project$Page$Front$update = F2(
 						model,
 						{loginFormBieterNr: nr}),
 					$elm$core$Platform$Cmd$none);
-			case 'SaveName':
+			case 'LoginSaveName':
 				var name = msg.a;
 				return _Utils_Tuple2(
 					_Utils_update(
@@ -9818,7 +9978,7 @@ var $author$project$Page$Admin$viewBieterLine = function (bieter) {
 				_List_Nil,
 				_List_fromArray(
 					[
-						$elm$html$Html$text(bieter.adresse)
+						$elm$html$Html$text(bieter.mail)
 					])),
 				A2(
 				$elm$html$Html$td,
@@ -10218,6 +10378,13 @@ var $author$project$Page$Admin$view = function (model) {
 };
 var $author$project$Permission$CanEdit = {$: 'CanEdit'};
 var $author$project$Page$Front$GotoEditPage = {$: 'GotoEditPage'};
+var $author$project$Bieter$abbuchungToString = function (a) {
+	if (a.$ === 'Jaehrlich') {
+		return 'Jährlich';
+	} else {
+		return 'Monatlich';
+	}
+};
 var $author$project$Permission$hasPerm = F2(
 	function (perm, session) {
 		var isAdmin = $author$project$Session$isAdmin(session);
@@ -10236,6 +10403,23 @@ var $author$project$Permission$hasPerm = F2(
 			}
 		}
 	});
+var $author$project$Bieter$verteilerToString = function (maybeVerteiler) {
+	if (maybeVerteiler.$ === 'Nothing') {
+		return 'Unbekant';
+	} else {
+		switch (maybeVerteiler.a.$) {
+			case 'Villingen':
+				var _v1 = maybeVerteiler.a;
+				return 'Villingen';
+			case 'Schwenningen':
+				var _v2 = maybeVerteiler.a;
+				return 'Schwenningen';
+			default:
+				var _v3 = maybeVerteiler.a;
+				return 'Überauchen';
+		}
+	}
+};
 var $author$project$Permission$CanOffer = {$: 'CanOffer'};
 var $author$project$Page$Front$SaveDraftOffer = function (a) {
 	return {$: 'SaveDraftOffer', a: a};
@@ -14285,7 +14469,44 @@ var $author$project$Page$Front$viewBieter = F6(
 						_List_Nil,
 						_List_fromArray(
 							[
+								$elm$html$Html$text('mail: ' + bieter.mail)
+							])),
+						A2(
+						$elm$html$Html$div,
+						_List_Nil,
+						_List_fromArray(
+							[
+								$elm$html$Html$text(
+								'Verteilstelle: ' + $author$project$Bieter$verteilerToString(bieter.verteilstelle))
+							])),
+						A2(
+						$elm$html$Html$div,
+						_List_Nil,
+						_List_fromArray(
+							[
+								$elm$html$Html$text('Kontoinhaber: ' + bieter.kontoinhaber)
+							])),
+						A2(
+						$elm$html$Html$div,
+						_List_Nil,
+						_List_fromArray(
+							[
+								$elm$html$Html$text('Mitglied: ' + bieter.mitglied)
+							])),
+						A2(
+						$elm$html$Html$div,
+						_List_Nil,
+						_List_fromArray(
+							[
 								$elm$html$Html$text('Adresse: ' + bieter.adresse)
+							])),
+						A2(
+						$elm$html$Html$div,
+						_List_Nil,
+						_List_fromArray(
+							[
+								$elm$html$Html$text(
+								'Abbuchung: ' + $author$project$Bieter$abbuchungToString(bieter.abbuchung))
 							])),
 						A2(
 						$elm$html$Html$div,
@@ -14301,17 +14522,32 @@ var $author$project$Page$Front$viewBieter = F6(
 			title: 'Bieter'
 		};
 	});
-var $author$project$Page$Front$FormGoBack = {$: 'FormGoBack'};
-var $author$project$Page$Front$FormSaveAdresse = function (a) {
-	return {$: 'FormSaveAdresse', a: a};
+var $author$project$Page$Front$GoBack = {$: 'GoBack'};
+var $author$project$Page$Front$SaveAbbuchung = function (a) {
+	return {$: 'SaveAbbuchung', a: a};
 };
-var $author$project$Page$Front$FormSaveIBAN = function (a) {
-	return {$: 'FormSaveIBAN', a: a};
+var $author$project$Page$Front$SaveAdresse = function (a) {
+	return {$: 'SaveAdresse', a: a};
 };
-var $author$project$Page$Front$FormSaveName = function (a) {
-	return {$: 'FormSaveName', a: a};
+var $author$project$Page$Front$SaveIBAN = function (a) {
+	return {$: 'SaveIBAN', a: a};
 };
-var $author$project$Page$Front$FormSubmit = {$: 'FormSubmit'};
+var $author$project$Page$Front$SaveKontoinhaber = function (a) {
+	return {$: 'SaveKontoinhaber', a: a};
+};
+var $author$project$Page$Front$SaveMail = function (a) {
+	return {$: 'SaveMail', a: a};
+};
+var $author$project$Page$Front$SaveMitglied = function (a) {
+	return {$: 'SaveMitglied', a: a};
+};
+var $author$project$Page$Front$SaveName = function (a) {
+	return {$: 'SaveName', a: a};
+};
+var $author$project$Page$Front$SaveVerteilstelle = function (a) {
+	return {$: 'SaveVerteilstelle', a: a};
+};
+var $author$project$Page$Front$Submit = {$: 'Submit'};
 var $author$project$Page$Front$viewEdit = function (model) {
 	var _v0 = model.draftBieter;
 	if (_v0.$ === 'Nothing') {
@@ -14327,81 +14563,231 @@ var $author$project$Page$Front$viewEdit = function (model) {
 				_List_Nil,
 				_List_fromArray(
 					[
-						$author$project$Page$Front$maybeError(model.editErrorMsg),
 						A2(
-						$elm$html$Html$div,
-						_List_Nil,
+						$elm$html$Html$form,
 						_List_fromArray(
 							[
-								$elm$html$Html$text('Name'),
-								A2(
-								$elm$html$Html$input,
-								_List_fromArray(
-									[
-										$elm$html$Html$Attributes$type_('text'),
-										$elm$html$Html$Attributes$value(bieter.name),
-										$elm$html$Html$Events$onInput($author$project$Page$Front$FormSaveName)
-									]),
-								_List_Nil)
-							])),
-						A2(
-						$elm$html$Html$div,
-						_List_Nil,
+								$elm$html$Html$Events$onSubmit($author$project$Page$Front$Submit)
+							]),
 						_List_fromArray(
 							[
-								$elm$html$Html$text('Adresse'),
+								$author$project$Page$Front$maybeError(model.editErrorMsg),
 								A2(
-								$elm$html$Html$input,
+								$elm$html$Html$div,
+								_List_Nil,
 								_List_fromArray(
 									[
-										$elm$html$Html$Attributes$type_('text'),
-										$elm$html$Html$Attributes$value(bieter.adresse),
-										$elm$html$Html$Events$onInput($author$project$Page$Front$FormSaveAdresse)
-									]),
-								_List_Nil)
-							])),
-						A2(
-						$elm$html$Html$div,
-						_List_Nil,
-						_List_fromArray(
-							[
-								$elm$html$Html$text('IBAN'),
-								A2(
-								$elm$html$Html$input,
-								_List_fromArray(
-									[
-										$elm$html$Html$Attributes$type_('text'),
-										$elm$html$Html$Attributes$class(
-										model.ibanValid ? '' : 'error'),
-										$elm$html$Html$Attributes$value(bieter.iban),
-										$elm$html$Html$Events$onInput($author$project$Page$Front$FormSaveIBAN)
-									]),
-								_List_Nil)
-							])),
-						A2(
-						$elm$html$Html$div,
-						_List_Nil,
-						_List_fromArray(
-							[
-								A2(
-								$elm$html$Html$button,
-								_List_fromArray(
-									[
-										$elm$html$Html$Events$onClick($author$project$Page$Front$FormSubmit)
-									]),
-								_List_fromArray(
-									[
-										$elm$html$Html$text('Speichern')
+										$elm$html$Html$text('Name'),
+										A2(
+										$elm$html$Html$input,
+										_List_fromArray(
+											[
+												$elm$html$Html$Attributes$type_('text'),
+												$elm$html$Html$Attributes$value(bieter.name),
+												$elm$html$Html$Events$onInput($author$project$Page$Front$SaveName)
+											]),
+										_List_Nil)
 									])),
 								A2(
-								$elm$html$Html$button,
+								$elm$html$Html$div,
+								_List_Nil,
 								_List_fromArray(
 									[
-										$elm$html$Html$Events$onClick($author$project$Page$Front$FormGoBack)
-									]),
+										$elm$html$Html$text('E-Mail'),
+										A2(
+										$elm$html$Html$input,
+										_List_fromArray(
+											[
+												$elm$html$Html$Attributes$type_('text'),
+												$elm$html$Html$Attributes$value(bieter.mail),
+												$elm$html$Html$Events$onInput($author$project$Page$Front$SaveMail)
+											]),
+										_List_Nil)
+									])),
+								A2(
+								$elm$html$Html$div,
+								_List_Nil,
 								_List_fromArray(
 									[
-										$elm$html$Html$text('Zurück')
+										$elm$html$Html$text('Verteilstelle'),
+										A2(
+										$elm$html$Html$select,
+										_List_fromArray(
+											[
+												$elm$html$Html$Events$onInput($author$project$Page$Front$SaveVerteilstelle)
+											]),
+										_List_fromArray(
+											[
+												A2(
+												$elm$html$Html$option,
+												_List_fromArray(
+													[
+														$elm$html$Html$Attributes$selected(
+														_Utils_eq(
+															bieter.verteilstelle,
+															$elm$core$Maybe$Just($author$project$Bieter$Villingen)))
+													]),
+												_List_fromArray(
+													[
+														$elm$html$Html$text('Villingen')
+													])),
+												A2(
+												$elm$html$Html$option,
+												_List_fromArray(
+													[
+														$elm$html$Html$Attributes$selected(
+														_Utils_eq(
+															bieter.verteilstelle,
+															$elm$core$Maybe$Just($author$project$Bieter$Schwenningen)))
+													]),
+												_List_fromArray(
+													[
+														$elm$html$Html$text('Schwenningen')
+													])),
+												A2(
+												$elm$html$Html$option,
+												_List_fromArray(
+													[
+														$elm$html$Html$Attributes$selected(
+														_Utils_eq(
+															bieter.verteilstelle,
+															$elm$core$Maybe$Just($author$project$Bieter$Ueberauchen)))
+													]),
+												_List_fromArray(
+													[
+														$elm$html$Html$text('Überauchen')
+													]))
+											]))
+									])),
+								A2(
+								$elm$html$Html$div,
+								_List_Nil,
+								_List_fromArray(
+									[
+										$elm$html$Html$text('Kontoinhaber'),
+										A2(
+										$elm$html$Html$input,
+										_List_fromArray(
+											[
+												$elm$html$Html$Attributes$type_('text'),
+												$elm$html$Html$Attributes$value(bieter.kontoinhaber),
+												$elm$html$Html$Events$onInput($author$project$Page$Front$SaveKontoinhaber)
+											]),
+										_List_Nil)
+									])),
+								A2(
+								$elm$html$Html$div,
+								_List_Nil,
+								_List_fromArray(
+									[
+										$elm$html$Html$text('Mitglied'),
+										A2(
+										$elm$html$Html$input,
+										_List_fromArray(
+											[
+												$elm$html$Html$Attributes$type_('text'),
+												$elm$html$Html$Attributes$value(bieter.mitglied),
+												$elm$html$Html$Events$onInput($author$project$Page$Front$SaveMitglied)
+											]),
+										_List_Nil)
+									])),
+								A2(
+								$elm$html$Html$div,
+								_List_Nil,
+								_List_fromArray(
+									[
+										$elm$html$Html$text('Adresse'),
+										A2(
+										$elm$html$Html$input,
+										_List_fromArray(
+											[
+												$elm$html$Html$Attributes$type_('text'),
+												$elm$html$Html$Attributes$value(bieter.adresse),
+												$elm$html$Html$Events$onInput($author$project$Page$Front$SaveAdresse)
+											]),
+										_List_Nil)
+									])),
+								A2(
+								$elm$html$Html$div,
+								_List_Nil,
+								_List_fromArray(
+									[
+										$elm$html$Html$text('IBAN'),
+										A2(
+										$elm$html$Html$input,
+										_List_fromArray(
+											[
+												$elm$html$Html$Attributes$type_('text'),
+												$elm$html$Html$Attributes$class(
+												model.ibanValid ? '' : 'error'),
+												$elm$html$Html$Attributes$value(bieter.iban),
+												$elm$html$Html$Events$onInput($author$project$Page$Front$SaveIBAN)
+											]),
+										_List_Nil)
+									])),
+								A2(
+								$elm$html$Html$div,
+								_List_Nil,
+								_List_fromArray(
+									[
+										$elm$html$Html$text('Abbuchung'),
+										A2(
+										$elm$html$Html$select,
+										_List_fromArray(
+											[
+												$elm$html$Html$Events$onInput($author$project$Page$Front$SaveAbbuchung)
+											]),
+										_List_fromArray(
+											[
+												A2(
+												$elm$html$Html$option,
+												_List_fromArray(
+													[
+														$elm$html$Html$Attributes$selected(
+														_Utils_eq(bieter.abbuchung, $author$project$Bieter$Jaehrlich))
+													]),
+												_List_fromArray(
+													[
+														$elm$html$Html$text('Jährlich')
+													])),
+												A2(
+												$elm$html$Html$option,
+												_List_fromArray(
+													[
+														$elm$html$Html$Attributes$selected(
+														_Utils_eq(bieter.abbuchung, $author$project$Bieter$Monatlich))
+													]),
+												_List_fromArray(
+													[
+														$elm$html$Html$text('Monatlich')
+													]))
+											]))
+									])),
+								A2(
+								$elm$html$Html$div,
+								_List_Nil,
+								_List_fromArray(
+									[
+										A2(
+										$elm$html$Html$button,
+										_List_fromArray(
+											[
+												$elm$html$Html$Attributes$type_('submit')
+											]),
+										_List_fromArray(
+											[
+												$elm$html$Html$text('Speichern')
+											])),
+										A2(
+										$elm$html$Html$button,
+										_List_fromArray(
+											[
+												$elm$html$Html$Events$onClick($author$project$Page$Front$GoBack)
+											]),
+										_List_fromArray(
+											[
+												$elm$html$Html$text('Zurück')
+											]))
 									]))
 							]))
 					])),
@@ -14415,10 +14801,10 @@ var $author$project$Page$Front$SaveNumber = function (a) {
 };
 var $elm$html$Html$Attributes$id = $elm$html$Html$Attributes$stringProperty('id');
 var $author$project$Permission$CanCreate = {$: 'CanCreate'};
-var $author$project$Page$Front$RequestCreate = {$: 'RequestCreate'};
-var $author$project$Page$Front$SaveName = function (a) {
-	return {$: 'SaveName', a: a};
+var $author$project$Page$Front$LoginSaveName = function (a) {
+	return {$: 'LoginSaveName', a: a};
 };
+var $author$project$Page$Front$RequestCreate = {$: 'RequestCreate'};
 var $author$project$Page$Front$viewCreateForm = function (model) {
 	return A2($author$project$Permission$hasPerm, $author$project$Permission$CanCreate, model.session) ? A2(
 		$elm$html$Html$div,
@@ -14453,7 +14839,7 @@ var $author$project$Page$Front$viewCreateForm = function (model) {
 										$elm$html$Html$Attributes$id('name'),
 										$elm$html$Html$Attributes$type_('text'),
 										$elm$html$Html$Attributes$value(model.loginFormBieterName),
-										$elm$html$Html$Events$onInput($author$project$Page$Front$SaveName)
+										$elm$html$Html$Events$onInput($author$project$Page$Front$LoginSaveName)
 									]),
 								_List_Nil)
 							])),
