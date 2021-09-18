@@ -191,6 +191,11 @@ update msg model =
                         , Cmd.batch [ Nav.pushUrl (Session.navKey newSession) (Route.routeToString Route.Front), cmd ]
                         )
 
+                    else if String.startsWith "/api" url.path then
+                        ( model
+                        , Nav.load (Url.toString url)
+                        )
+
                     else
                         ( model
                         , Nav.pushUrl (Session.navKey (toSession model)) (Url.toString url)

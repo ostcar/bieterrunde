@@ -11,7 +11,7 @@ import (
 )
 
 // Bietervertrag creates the bietervertrag pdf for a bieter
-func Bietervertrag(headerImage string, data pdfData) (*bytes.Buffer, error) {
+func Bietervertrag(domain string, bieterID string, headerImage string, data pdfData) (*bytes.Buffer, error) {
 	m := pdf.NewMaroto(consts.Portrait, consts.A4)
 
 	// TODO: Remove
@@ -34,8 +34,13 @@ func Bietervertrag(headerImage string, data pdfData) (*bytes.Buffer, error) {
 			}
 		})
 
+		// Baarcode
+		m.Col(3, func() {
+			m.QrCode(fmt.Sprintf("%s/bieter/%s", domain, bieterID))
+		})
+
 		// Image
-		m.Col(6, func() {
+		m.Col(3, func() {
 			err := m.Base64Image(headerImage, consts.Png, props.Rect{
 				Center: true,
 			})

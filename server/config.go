@@ -14,12 +14,14 @@ import (
 type Config struct {
 	AdminPW    string `toml:"admin_password"`
 	ListenAddr string `toml:"listen_addr"`
+	Domain     string `toml:"domain"`
 }
 
 // DefaultConfig returns a config object with default values.
 func DefaultConfig() Config {
 	return Config{
 		ListenAddr: ":9600",
+		Domain:     "http://localhost:9600",
 	}
 }
 

@@ -152,8 +152,6 @@ func handleBieter(router *mux.Router, db *Database, config Config, filesystem fs
 			return
 		}
 
-		_ = payload
-
 		f, err := filesystem.Open("static/images/pdf_header_image.png")
 		if err != nil {
 			handleError(w, fmt.Errorf("open header image: %w", err))
@@ -172,7 +170,7 @@ func handleBieter(router *mux.Router, db *Database, config Config, filesystem fs
 			return
 		}
 
-		pdfile, err := Bietervertrag(headerImage, data)
+		pdfile, err := Bietervertrag(config.Domain, bieterID, headerImage, data)
 		if err != nil {
 			handleError(w, fmt.Errorf("creating pdf: %w", err))
 			return

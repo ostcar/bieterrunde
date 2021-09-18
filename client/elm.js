@@ -9785,13 +9785,20 @@ var $author$project$Main$update = F2(
 											cmd
 										])));
 						} else {
-							return _Utils_Tuple2(
-								model,
-								A2(
-									$elm$browser$Browser$Navigation$pushUrl,
-									$author$project$Session$navKey(
-										$author$project$Main$toSession(model)),
-									$elm$url$Url$toString(url)));
+							if (A2($elm$core$String$startsWith, '/api', url.path)) {
+								return _Utils_Tuple2(
+									model,
+									$elm$browser$Browser$Navigation$load(
+										$elm$url$Url$toString(url)));
+							} else {
+								return _Utils_Tuple2(
+									model,
+									A2(
+										$elm$browser$Browser$Navigation$pushUrl,
+										$author$project$Session$navKey(
+											$author$project$Main$toSession(model)),
+										$elm$url$Url$toString(url)));
+							}
 						}
 					} else {
 						if (urlRequest.a === '') {
@@ -14556,6 +14563,17 @@ var $author$project$Page$Front$viewBieter = F6(
 								$elm$html$Html$text('IBAN: ' + bieter.iban)
 							])),
 						maybeEditButton,
+						A2(
+						$elm$html$Html$a,
+						_List_fromArray(
+							[
+								$elm$html$Html$Attributes$href(
+								'/api/bieter/' + ($author$project$Bieter$idToString(bieter.id) + '/pdf'))
+							]),
+						_List_fromArray(
+							[
+								$elm$html$Html$text('Bietervertrag (PDF)')
+							])),
 						A5($author$project$Page$Front$viewOffer, session, bieter, draftOffer, error, offerValid),
 						A2($author$project$Page$Front$viewQRCode, baseURL, bieter.id)
 					])),

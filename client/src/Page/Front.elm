@@ -467,9 +467,10 @@ viewBieter session baseURL bieter draftOffer error offerValid =
             , div [] [ text ("Kontoinhaber: " ++ bieter.kontoinhaber) ]
             , div [] [ text ("Mitglied: " ++ bieter.mitglied) ]
             , div [] [ text ("Adresse: " ++ bieter.adresse) ]
-            , div [] [ text ("Abbuchung: " ++ (Bieter.abbuchungToString bieter.abbuchung)) ]
+            , div [] [ text ("Abbuchung: " ++ Bieter.abbuchungToString bieter.abbuchung) ]
             , div [] [ text ("IBAN: " ++ bieter.iban) ]
             , maybeEditButton
+            , a [ href ("/api/bieter/" ++ Bieter.idToString bieter.id ++ "/pdf") ] [ text "Bietervertrag (PDF)" ]
             , viewOffer session bieter draftOffer error offerValid
             , viewQRCode baseURL bieter.id
             ]
