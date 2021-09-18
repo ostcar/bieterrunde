@@ -1,6 +1,7 @@
 package server
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -20,12 +21,19 @@ const (
 )
 
 func registerHandlers(router *mux.Router, config Config, db *Database, defaultFiles DefaultFiles) {
+	fileSystem := MultiFS{
+		fs: []fs.FS{
+			os.DirFS("./static"),
+			defaultFiles.Static,
+		},
+	}
+
 	router.Use(loggingMiddleware)
 
 	handleElmJS(router, defaultFiles.Elm)
 	handleIndex(router, defaultFiles.Index)
 
-	handleBieter(router, db, config)
+	handleBieter(router, db, config, fileSystem)
 	handleBieterCreate(router, db, config)
 	handleBieterList(router, db, config)
 
@@ -33,7 +41,7 @@ func registerHandlers(router *mux.Router, config Config, db *Database, defaultFi
 	handleSetOffer(router, db, config)
 	handleClearOffer(router, db, config)
 
-	handleStatic(router, defaultFiles.Static)
+	handleStatic(router, fileSystem)
 }
 
 // ViewBieter is the bieter data returned to the client
@@ -89,7 +97,7 @@ func handleElmJS(router *mux.Router, defaultContent []byte) {
 
 // handleBieter handles request to /bieter/id. Get returns the bieter, put
 // updates it and delete deletes it
-func handleBieter(router *mux.Router, db *Database, config Config) {
+func handleBieter(router *mux.Router, db *Database, config Config, filesystem fs.FS) {
 	path := pathPrefixAPI + "/bieter/{id}"
 
 	router.Path(path).Methods("DELETE").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -134,6 +142,42 @@ func handleBieter(router *mux.Router, db *Database, config Config) {
 			handleError(w, fmt.Errorf("encoding bieter: %w", err))
 			return
 		}
+	})
+
+	router.Path(path + "/pdf").Methods("GET").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		bieterID := mux.Vars(r)["id"]
+		payload, exist := db.Bieter(bieterID)
+		if !exist {
+			handleError(w, clientError{msg: "Bieter existiert nicht", status: 404})
+			return
+		}
+
+		_ = payload
+
+		f, err := filesystem.Open("static/images/pdf_header_image.png")
+		if err != nil {
+			handleError(w, fmt.Errorf("open header image: %w", err))
+			return
+		}
+		imgBytes, err := io.ReadAll(f)
+		if err != nil {
+			handleError(w, fmt.Errorf("reading header image: %w", err))
+			return
+		}
+
+		headerImage := base64.StdEncoding.EncodeToString(imgBytes)
+		var data pdfData
+		if err := json.Unmarshal(payload, &data); err != nil {
+			handleError(w, fmt.Errorf("decode bieter data: %w", err))
+			return
+		}
+
+		pdfile, err := Bietervertrag(headerImage, data)
+		if err != nil {
+			handleError(w, fmt.Errorf("creating pdf: %w", err))
+			return
+		}
+		io.Copy(w, pdfile)
 	})
 }
 
@@ -259,13 +303,8 @@ func handleSetOffer(router *mux.Router, db *Database, config Config) {
 //
 // It looks for each file in a directory "static/". It the file does not exist
 // there, it looks in the default static files, the binary was creaded with.
-func handleStatic(router *mux.Router, defaultContent fs.FS) {
-	fileSystem := MultiFS{
-		fs: []fs.FS{
-			os.DirFS("./static"),
-			defaultContent,
-		},
-	}
+func handleStatic(router *mux.Router, fileSystem fs.FS) {
+
 	router.PathPrefix(pathPrefixStatic).Handler(http.StripPrefix(pathPrefixStatic, http.FileServer(http.FS(fileSystem))))
 }
 
@@ -289,10 +328,22 @@ func (fs MultiFS) Open(name string) (fs.File, error) {
 	return nil, os.ErrNotExist
 }
 
+type responselogger struct {
+	http.ResponseWriter
+	code int
+}
+
+func (r *responselogger) WriteHeader(h int) {
+	r.code = h
+	r.ResponseWriter.WriteHeader(h)
+}
+
 func loggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Println(r.Method + " " + r.RequestURI)
+
+		writer := responselogger{w, 200}
 		next.ServeHTTP(w, r)
+		log.Printf("%s %d %s", r.Method, writer.code, r.RequestURI)
 	})
 }
 

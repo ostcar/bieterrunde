@@ -9263,6 +9263,31 @@ var $author$project$Page$Front$GotEditPageMsg = function (a) {
 var $author$project$Page$Front$Received = function (a) {
 	return {$: 'Received', a: a};
 };
+var $author$project$Bieter$abbuchungEncoder = function (abbuchung) {
+	if (abbuchung.$ === 'Jaehrlich') {
+		return $elm$json$Json$Encode$int(1);
+	} else {
+		return $elm$json$Json$Encode$int(0);
+	}
+};
+var $elm$json$Json$Encode$null = _Json_encodeNull;
+var $author$project$Bieter$verteilEncoder = function (verteiler) {
+	if (verteiler.$ === 'Nothing') {
+		return $elm$json$Json$Encode$null;
+	} else {
+		switch (verteiler.a.$) {
+			case 'Villingen':
+				var _v1 = verteiler.a;
+				return $elm$json$Json$Encode$int(1);
+			case 'Schwenningen':
+				var _v2 = verteiler.a;
+				return $elm$json$Json$Encode$int(2);
+			default:
+				var _v3 = verteiler.a;
+				return $elm$json$Json$Encode$int(3);
+		}
+	}
+};
 var $author$project$Bieter$bieterEncoder = function (bieter) {
 	return $elm$json$Json$Encode$object(
 		_List_fromArray(
@@ -9271,11 +9296,26 @@ var $author$project$Bieter$bieterEncoder = function (bieter) {
 				'name',
 				$elm$json$Json$Encode$string(bieter.name)),
 				_Utils_Tuple2(
-				'adresse',
+				'mail',
 				$elm$json$Json$Encode$string(bieter.mail)),
 				_Utils_Tuple2(
+				'verteilstelle',
+				$author$project$Bieter$verteilEncoder(bieter.verteilstelle)),
+				_Utils_Tuple2(
+				'kontoinhaber',
+				$elm$json$Json$Encode$string(bieter.kontoinhaber)),
+				_Utils_Tuple2(
+				'mitglied',
+				$elm$json$Json$Encode$string(bieter.mitglied)),
+				_Utils_Tuple2(
+				'adresse',
+				$elm$json$Json$Encode$string(bieter.adresse)),
+				_Utils_Tuple2(
 				'iban',
-				$elm$json$Json$Encode$string(bieter.iban))
+				$elm$json$Json$Encode$string(bieter.iban)),
+				_Utils_Tuple2(
+				'abbuchung',
+				$author$project$Bieter$abbuchungEncoder(bieter.abbuchung))
 			]));
 };
 var $author$project$Page$Front$updateBieter = F2(

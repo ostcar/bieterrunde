@@ -47,8 +47,13 @@ bieterEncoder : Bieter -> Encode.Value
 bieterEncoder bieter =
     Encode.object
         [ ( "name", Encode.string bieter.name )
-        , ( "adresse", Encode.string bieter.mail )
+        , ( "mail", Encode.string bieter.mail )
+        , ( "verteilstelle", verteilEncoder bieter.verteilstelle )
+        , ( "kontoinhaber", Encode.string bieter.kontoinhaber )
+        , ( "mitglied", Encode.string bieter.mitglied )
+        , ( "adresse", Encode.string bieter.adresse )
         , ( "iban", Encode.string bieter.iban )
+        , ( "abbuchung", abbuchungEncoder bieter.abbuchung )
         ]
 
 
@@ -61,6 +66,22 @@ type Verteilstelle
 verteilDecoder : Decoder (Maybe Verteilstelle)
 verteilDecoder =
     Decode.int |> Decode.andThen fromVerteilID
+
+
+verteilEncoder : Maybe Verteilstelle -> Encode.Value
+verteilEncoder verteiler =
+    case verteiler of
+        Nothing ->
+            Encode.null
+
+        Just Villingen ->
+            Encode.int 1
+
+        Just Schwenningen ->
+            Encode.int 2
+
+        Just Ueberauchen ->
+            Encode.int 3
 
 
 fromVerteilID : Int -> Decoder (Maybe Verteilstelle)
@@ -130,6 +151,16 @@ abbuchungDecoder =
                 else
                     Decode.succeed Monatlich
             )
+
+
+abbuchungEncoder : Abbuchung -> Encode.Value
+abbuchungEncoder abbuchung =
+    case abbuchung of
+        Jaehrlich ->
+            Encode.int 1
+
+        Monatlich ->
+            Encode.int 0
 
 
 abbuchungFromString : String -> Abbuchung
