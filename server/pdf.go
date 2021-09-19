@@ -64,7 +64,7 @@ func Bietervertrag(domain string, bieterID string, headerImage string, data pdfD
 	})
 
 	// Vertragstext
-	m.Row(55, func() {
+	m.Row(50, func() {
 		m.Col(12, func() {
 			m.Text(fmt.Sprintf(`
 				Ich, %s <%s>, bin Mitglied im des Vereins Solidarische Landwirtschaft Baarfood e.V. 
@@ -113,6 +113,94 @@ func Bietervertrag(domain string, bieterID string, headerImage string, data pdfD
 		})
 	})
 
+	// SEPA
+	m.Row(15, func() {
+		m.Col(12, func() {
+			m.Text("SEPA Lastschriftmandat", props.Text{
+				Size:  14,
+				Style: consts.Bold,
+				Align: consts.Center,
+				Top:   5,
+			})
+		})
+	})
+
+	// Gläubiger-Identifikationsnummer
+	m.Row(5, func() {
+		m.Col(12, func() {
+			m.Text(`Gläubiger-Identifikationsnummer: DE62ZZZ00001997635`)
+		})
+	})
+
+	// Mandatsreferenz
+	m.Row(5, func() {
+		m.Col(12, func() {
+			m.Text(fmt.Sprintf(`Mandatsreferenz: 22%s`, bieterID))
+		})
+	})
+
+	// Abbuchung
+
+	m.Row(5, func() {
+		m.Col(12, func() {
+			if data.Abbuchung == 1 {
+				m.Text("Die Abbuchung erfolgt am 1. April 2022")
+			} else {
+				m.Text("Die Abbuchung erfolgt am ersten Werktag eines Monats von April 2022 bis Märt 2023")
+			}
+		})
+	})
+
+	// Sepa-Text
+	m.Row(30, func() {
+		m.Col(12, func() {
+			m.Text(`
+			Ich ermächtige den Verein Solidarische Landwirtschaft Baarfood e.V. 
+			Lastschriften von meinem Konto einzuziehen. Zugleich weise ich mein 
+			Kreditinstitut an, die von Solidarische Landwirtschaft Baarfood e.V. 
+			auf mein Konto gezogenen Lastschriften einzulösen.
+			`,
+			)
+
+			m.Text(
+				`Ich kann innerhalb von acht Wochen, beginnend mit dem Belastungsdatum,
+				die Erstattung des belasteten Betrages verlangen. Es gelten dabei die
+				mit meinem Kreditinstitut vereinbarten Bedingungen.
+				`,
+				props.Text{
+					Top: 12,
+				},
+			)
+
+			m.Text(
+				`Ist eine Abbuchung nicht möglich, so geht die Rückbuchungsgebühr zu meinen Lasten.`,
+				props.Text{
+					Top: 20,
+				},
+			)
+		})
+	})
+
+	m.Row(10, func() {
+		m.Col(12, func() {
+			kontoinhaber := data.Kontoinhaber
+			if len(kontoinhaber) == 0 {
+				kontoinhaber = data.Name
+			}
+			m.Text(fmt.Sprintf(`Kontoinhaber: %s`, kontoinhaber))
+			m.Text(fmt.Sprintf(`Adresse: %s`, data.Adresse),
+				props.Text{
+					Top: 5,
+				},
+			)
+			m.Text(fmt.Sprintf(`IBAN: %s`, data.IBAN),
+				props.Text{
+					Top: 10,
+				},
+			)
+		})
+	})
+
 	// Datum Unterschrift
 	m.Row(20, func() {
 		m.Col(6, func() {
@@ -156,6 +244,9 @@ type pdfData struct {
 	Mail          string        `json:"mail"`
 	Verteilstelle verteilstelle `json:"verteilstelle"`
 	Abbuchung     abbuchung     `json:"abbuchung"`
+	Kontoinhaber  string        `json:"kontoinhaber"`
+	Adresse       string        `json:"adresse"`
+	IBAN          string        `json:"IBAN"`
 }
 
 type verteilstelle int
