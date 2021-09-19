@@ -140,7 +140,6 @@ func Bietervertrag(domain string, bieterID string, headerImage string, data pdfD
 	})
 
 	// Abbuchung
-
 	m.Row(5, func() {
 		m.Col(12, func() {
 			if data.Abbuchung == 1 {
@@ -148,6 +147,36 @@ func Bietervertrag(domain string, bieterID string, headerImage string, data pdfD
 			} else {
 				m.Text("Die Abbuchung erfolgt am ersten Werktag eines Monats von April 2022 bis Märt 2023")
 			}
+		})
+	})
+
+	// Datum Unterschrift
+	m.Row(20, func() {
+		m.Col(6, func() {
+			m.Text("_________________________",
+				props.Text{
+					Top: 10,
+				},
+			)
+
+			m.Text("Ort, Datum",
+				props.Text{
+					Top:  15,
+					Size: 8,
+				},
+			)
+		})
+
+		m.Col(6, func() {
+			m.Text("_________________________",
+				props.Text{
+					Top: 10,
+				},
+			)
+			m.Text("Unterschrift", props.Text{
+				Top:  15,
+				Size: 8,
+			})
 		})
 	})
 
@@ -224,7 +253,7 @@ func Bietervertrag(domain string, bieterID string, headerImage string, data pdfD
 					Top: 10,
 				},
 			)
-			m.Text("Unterschrift", props.Text{
+			m.Text("Unterschrift Kontoinhaber", props.Text{
 				Top:  15,
 				Size: 8,
 			})
