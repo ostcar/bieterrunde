@@ -9848,8 +9848,6 @@ var $elm$virtual_dom$VirtualDom$map = _VirtualDom_map;
 var $elm$html$Html$map = $elm$virtual_dom$VirtualDom$map;
 var $elm$virtual_dom$VirtualDom$text = _VirtualDom_text;
 var $elm$html$Html$text = $elm$virtual_dom$VirtualDom$text;
-var $elm$html$Html$a = _VirtualDom_node('a');
-var $elm$html$Html$div = _VirtualDom_node('div');
 var $elm$html$Html$Attributes$stringProperty = F2(
 	function (key, string) {
 		return A2(
@@ -9857,6 +9855,21 @@ var $elm$html$Html$Attributes$stringProperty = F2(
 			key,
 			$elm$json$Json$Encode$string(string));
 	});
+var $elm$html$Html$Attributes$class = $elm$html$Html$Attributes$stringProperty('className');
+var $elm$html$Html$main_ = _VirtualDom_node('main');
+var $author$project$Page$viewContent = function (content) {
+	return A2(
+		$elm$html$Html$main_,
+		_List_fromArray(
+			[
+				$elm$html$Html$Attributes$class('container')
+			]),
+		_List_fromArray(
+			[content]));
+};
+var $elm$html$Html$a = _VirtualDom_node('a');
+var $elm$html$Html$div = _VirtualDom_node('div');
+var $elm$html$Html$footer = _VirtualDom_node('footer');
 var $elm$html$Html$Attributes$href = function (url) {
 	return A2(
 		$elm$html$Html$Attributes$stringProperty,
@@ -9868,24 +9881,35 @@ var $author$project$Route$href = function (targetRoute) {
 		$author$project$Route$routeToString(targetRoute));
 };
 var $author$project$Page$viewFooter = A2(
-	$elm$html$Html$div,
-	_List_Nil,
+	$elm$html$Html$footer,
 	_List_fromArray(
 		[
-			$elm$html$Html$text('footer content'),
+			$elm$html$Html$Attributes$class('footer')
+		]),
+	_List_fromArray(
+		[
 			A2(
-			$elm$html$Html$a,
+			$elm$html$Html$div,
 			_List_fromArray(
 				[
-					$author$project$Route$href($author$project$Route$Admin)
+					$elm$html$Html$Attributes$class('container')
 				]),
 			_List_fromArray(
 				[
-					$elm$html$Html$text('Admin')
+					A2(
+					$elm$html$Html$a,
+					_List_fromArray(
+						[
+							$author$project$Route$href($author$project$Route$Admin)
+						]),
+					_List_fromArray(
+						[
+							$elm$html$Html$text('Admin')
+						]))
 				]))
 		]));
-var $elm$html$Html$h1 = _VirtualDom_node('h1');
 var $elm$html$Html$header = _VirtualDom_node('header');
+var $elm$html$Html$strong = _VirtualDom_node('strong');
 var $author$project$Page$viewMaybeLogout = function (session) {
 	var _v0 = $author$project$Session$toBieter(session);
 	if (_v0.$ === 'Nothing') {
@@ -9895,7 +9919,8 @@ var $author$project$Page$viewMaybeLogout = function (session) {
 			$elm$html$Html$a,
 			_List_fromArray(
 				[
-					$author$project$Route$href($author$project$Route$Logout)
+					$author$project$Route$href($author$project$Route$Logout),
+					$elm$html$Html$Attributes$class('navbar-text')
 				]),
 			_List_fromArray(
 				[
@@ -9910,13 +9935,40 @@ var $author$project$Page$viewHeader = function (session) {
 		_List_fromArray(
 			[
 				A2(
-				$elm$html$Html$h1,
-				_List_Nil,
+				$elm$html$Html$div,
 				_List_fromArray(
 					[
-						$elm$html$Html$text('Bieterrunde')
-					])),
-				$author$project$Page$viewMaybeLogout(session)
+						$elm$html$Html$Attributes$class('navbar navbar-dark bg-primary box-shadow')
+					]),
+				_List_fromArray(
+					[
+						A2(
+						$elm$html$Html$div,
+						_List_fromArray(
+							[
+								$elm$html$Html$Attributes$class('container d-flex')
+							]),
+						_List_fromArray(
+							[
+								A2(
+								$elm$html$Html$div,
+								_List_fromArray(
+									[
+										$elm$html$Html$Attributes$class('navbar-brand')
+									]),
+								_List_fromArray(
+									[
+										A2(
+										$elm$html$Html$strong,
+										_List_Nil,
+										_List_fromArray(
+											[
+												$elm$html$Html$text('Bieterrunde')
+											]))
+									])),
+								$author$project$Page$viewMaybeLogout(session)
+							]))
+					]))
 			]));
 };
 var $author$project$Page$view = F2(
@@ -9927,15 +9979,16 @@ var $author$project$Page$view = F2(
 			body: _List_fromArray(
 				[
 					$author$project$Page$viewHeader(session),
-					content,
+					$author$project$Page$viewContent(content),
 					$author$project$Page$viewFooter
 				]),
-			title: title + ' - Conduit'
+			title: title + ' - Bieterrunde'
 		};
 	});
 var $author$project$Page$Admin$Reload = {$: 'Reload'};
 var $author$project$Page$Admin$ResetOffer = {$: 'ResetOffer'};
 var $elm$html$Html$button = _VirtualDom_node('button');
+var $elm$html$Html$h1 = _VirtualDom_node('h1');
 var $elm$virtual_dom$VirtualDom$Normal = function (a) {
 	return {$: 'Normal', a: a};
 };
@@ -10119,7 +10172,6 @@ var $elm$html$Html$Attributes$boolProperty = F2(
 			$elm$json$Json$Encode$bool(bool));
 	});
 var $elm$html$Html$Attributes$disabled = $elm$html$Html$Attributes$boolProperty('disabled');
-var $elm$html$Html$strong = _VirtualDom_node('strong');
 var $author$project$Page$Admin$maybeError = function (maybeStr) {
 	if (maybeStr.$ === 'Just') {
 		var message = maybeStr.a;
@@ -10472,7 +10524,6 @@ var $author$project$Page$Front$SaveDraftOffer = function (a) {
 	return {$: 'SaveDraftOffer', a: a};
 };
 var $author$project$Page$Front$SendOffer = {$: 'SendOffer'};
-var $elm$html$Html$Attributes$class = $elm$html$Html$Attributes$stringProperty('className');
 var $author$project$Page$Front$maybeError = function (errorMsg) {
 	if (errorMsg.$ === 'Just') {
 		var message = errorMsg.a;
