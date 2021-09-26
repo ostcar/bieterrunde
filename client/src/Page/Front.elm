@@ -460,9 +460,9 @@ viewBieter session baseURL bieter draftOffer error offerValid =
             , div []
                 [ text "Deine Bieternummer ist "
                 , strong [] [ text (Bieter.idToString bieter.id) ]
-                , text ". Merke sie dir gut. Du brauchst sie für die nächste anmeldung"
+                , text ". Merke sie dir gut. Du brauchst sie für die nächste Anmeldung"
                 ]
-            , div [] [ text ("mail: " ++ bieter.mail) ]
+            , div [] [ text ("E-Mail: " ++ bieter.mail) ]
             , div [] [ text ("Verteilstelle: " ++ Bieter.verteilerToString bieter.verteilstelle) ]
             , div [] [ text ("Kontoinhaber: " ++ bieter.kontoinhaber) ]
             , div [] [ text ("Mitglied: " ++ bieter.mitglied) ]
@@ -556,7 +556,8 @@ viewEdit model =
                         , div []
                             [ text "Verteilstelle"
                             , select [ onInput SaveVerteilstelle ]
-                                [ option [ selected (bieter.verteilstelle == Just Bieter.Villingen) ] [ text "Villingen" ]
+                                [ option [ selected (bieter.verteilstelle == Just Bieter.AuswahlVerteilstelle) ] [ text "Wähle deine Verteilstelle" ]
+                                , option [ selected (bieter.verteilstelle == Just Bieter.Villingen) ] [ text "Villingen" ]
                                 , option [ selected (bieter.verteilstelle == Just Bieter.Schwenningen) ] [ text "Schwenningen" ]
                                 , option [ selected (bieter.verteilstelle == Just Bieter.Ueberauchen) ] [ text "Überauchen" ]
                                 ]

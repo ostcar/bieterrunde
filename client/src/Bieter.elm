@@ -58,7 +58,8 @@ bieterEncoder bieter =
 
 
 type Verteilstelle
-    = Villingen
+    = AuswahlVerteilstelle
+    | Villingen
     | Schwenningen
     | Ueberauchen
 
@@ -74,6 +75,9 @@ verteilEncoder verteiler =
         Nothing ->
             Encode.null
 
+        Just AuswahlVerteilstelle ->
+            Encode.int 0
+        
         Just Villingen ->
             Encode.int 1
 
@@ -100,12 +104,15 @@ fromVerteilID n =
             Decode.succeed (Just Ueberauchen)
 
         _ ->
-            Decode.fail ("Unbekannte verteilstelle " ++ String.fromInt n)
+            Decode.fail ("Unbekannte Verteilstelle " ++ String.fromInt n)
 
 
 verteilerFromString : String -> Maybe Verteilstelle
 verteilerFromString s =
     case s of
+        "Wähle deine Verteilstelle" ->
+            Just AuswahlVerteilstelle
+
         "Villingen" ->
             Just Villingen
 
@@ -123,7 +130,10 @@ verteilerToString : Maybe Verteilstelle -> String
 verteilerToString maybeVerteiler =
     case maybeVerteiler of
         Nothing ->
-            "Unbekant"
+            "Unbekannte"
+
+        Just AuswahlVerteilstelle ->
+            "Wähle deine Verteilstelle"
 
         Just Villingen ->
             "Villingen"

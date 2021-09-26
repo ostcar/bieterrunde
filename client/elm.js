@@ -5908,7 +5908,7 @@ var $author$project$Bieter$fromVerteilID = function (n) {
 				$elm$core$Maybe$Just($author$project$Bieter$Ueberauchen));
 		default:
 			return $elm$json$Json$Decode$fail(
-				'Unbekannte verteilstelle ' + $elm$core$String$fromInt(n));
+				'Unbekannte Verteilstelle ' + $elm$core$String$fromInt(n));
 	}
 };
 var $author$project$Bieter$verteilDecoder = A2($elm$json$Json$Decode$andThen, $author$project$Bieter$fromVerteilID, $elm$json$Json$Decode$int);
@@ -9276,14 +9276,17 @@ var $author$project$Bieter$verteilEncoder = function (verteiler) {
 		return $elm$json$Json$Encode$null;
 	} else {
 		switch (verteiler.a.$) {
-			case 'Villingen':
+			case 'AuswahlVerteilstelle':
 				var _v1 = verteiler.a;
+				return $elm$json$Json$Encode$int(0);
+			case 'Villingen':
+				var _v2 = verteiler.a;
 				return $elm$json$Json$Encode$int(1);
 			case 'Schwenningen':
-				var _v2 = verteiler.a;
+				var _v3 = verteiler.a;
 				return $elm$json$Json$Encode$int(2);
 			default:
-				var _v3 = verteiler.a;
+				var _v4 = verteiler.a;
 				return $elm$json$Json$Encode$int(3);
 		}
 	}
@@ -9335,8 +9338,11 @@ var $author$project$Page$Front$updateBieter = F2(
 					url: '/api/bieter/' + $author$project$Bieter$idToString(bieter.id)
 				}));
 	});
+var $author$project$Bieter$AuswahlVerteilstelle = {$: 'AuswahlVerteilstelle'};
 var $author$project$Bieter$verteilerFromString = function (s) {
 	switch (s) {
+		case 'Wähle deine Verteilstelle':
+			return $elm$core$Maybe$Just($author$project$Bieter$AuswahlVerteilstelle);
 		case 'Villingen':
 			return $elm$core$Maybe$Just($author$project$Bieter$Villingen);
 		case 'Schwenningen':
@@ -10452,17 +10458,20 @@ var $author$project$Permission$hasPerm = F2(
 	});
 var $author$project$Bieter$verteilerToString = function (maybeVerteiler) {
 	if (maybeVerteiler.$ === 'Nothing') {
-		return 'Unbekant';
+		return 'Unbekannte';
 	} else {
 		switch (maybeVerteiler.a.$) {
-			case 'Villingen':
+			case 'AuswahlVerteilstelle':
 				var _v1 = maybeVerteiler.a;
+				return 'Wähle deine Verteilstelle';
+			case 'Villingen':
+				var _v2 = maybeVerteiler.a;
 				return 'Villingen';
 			case 'Schwenningen':
-				var _v2 = maybeVerteiler.a;
+				var _v3 = maybeVerteiler.a;
 				return 'Schwenningen';
 			default:
-				var _v3 = maybeVerteiler.a;
+				var _v4 = maybeVerteiler.a;
 				return 'Überauchen';
 		}
 	}
@@ -14509,14 +14518,14 @@ var $author$project$Page$Front$viewBieter = F6(
 										$elm$html$Html$text(
 										$author$project$Bieter$idToString(bieter.id))
 									])),
-								$elm$html$Html$text('. Merke sie dir gut. Du brauchst sie für die nächste anmeldung')
+								$elm$html$Html$text('. Merke sie dir gut. Du brauchst sie für die nächste Anmeldung')
 							])),
 						A2(
 						$elm$html$Html$div,
 						_List_Nil,
 						_List_fromArray(
 							[
-								$elm$html$Html$text('mail: ' + bieter.mail)
+								$elm$html$Html$text('E-Mail: ' + bieter.mail)
 							])),
 						A2(
 						$elm$html$Html$div,
@@ -14676,6 +14685,19 @@ var $author$project$Page$Front$viewEdit = function (model) {
 											]),
 										_List_fromArray(
 											[
+												A2(
+												$elm$html$Html$option,
+												_List_fromArray(
+													[
+														$elm$html$Html$Attributes$selected(
+														_Utils_eq(
+															bieter.verteilstelle,
+															$elm$core$Maybe$Just($author$project$Bieter$AuswahlVerteilstelle)))
+													]),
+												_List_fromArray(
+													[
+														$elm$html$Html$text('Wähle deine Verteilstelle')
+													])),
 												A2(
 												$elm$html$Html$option,
 												_List_fromArray(
