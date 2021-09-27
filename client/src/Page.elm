@@ -2,22 +2,27 @@ module Page exposing (view, viewFooter, viewHeader)
 
 import Browser exposing (Document)
 import Html exposing (..)
+import Html.Attributes exposing (..)
 import Route
 import Session exposing (Session)
 
 
 view : Session -> { title : String, content : Html msg } -> Document msg
 view session { title, content } =
-    { title = title ++ " - Conduit"
-    , body = [ viewHeader session, content, viewFooter ]
+    { title = title ++ " - Bieterrunde"
+    , body = [ viewHeader session, viewContent content, viewFooter ]
     }
 
 
 viewHeader : Session -> Html msg
 viewHeader session =
     header []
-        [ h1 [] [ text "Bieterrunde" ]
-        , viewMaybeLogout session
+        [ div [ class "navbar navbar-dark bg-primary box-shadow" ]
+            [ div [ class "container d-flex" ]
+                [ div [ class "navbar-brand" ] [ strong [] [ text "Bieterrunde" ] ]
+                , viewMaybeLogout session
+                ]
+            ]
         ]
 
 
@@ -28,12 +33,19 @@ viewMaybeLogout session =
             text ""
 
         Just _ ->
-            a [ Route.href Route.Logout ] [ text "logout" ]
+            a [ Route.href Route.Logout, class "navbar-text" ] [ text "logout" ]
 
+
+viewContent : Html msg -> Html msg
+viewContent content =
+    main_ [class "container"] [
+        content
+    ]
 
 viewFooter : Html msg
 viewFooter =
-    div []
-        [ text "footer content"
-        , a [ Route.href Route.Admin ] [ text "Admin" ]
+    footer [class "footer"]
+        [ div [ class "container" ]
+            [ a [ Route.href Route.Admin ] [ text "Admin" ]
+            ]
         ]
