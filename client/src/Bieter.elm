@@ -12,7 +12,9 @@ import Url.Parser
 type alias Bieter =
     { id : ID
     , name : String
+    , teilpartner : String
     , mail : String
+    , teilpartnerMail : String
     , verteilstelle : Maybe Verteilstelle
     , kontoinhaber : String
     , mitglied : String
@@ -28,7 +30,9 @@ bieterDecoder =
     Decode.succeed Bieter
         |> required "id" idDecoder
         |> optionalAt [ "payload", "name" ] Decode.string ""
+        |> optionalAt [ "payload", "teilpartner" ] Decode.string ""
         |> optionalAt [ "payload", "mail" ] Decode.string ""
+        |> optionalAt [ "payload", "teilpartnerMail" ] Decode.string ""
         |> optionalAt [ "payload", "verteilstelle" ] verteilDecoder Nothing
         |> optionalAt [ "payload", "kontoinhaber" ] Decode.string ""
         |> optionalAt [ "payload", "mitglied" ] Decode.string ""
@@ -46,8 +50,10 @@ bieterListDecoder =
 bieterEncoder : Bieter -> Encode.Value
 bieterEncoder bieter =
     Encode.object
-        [ ( "name", Encode.string bieter.name )
+        [ ( "name", Encode.string bieter.name )      
+        , ( "teilpartner", Encode.string bieter.teilpartner )
         , ( "mail", Encode.string bieter.mail )
+        , ( "teilpartnerMail", Encode.string bieter.teilpartnerMail )
         , ( "verteilstelle", verteilEncoder bieter.verteilstelle )
         , ( "kontoinhaber", Encode.string bieter.kontoinhaber )
         , ( "mitglied", Encode.string bieter.mitglied )

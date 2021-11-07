@@ -38,6 +38,8 @@ type Page
 type EditPageMsg
     = SaveName String
     | SaveMail String
+    | SaveMailTP String
+    | SaveNameTP String
     | SaveVerteilstelle String
     | SaveKontoinhaber String
     | SaveMitglied String
@@ -223,6 +225,16 @@ updateEditPage model editMsg =
                     , Cmd.none
                     )
 
+                SaveNameTP teilpartner ->
+                    ( { model | draftBieter = Just { bieter | teilpartner = teilpartner } }
+                    , Cmd.none
+                    )
+
+                SaveMailTP teilpartnerMail ->
+                    ( { model | draftBieter = Just { bieter | teilpartnerMail = teilpartnerMail } }
+                    , Cmd.none
+                    )
+
                 SaveMail mail ->
                     ( { model | draftBieter = Just { bieter | mail = mail } }
                     , Cmd.none
@@ -252,6 +264,8 @@ updateEditPage model editMsg =
                     ( { model | draftBieter = Just { bieter | abbuchung = Bieter.abbuchungFromString abbuchung } }
                     , Cmd.none
                     )
+
+                
 
                 SaveIBAN iban ->
                     let
@@ -375,6 +389,9 @@ view model =
                     , content = Html.map GotEditPageMsg content
                     }
 
+myClass : List (String, String)
+myClass =
+  [ ("background-color", "red") ]
 
 viewLogin : Model -> { title : String, content : Html Msg }
 viewLogin loginData =
@@ -391,6 +408,7 @@ viewLogin loginData =
                         , type_ "text"
                         , value loginData.loginFormBieterNr
                         , onInput SaveNumber
+                        
                         ]
                         []
                     ]
@@ -469,6 +487,8 @@ viewBieter session baseURL bieter draftOffer error offerValid =
             , div [] [ text ("Adresse: " ++ bieter.adresse) ]
             , div [] [ text ("Abbuchung: " ++ Bieter.abbuchungToString bieter.abbuchung) ]
             , div [] [ text ("IBAN: " ++ bieter.iban) ]
+            , div [] [ text ("Teilpartner Name: " ++ bieter.teilpartner) ]
+            , div [] [ text ("Teilpartner E-Mail: " ++ bieter.teilpartnerMail) ]
             , maybeEditButton
             , a [ href ("/api/bieter/" ++ Bieter.idToString bieter.id ++ "/pdf") ] [ text "Bietervertrag (PDF)" ]
             , viewOffer session bieter draftOffer error offerValid
@@ -553,6 +573,26 @@ viewEdit model =
                                 ]
                                 []
                             ]
+                        
+                        , div []
+                            [ text "Name Teilpartner"
+                            , input
+                                [ type_ "text"
+                                , value bieter.teilpartner
+                                , onInput SaveNameTP
+                                ]
+                                []
+                            ]
+                        , div []
+                            [ text "E-Mail"
+                            , input
+                                [ type_ "text"
+                                , value bieter.teilpartnerMail
+                                , onInput SaveMailTP
+                                ]
+                                []
+                            ]
+                        
                         , div []
                             [ text "Verteilstelle"
                             , select [ onInput SaveVerteilstelle ]

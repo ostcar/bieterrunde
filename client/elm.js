@@ -5770,15 +5770,19 @@ var $author$project$Page$Admin$ReceivedBieter = function (a) {
 };
 var $author$project$Bieter$Bieter = function (id) {
 	return function (name) {
-		return function (mail) {
-			return function (verteilstelle) {
-				return function (kontoinhaber) {
-					return function (mitglied) {
-						return function (adresse) {
-							return function (iban) {
-								return function (abbuchung) {
-									return function (offer) {
-										return {abbuchung: abbuchung, adresse: adresse, iban: iban, id: id, kontoinhaber: kontoinhaber, mail: mail, mitglied: mitglied, name: name, offer: offer, verteilstelle: verteilstelle};
+		return function (teilpartner) {
+			return function (mail) {
+				return function (teilpartnerMail) {
+					return function (verteilstelle) {
+						return function (kontoinhaber) {
+							return function (mitglied) {
+								return function (adresse) {
+									return function (iban) {
+										return function (abbuchung) {
+											return function (offer) {
+												return {abbuchung: abbuchung, adresse: adresse, iban: iban, id: id, kontoinhaber: kontoinhaber, mail: mail, mitglied: mitglied, name: name, offer: offer, teilpartner: teilpartner, teilpartnerMail: teilpartnerMail, verteilstelle: verteilstelle};
+											};
+										};
 									};
 								};
 							};
@@ -5956,20 +5960,32 @@ var $author$project$Bieter$bieterDecoder = A4(
 							A4(
 								$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$optionalAt,
 								_List_fromArray(
-									['payload', 'mail']),
+									['payload', 'teilpartnerMail']),
 								$elm$json$Json$Decode$string,
 								'',
 								A4(
 									$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$optionalAt,
 									_List_fromArray(
-										['payload', 'name']),
+										['payload', 'mail']),
 									$elm$json$Json$Decode$string,
 									'',
-									A3(
-										$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
-										'id',
-										$author$project$Bieter$idDecoder,
-										$elm$json$Json$Decode$succeed($author$project$Bieter$Bieter)))))))))));
+									A4(
+										$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$optionalAt,
+										_List_fromArray(
+											['payload', 'teilpartner']),
+										$elm$json$Json$Decode$string,
+										'',
+										A4(
+											$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$optionalAt,
+											_List_fromArray(
+												['payload', 'name']),
+											$elm$json$Json$Decode$string,
+											'',
+											A3(
+												$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
+												'id',
+												$author$project$Bieter$idDecoder,
+												$elm$json$Json$Decode$succeed($author$project$Bieter$Bieter)))))))))))));
 var $elm$json$Json$Decode$list = _Json_decodeList;
 var $author$project$Bieter$bieterListDecoder = $elm$json$Json$Decode$list($author$project$Bieter$bieterDecoder);
 var $elm$http$Http$BadStatus_ = F2(
@@ -9299,8 +9315,14 @@ var $author$project$Bieter$bieterEncoder = function (bieter) {
 				'name',
 				$elm$json$Json$Encode$string(bieter.name)),
 				_Utils_Tuple2(
+				'teilpartner',
+				$elm$json$Json$Encode$string(bieter.teilpartner)),
+				_Utils_Tuple2(
 				'mail',
 				$elm$json$Json$Encode$string(bieter.mail)),
+				_Utils_Tuple2(
+				'teilpartnerMail',
+				$elm$json$Json$Encode$string(bieter.teilpartnerMail)),
 				_Utils_Tuple2(
 				'verteilstelle',
 				$author$project$Bieter$verteilEncoder(bieter.verteilstelle)),
@@ -9371,6 +9393,30 @@ var $author$project$Page$Front$updateEditPage = F2(
 									_Utils_update(
 										bieter,
 										{name: name}))
+							}),
+						$elm$core$Platform$Cmd$none);
+				case 'SaveNameTP':
+					var teilpartner = editMsg.a;
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{
+								draftBieter: $elm$core$Maybe$Just(
+									_Utils_update(
+										bieter,
+										{teilpartner: teilpartner}))
+							}),
+						$elm$core$Platform$Cmd$none);
+				case 'SaveMailTP':
+					var teilpartnerMail = editMsg.a;
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{
+								draftBieter: $elm$core$Maybe$Just(
+									_Utils_update(
+										bieter,
+										{teilpartnerMail: teilpartnerMail}))
 							}),
 						$elm$core$Platform$Cmd$none);
 				case 'SaveMail':
@@ -14622,6 +14668,20 @@ var $author$project$Page$Front$viewBieter = F6(
 							[
 								$elm$html$Html$text('IBAN: ' + bieter.iban)
 							])),
+						A2(
+						$elm$html$Html$div,
+						_List_Nil,
+						_List_fromArray(
+							[
+								$elm$html$Html$text('Teilpartner Name: ' + bieter.teilpartner)
+							])),
+						A2(
+						$elm$html$Html$div,
+						_List_Nil,
+						_List_fromArray(
+							[
+								$elm$html$Html$text('Teilpartner E-Mail: ' + bieter.teilpartnerMail)
+							])),
 						maybeEditButton,
 						A2(
 						$elm$html$Html$a,
@@ -14656,11 +14716,17 @@ var $author$project$Page$Front$SaveKontoinhaber = function (a) {
 var $author$project$Page$Front$SaveMail = function (a) {
 	return {$: 'SaveMail', a: a};
 };
+var $author$project$Page$Front$SaveMailTP = function (a) {
+	return {$: 'SaveMailTP', a: a};
+};
 var $author$project$Page$Front$SaveMitglied = function (a) {
 	return {$: 'SaveMitglied', a: a};
 };
 var $author$project$Page$Front$SaveName = function (a) {
 	return {$: 'SaveName', a: a};
+};
+var $author$project$Page$Front$SaveNameTP = function (a) {
+	return {$: 'SaveNameTP', a: a};
 };
 var $author$project$Page$Front$SaveVerteilstelle = function (a) {
 	return {$: 'SaveVerteilstelle', a: a};
@@ -14719,6 +14785,38 @@ var $author$project$Page$Front$viewEdit = function (model) {
 												$elm$html$Html$Attributes$type_('text'),
 												$elm$html$Html$Attributes$value(bieter.mail),
 												$elm$html$Html$Events$onInput($author$project$Page$Front$SaveMail)
+											]),
+										_List_Nil)
+									])),
+								A2(
+								$elm$html$Html$div,
+								_List_Nil,
+								_List_fromArray(
+									[
+										$elm$html$Html$text('Name Teilpartner'),
+										A2(
+										$elm$html$Html$input,
+										_List_fromArray(
+											[
+												$elm$html$Html$Attributes$type_('text'),
+												$elm$html$Html$Attributes$value(bieter.teilpartner),
+												$elm$html$Html$Events$onInput($author$project$Page$Front$SaveNameTP)
+											]),
+										_List_Nil)
+									])),
+								A2(
+								$elm$html$Html$div,
+								_List_Nil,
+								_List_fromArray(
+									[
+										$elm$html$Html$text('E-Mail'),
+										A2(
+										$elm$html$Html$input,
+										_List_fromArray(
+											[
+												$elm$html$Html$Attributes$type_('text'),
+												$elm$html$Html$Attributes$value(bieter.teilpartnerMail),
+												$elm$html$Html$Events$onInput($author$project$Page$Front$SaveMailTP)
 											]),
 										_List_Nil)
 									])),
