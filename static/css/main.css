@@ -2,6 +2,14 @@ input[type="text"].error {
     background-color : red; 
   }
 
+body{
+  font-size: 18px;
+}
+
+.testklasee{
+  color: red;
+}
+
 .footer {
   position: absolute;
   bottom: 0;
@@ -10,3 +18,4 @@ input[type="text"].error {
   line-height: 60px;
   background-color: #f5f5f5;
 }
+

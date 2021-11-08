@@ -5770,15 +5770,19 @@ var $author$project$Page$Admin$ReceivedBieter = function (a) {
 };
 var $author$project$Bieter$Bieter = function (id) {
 	return function (name) {
-		return function (mail) {
-			return function (verteilstelle) {
-				return function (kontoinhaber) {
-					return function (mitglied) {
-						return function (adresse) {
-							return function (iban) {
-								return function (abbuchung) {
-									return function (offer) {
-										return {abbuchung: abbuchung, adresse: adresse, iban: iban, id: id, kontoinhaber: kontoinhaber, mail: mail, mitglied: mitglied, name: name, offer: offer, verteilstelle: verteilstelle};
+		return function (teilpartner) {
+			return function (mail) {
+				return function (teilpartnerMail) {
+					return function (verteilstelle) {
+						return function (kontoinhaber) {
+							return function (mitglied) {
+								return function (adresse) {
+									return function (iban) {
+										return function (abbuchung) {
+											return function (offer) {
+												return {abbuchung: abbuchung, adresse: adresse, iban: iban, id: id, kontoinhaber: kontoinhaber, mail: mail, mitglied: mitglied, name: name, offer: offer, teilpartner: teilpartner, teilpartnerMail: teilpartnerMail, verteilstelle: verteilstelle};
+											};
+										};
 									};
 								};
 							};
@@ -5908,7 +5912,7 @@ var $author$project$Bieter$fromVerteilID = function (n) {
 				$elm$core$Maybe$Just($author$project$Bieter$Ueberauchen));
 		default:
 			return $elm$json$Json$Decode$fail(
-				'Unbekannte verteilstelle ' + $elm$core$String$fromInt(n));
+				'Unbekannte Verteilstelle ' + $elm$core$String$fromInt(n));
 	}
 };
 var $author$project$Bieter$verteilDecoder = A2($elm$json$Json$Decode$andThen, $author$project$Bieter$fromVerteilID, $elm$json$Json$Decode$int);
@@ -5956,20 +5960,32 @@ var $author$project$Bieter$bieterDecoder = A4(
 							A4(
 								$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$optionalAt,
 								_List_fromArray(
-									['payload', 'mail']),
+									['payload', 'teilpartnerMail']),
 								$elm$json$Json$Decode$string,
 								'',
 								A4(
 									$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$optionalAt,
 									_List_fromArray(
-										['payload', 'name']),
+										['payload', 'mail']),
 									$elm$json$Json$Decode$string,
 									'',
-									A3(
-										$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
-										'id',
-										$author$project$Bieter$idDecoder,
-										$elm$json$Json$Decode$succeed($author$project$Bieter$Bieter)))))))))));
+									A4(
+										$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$optionalAt,
+										_List_fromArray(
+											['payload', 'teilpartner']),
+										$elm$json$Json$Decode$string,
+										'',
+										A4(
+											$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$optionalAt,
+											_List_fromArray(
+												['payload', 'name']),
+											$elm$json$Json$Decode$string,
+											'',
+											A3(
+												$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
+												'id',
+												$author$project$Bieter$idDecoder,
+												$elm$json$Json$Decode$succeed($author$project$Bieter$Bieter)))))))))))));
 var $elm$json$Json$Decode$list = _Json_decodeList;
 var $author$project$Bieter$bieterListDecoder = $elm$json$Json$Decode$list($author$project$Bieter$bieterDecoder);
 var $elm$http$Http$BadStatus_ = F2(
@@ -9276,14 +9292,17 @@ var $author$project$Bieter$verteilEncoder = function (verteiler) {
 		return $elm$json$Json$Encode$null;
 	} else {
 		switch (verteiler.a.$) {
-			case 'Villingen':
+			case 'AuswahlVerteilstelle':
 				var _v1 = verteiler.a;
+				return $elm$json$Json$Encode$int(0);
+			case 'Villingen':
+				var _v2 = verteiler.a;
 				return $elm$json$Json$Encode$int(1);
 			case 'Schwenningen':
-				var _v2 = verteiler.a;
+				var _v3 = verteiler.a;
 				return $elm$json$Json$Encode$int(2);
 			default:
-				var _v3 = verteiler.a;
+				var _v4 = verteiler.a;
 				return $elm$json$Json$Encode$int(3);
 		}
 	}
@@ -9296,8 +9315,14 @@ var $author$project$Bieter$bieterEncoder = function (bieter) {
 				'name',
 				$elm$json$Json$Encode$string(bieter.name)),
 				_Utils_Tuple2(
+				'teilpartner',
+				$elm$json$Json$Encode$string(bieter.teilpartner)),
+				_Utils_Tuple2(
 				'mail',
 				$elm$json$Json$Encode$string(bieter.mail)),
+				_Utils_Tuple2(
+				'teilpartnerMail',
+				$elm$json$Json$Encode$string(bieter.teilpartnerMail)),
 				_Utils_Tuple2(
 				'verteilstelle',
 				$author$project$Bieter$verteilEncoder(bieter.verteilstelle)),
@@ -9335,8 +9360,11 @@ var $author$project$Page$Front$updateBieter = F2(
 					url: '/api/bieter/' + $author$project$Bieter$idToString(bieter.id)
 				}));
 	});
+var $author$project$Bieter$AuswahlVerteilstelle = {$: 'AuswahlVerteilstelle'};
 var $author$project$Bieter$verteilerFromString = function (s) {
 	switch (s) {
+		case 'Wähle deine Verteilstelle':
+			return $elm$core$Maybe$Just($author$project$Bieter$AuswahlVerteilstelle);
 		case 'Villingen':
 			return $elm$core$Maybe$Just($author$project$Bieter$Villingen);
 		case 'Schwenningen':
@@ -9365,6 +9393,30 @@ var $author$project$Page$Front$updateEditPage = F2(
 									_Utils_update(
 										bieter,
 										{name: name}))
+							}),
+						$elm$core$Platform$Cmd$none);
+				case 'SaveNameTP':
+					var teilpartner = editMsg.a;
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{
+								draftBieter: $elm$core$Maybe$Just(
+									_Utils_update(
+										bieter,
+										{teilpartner: teilpartner}))
+							}),
+						$elm$core$Platform$Cmd$none);
+				case 'SaveMailTP':
+					var teilpartnerMail = editMsg.a;
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{
+								draftBieter: $elm$core$Maybe$Just(
+									_Utils_update(
+										bieter,
+										{teilpartnerMail: teilpartnerMail}))
 							}),
 						$elm$core$Platform$Cmd$none);
 				case 'SaveMail':
@@ -10504,17 +10556,20 @@ var $author$project$Permission$hasPerm = F2(
 	});
 var $author$project$Bieter$verteilerToString = function (maybeVerteiler) {
 	if (maybeVerteiler.$ === 'Nothing') {
-		return 'Unbekant';
+		return 'Unbekannte';
 	} else {
 		switch (maybeVerteiler.a.$) {
-			case 'Villingen':
+			case 'AuswahlVerteilstelle':
 				var _v1 = maybeVerteiler.a;
+				return 'Wähle deine Verteilstelle';
+			case 'Villingen':
+				var _v2 = maybeVerteiler.a;
 				return 'Villingen';
 			case 'Schwenningen':
-				var _v2 = maybeVerteiler.a;
+				var _v3 = maybeVerteiler.a;
 				return 'Schwenningen';
 			default:
-				var _v3 = maybeVerteiler.a;
+				var _v4 = maybeVerteiler.a;
 				return 'Überauchen';
 		}
 	}
@@ -14560,14 +14615,14 @@ var $author$project$Page$Front$viewBieter = F6(
 										$elm$html$Html$text(
 										$author$project$Bieter$idToString(bieter.id))
 									])),
-								$elm$html$Html$text('. Merke sie dir gut. Du brauchst sie für die nächste anmeldung')
+								$elm$html$Html$text('. Merke sie dir gut. Du brauchst sie für die nächste Anmeldung')
 							])),
 						A2(
 						$elm$html$Html$div,
 						_List_Nil,
 						_List_fromArray(
 							[
-								$elm$html$Html$text('mail: ' + bieter.mail)
+								$elm$html$Html$text('E-Mail: ' + bieter.mail)
 							])),
 						A2(
 						$elm$html$Html$div,
@@ -14613,6 +14668,20 @@ var $author$project$Page$Front$viewBieter = F6(
 							[
 								$elm$html$Html$text('IBAN: ' + bieter.iban)
 							])),
+						A2(
+						$elm$html$Html$div,
+						_List_Nil,
+						_List_fromArray(
+							[
+								$elm$html$Html$text('Teilpartner Name: ' + bieter.teilpartner)
+							])),
+						A2(
+						$elm$html$Html$div,
+						_List_Nil,
+						_List_fromArray(
+							[
+								$elm$html$Html$text('Teilpartner E-Mail: ' + bieter.teilpartnerMail)
+							])),
 						maybeEditButton,
 						A2(
 						$elm$html$Html$a,
@@ -14647,11 +14716,17 @@ var $author$project$Page$Front$SaveKontoinhaber = function (a) {
 var $author$project$Page$Front$SaveMail = function (a) {
 	return {$: 'SaveMail', a: a};
 };
+var $author$project$Page$Front$SaveMailTP = function (a) {
+	return {$: 'SaveMailTP', a: a};
+};
 var $author$project$Page$Front$SaveMitglied = function (a) {
 	return {$: 'SaveMitglied', a: a};
 };
 var $author$project$Page$Front$SaveName = function (a) {
 	return {$: 'SaveName', a: a};
+};
+var $author$project$Page$Front$SaveNameTP = function (a) {
+	return {$: 'SaveNameTP', a: a};
 };
 var $author$project$Page$Front$SaveVerteilstelle = function (a) {
 	return {$: 'SaveVerteilstelle', a: a};
@@ -14718,6 +14793,38 @@ var $author$project$Page$Front$viewEdit = function (model) {
 								_List_Nil,
 								_List_fromArray(
 									[
+										$elm$html$Html$text('Name Teilpartner'),
+										A2(
+										$elm$html$Html$input,
+										_List_fromArray(
+											[
+												$elm$html$Html$Attributes$type_('text'),
+												$elm$html$Html$Attributes$value(bieter.teilpartner),
+												$elm$html$Html$Events$onInput($author$project$Page$Front$SaveNameTP)
+											]),
+										_List_Nil)
+									])),
+								A2(
+								$elm$html$Html$div,
+								_List_Nil,
+								_List_fromArray(
+									[
+										$elm$html$Html$text('E-Mail'),
+										A2(
+										$elm$html$Html$input,
+										_List_fromArray(
+											[
+												$elm$html$Html$Attributes$type_('text'),
+												$elm$html$Html$Attributes$value(bieter.teilpartnerMail),
+												$elm$html$Html$Events$onInput($author$project$Page$Front$SaveMailTP)
+											]),
+										_List_Nil)
+									])),
+								A2(
+								$elm$html$Html$div,
+								_List_Nil,
+								_List_fromArray(
+									[
 										$elm$html$Html$text('Verteilstelle'),
 										A2(
 										$elm$html$Html$select,
@@ -14727,6 +14834,19 @@ var $author$project$Page$Front$viewEdit = function (model) {
 											]),
 										_List_fromArray(
 											[
+												A2(
+												$elm$html$Html$option,
+												_List_fromArray(
+													[
+														$elm$html$Html$Attributes$selected(
+														_Utils_eq(
+															bieter.verteilstelle,
+															$elm$core$Maybe$Just($author$project$Bieter$AuswahlVerteilstelle)))
+													]),
+												_List_fromArray(
+													[
+														$elm$html$Html$text('Wähle deine Verteilstelle')
+													])),
 												A2(
 												$elm$html$Html$option,
 												_List_fromArray(

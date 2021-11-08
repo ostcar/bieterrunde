@@ -64,17 +64,17 @@ func Bietervertrag(domain string, bieterID string, headerImage string, data pdfD
 	})
 
 	// Vertragstext
-	m.Row(50, func() {
+	m.Row(60, func() {
 		m.Col(12, func() {
 			m.Text(fmt.Sprintf(`
-				Ich, %s <%s>, bin Mitglied im des Vereins Solidarische Landwirtschaft Baarfood e.V. 
-				und möchte im Gemüsejahr 2021/22 (April 2021 – März 2022) einen Gemüseanteil beziehen.`, data.Name, data.Mail),
+				Ich, %s (E-Mail: %s ), bin Mitglied im des Vereins Solidarische Landwirtschaft Baarfood e.V. 
+				und möchte im Gemüsejahr 2022/23 (April 2022 – März 2023) einen Gemüseanteil beziehen.`, data.Name, data.Mail),
 			)
 			m.Text(
 				`Nach erfolgreicher Bieterrunde schließe ich mit dem Verein Solidarische Landwirtschaft 
 				Baarfood e.V. diesen Gemüsevertrag ab.`,
 				props.Text{
-					Top: 8,
+					Top: 10,
 				},
 			)
 
@@ -91,7 +91,8 @@ func Bietervertrag(domain string, bieterID string, headerImage string, data pdfD
 				oben genannten monatlichen finanziellen Beitrag für die verbleibenden Monate übernimmt. 
 				Erst ab diesem Zeitpunkt erfolgt der Lastschrifteinzug von diesem neuen Mitglied.`,
 				props.Text{
-					Top: 16,
+					Top: 20,
+					// Style: consts.Italic,
 				},
 			)
 		})
@@ -101,7 +102,7 @@ func Bietervertrag(domain string, bieterID string, headerImage string, data pdfD
 	m.Row(5, func() {
 		m.Col(12, func() {
 			m.Text(
-				fmt.Sprintf(`Ich hole meinen Antreil in der Verteilstelle in %s`, data.Verteilstelle),
+				fmt.Sprintf(`Ich hole meinen Antreil in der Verteilstelle in %s.`, data.Verteilstelle),
 			)
 		})
 	})
@@ -109,44 +110,7 @@ func Bietervertrag(domain string, bieterID string, headerImage string, data pdfD
 	// Abbuchung
 	m.Row(5, func() {
 		m.Col(12, func() {
-			m.Text(fmt.Sprintf(`Die Abbuchung meines Beitrages für den Ernteanteil erfolgt von April 2021 bis März 2022 %s`, data.Abbuchung))
-		})
-	})
-
-	// SEPA
-	m.Row(15, func() {
-		m.Col(12, func() {
-			m.Text("SEPA Lastschriftmandat", props.Text{
-				Size:  14,
-				Style: consts.Bold,
-				Align: consts.Center,
-				Top:   5,
-			})
-		})
-	})
-
-	// Gläubiger-Identifikationsnummer
-	m.Row(5, func() {
-		m.Col(12, func() {
-			m.Text(`Gläubiger-Identifikationsnummer: DE62ZZZ00001997635`)
-		})
-	})
-
-	// Mandatsreferenz
-	m.Row(5, func() {
-		m.Col(12, func() {
-			m.Text(fmt.Sprintf(`Mandatsreferenz: 22%s`, bieterID))
-		})
-	})
-
-	// Abbuchung
-	m.Row(5, func() {
-		m.Col(12, func() {
-			if data.Abbuchung == 1 {
-				m.Text("Die Abbuchung erfolgt am 1. April 2022")
-			} else {
-				m.Text("Die Abbuchung erfolgt am ersten Werktag eines Monats von April 2022 bis Märt 2023")
-			}
+			m.Text(fmt.Sprintf(`Die Abbuchung meines Beitrages für den Ernteanteil erfolgt von April 2022 bis März 2023 %s.`, data.Abbuchung))
 		})
 	})
 
@@ -166,7 +130,6 @@ func Bietervertrag(domain string, bieterID string, headerImage string, data pdfD
 				},
 			)
 		})
-
 		m.Col(6, func() {
 			m.Text("_________________________",
 				props.Text{
@@ -177,6 +140,54 @@ func Bietervertrag(domain string, bieterID string, headerImage string, data pdfD
 				Top:  15,
 				Size: 8,
 			})
+		})
+	})
+
+	// SEPA
+	m.Row(15, func() {
+		m.Col(12, func() {
+			m.Text("SEPA Lastschriftmandat", props.Text{
+				Size:  14,
+				Style: consts.Bold,
+				Align: consts.Center,
+				Top:   5,
+			})
+		})
+	})
+
+	// Gläubiger-Identifikationsnummer
+	m.Row(5, func() {
+		m.Col(4, func() {
+			m.Text(`Gläubiger-Identifikationsnummer:`)
+
+		})
+		m.Col(12, func() {
+			m.Text(`DE62ZZZ00001997635`, props.Text{
+				Style: consts.Bold,
+			})
+		})
+	})
+
+	// Mandatsreferenz
+	m.Row(5, func() {
+		m.Col(3, func() {
+			m.Text(`Mandatsreferenz: `)
+		})
+		m.Col(12, func() {
+			m.Text(fmt.Sprintf(` 22%s`, bieterID), props.Text{
+				Style: consts.Bold,
+			})
+		})
+	})
+
+	// Abbuchung
+	m.Row(6, func() {
+		m.Col(12, func() {
+			if data.Abbuchung == 1 {
+				m.Text("Die Abbuchung erfolgt am 1. April 2022")
+			} else {
+				m.Text("Die Abbuchung erfolgt am ersten Werktag eines Monats von April 2022 bis März 2023")
+			}
 		})
 	})
 
