@@ -191,6 +191,19 @@ func Bietervertrag(domain string, bieterID string, headerImage string, data pdfD
 		})
 	})
 
+	m.Row(6, func() {
+		m.Col(12, func() {
+			// if data == 1 {
+			// 	m.Text("Die Abbuchung erfolgt am 1. April 2022")
+			// } else {
+			// 	m.Text("Die Abbuchung erfolgt am ersten Werktag eines Monats von April 2022 bis März 2023")
+			// }
+			m.Text("Der Betrag lautet:   €", props.Text{
+				Style: consts.Bold,
+			})
+		})
+	})
+
 	// Sepa-Text
 	m.Row(30, func() {
 		m.Col(12, func() {
