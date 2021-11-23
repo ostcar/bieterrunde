@@ -601,7 +601,24 @@ viewEdit model =
                                 ]
                                 []
                             ]
-                        
+                        , div []
+                            [ text "Name Teilpartner"
+                            , input
+                                [ type_ "text"
+                                , value bieter.teilpartner
+                                , onInput SaveNameTP
+                                ]
+                                []
+                            ]
+                        , div []
+                            [ text "E-Mail"
+                            , input
+                                [ type_ "text"
+                                , value bieter.teilpartnerMail
+                                , onInput SaveMailTP
+                                ]
+                                []
+                            ]
                         , div []
                             [ text "Verteilstelle: "
                             , select [ onInput SaveVerteilstelle ]

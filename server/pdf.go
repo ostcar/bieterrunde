@@ -203,7 +203,6 @@ func Bietervertrag(domain string, bieterID string, headerImage string, data pdfD
 			})
 		})
 	})
-
 	// Sepa-Text
 	m.Row(30, func() {
 		m.Col(12, func() {
