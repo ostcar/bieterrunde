@@ -14862,39 +14862,7 @@ var $author$project$Page$Front$viewEdit = function (model) {
 								_List_Nil,
 								_List_fromArray(
 									[
-										$elm$html$Html$text('Name Teilpartner'),
-										A2(
-										$elm$html$Html$input,
-										_List_fromArray(
-											[
-												$elm$html$Html$Attributes$type_('text'),
-												$elm$html$Html$Attributes$value(bieter.teilpartner),
-												$elm$html$Html$Events$onInput($author$project$Page$Front$SaveNameTP)
-											]),
-										_List_Nil)
-									])),
-								A2(
-								$elm$html$Html$div,
-								_List_Nil,
-								_List_fromArray(
-									[
-										$elm$html$Html$text('E-Mail'),
-										A2(
-										$elm$html$Html$input,
-										_List_fromArray(
-											[
-												$elm$html$Html$Attributes$type_('text'),
-												$elm$html$Html$Attributes$value(bieter.teilpartnerMail),
-												$elm$html$Html$Events$onInput($author$project$Page$Front$SaveMailTP)
-											]),
-										_List_Nil)
-									])),
-								A2(
-								$elm$html$Html$div,
-								_List_Nil,
-								_List_fromArray(
-									[
-										$elm$html$Html$text('Verteilstelle'),
+										$elm$html$Html$text('Verteilstelle: '),
 										A2(
 										$elm$html$Html$select,
 										_List_fromArray(
