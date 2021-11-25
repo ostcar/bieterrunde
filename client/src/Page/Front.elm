@@ -429,7 +429,7 @@ viewCreateForm model =
         div []
             [ h1 [] [ text "Neue Bieternummer anlegen" ]
             , Html.form [ onSubmit RequestCreate ]
-                [ div []
+                [ div [style "display" "none"]
                     [ text "Bieternummer"
                     , input
                         [ id "name"
@@ -439,7 +439,8 @@ viewCreateForm model =
                         ]
                         []
                     ]
-                , div []
+                , 
+                    div []
                     [ button
                         [ type_ "submit" ]
                         [ text "Anlegen" ]
@@ -480,15 +481,15 @@ viewBieter session baseURL bieter draftOffer error offerValid =
                 , strong [] [ text (Bieter.idToString bieter.id) ]
                 , text ". Merke sie dir gut. Du brauchst sie für die nächste Anmeldung"
                 ]
-            , div [] [ text ("E-Mail: " ++ bieter.mail) ]
-            , div [] [ text ("Verteilstelle: " ++ Bieter.verteilerToString bieter.verteilstelle) ]
-            , div [] [ text ("Kontoinhaber: " ++ bieter.kontoinhaber) ]
-            , div [] [ text ("Mitglied: " ++ bieter.mitglied) ]
-            , div [] [ text ("Adresse: " ++ bieter.adresse) ]
-            , div [] [ text ("Abbuchung: " ++ Bieter.abbuchungToString bieter.abbuchung) ]
-            , div [] [ text ("IBAN: " ++ bieter.iban) ]
-            , div [] [ text ("Teilpartner Name: " ++ bieter.teilpartner) ]
-            , div [] [ text ("Teilpartner E-Mail: " ++ bieter.teilpartnerMail) ]
+            , div [style "margin" "4px"] [ text ("E-Mail: " ++ bieter.mail) ]
+            , div [style "margin" "4px"] [ text ("Verteilstelle: " ++ Bieter.verteilerToString bieter.verteilstelle) ]
+            , div [style "margin" "4px"] [ text ("Kontoinhaber: " ++ bieter.kontoinhaber) ]
+            , div [style "margin" "4px"] [ text ("Mitglied: " ++ bieter.mitglied) ]
+            , div [style "margin" "4px"] [ text ("Adresse: " ++ bieter.adresse) ]
+            , div [style "margin" "4px"] [ text ("Abbuchung: " ++ Bieter.abbuchungToString bieter.abbuchung) ]
+            , div [style "margin" "4px"] [ text ("IBAN: " ++ bieter.iban) ]
+            , div [style "margin" "4px"] [ text ("Teilpartner Name: " ++ bieter.teilpartner) ]
+            , div [style "margin" "4px"] [ text ("Teilpartner E-Mail: " ++ bieter.teilpartnerMail) ]
             , maybeEditButton
             , a [ href ("/api/bieter/" ++ Bieter.idToString bieter.id ++ "/pdf") ] [ text "Bietervertrag (PDF)" ]
             , viewOffer session bieter draftOffer error offerValid
@@ -556,45 +557,52 @@ viewEdit model =
                     [ Html.form [ onSubmit Submit ]
                         [ maybeError model.editErrorMsg
                         , div []
-                            [ text "Name"
+                            [ text "Name: "
                             , input
                                 [ type_ "text"
                                 , value bieter.name
                                 , onInput SaveName
+                                , style "width" "500px"
+                                , style "margin" "5px"
                                 ]
                                 []
                             ]
                         , div []
-                            [ text "E-Mail"
+                            [ text "E-Mail: "
                             , input
                                 [ type_ "text"
                                 , value bieter.mail
                                 , onInput SaveMail
+                                , style "width" "500px"
+                                , style "margin" "5px"
                                 ]
                                 []
                             ]
                         
                         , div []
-                            [ text "Name Teilpartner"
+                            [ text "Name Teilpartner: "
                             , input
                                 [ type_ "text"
                                 , value bieter.teilpartner
                                 , onInput SaveNameTP
+                                , style "width" "500px"
+                                , style "margin" "5px"
                                 ]
                                 []
                             ]
                         , div []
-                            [ text "E-Mail"
+                            [ text "E-Mail Teilpartner: "
                             , input
                                 [ type_ "text"
                                 , value bieter.teilpartnerMail
                                 , onInput SaveMailTP
+                                , style "width" "500px"
+                                , style "margin" "5px"
                                 ]
                                 []
                             ]
-                        
                         , div []
-                            [ text "Verteilstelle"
+                            [ text "Verteilstelle: "
                             , select [ onInput SaveVerteilstelle ]
                                 [ option [ selected (bieter.verteilstelle == Just Bieter.AuswahlVerteilstelle) ] [ text "Wähle deine Verteilstelle" ]
                                 , option [ selected (bieter.verteilstelle == Just Bieter.Villingen) ] [ text "Villingen" ]
@@ -603,34 +611,40 @@ viewEdit model =
                                 ]
                             ]
                         , div []
-                            [ text "Kontoinhaber"
+                            [ text "Kontoinhaber: "
                             , input
                                 [ type_ "text"
                                 , value bieter.kontoinhaber
                                 , onInput SaveKontoinhaber
+                                , style "width" "500px"
+                                , style "margin" "5px"
                                 ]
                                 []
                             ]
                         , div []
-                            [ text "Mitglied"
+                            [ text "Mitglied (ja/nein): "
                             , input
                                 [ type_ "text"
                                 , value bieter.mitglied
                                 , onInput SaveMitglied
+                                , style "width" "50px"
+                                , style "margin" "5px"
                                 ]
                                 []
                             ]
                         , div []
-                            [ text "Adresse"
+                            [ text "Adresse: "
                             , input
                                 [ type_ "text"
                                 , value bieter.adresse
                                 , onInput SaveAdresse
+                                , style "width" "600px"
+                                , style "margin" "5px"
                                 ]
                                 []
                             ]
                         , div []
-                            [ text "IBAN"
+                            [ text "IBAN: "
                             , input
                                 [ type_ "text"
                                 , class
@@ -642,22 +656,24 @@ viewEdit model =
                                     )
                                 , value bieter.iban
                                 , onInput SaveIBAN
+                                , style "width" "300px"
+                                , style "margin" "5px"
                                 ]
                                 []
                             ]
                         , div []
-                            [ text "Abbuchung"
-                            , select [ onInput SaveAbbuchung ]
+                            [ text "Abbuchung: "
+                            , select [ onInput SaveAbbuchung, style "margin" "5px" ]
                                 [ option [ selected (bieter.abbuchung == Bieter.Jaehrlich) ] [ text "Jährlich" ]
                                 , option [ selected (bieter.abbuchung == Bieter.Monatlich) ] [ text "Monatlich" ]
                                 ]
                             ]
                         , div []
                             [ button
-                                [ type_ "submit" ]
+                                [ type_ "submit" , style "margin" "5px"]
                                 [ text "Speichern" ]
                             , button
-                                [ onClick GoBack ]
+                                [ onClick GoBack , style "margin" "5px"]
                                 [ text "Zurück" ]
                             ]
                         ]

@@ -10554,6 +10554,8 @@ var $author$project$Permission$hasPerm = F2(
 			}
 		}
 	});
+var $elm$virtual_dom$VirtualDom$style = _VirtualDom_style;
+var $elm$html$Html$Attributes$style = $elm$virtual_dom$VirtualDom$style;
 var $author$project$Bieter$verteilerToString = function (maybeVerteiler) {
 	if (maybeVerteiler.$ === 'Nothing') {
 		return 'Unbekannte';
@@ -14619,14 +14621,20 @@ var $author$project$Page$Front$viewBieter = F6(
 							])),
 						A2(
 						$elm$html$Html$div,
-						_List_Nil,
+						_List_fromArray(
+							[
+								A2($elm$html$Html$Attributes$style, 'margin', '4px')
+							]),
 						_List_fromArray(
 							[
 								$elm$html$Html$text('E-Mail: ' + bieter.mail)
 							])),
 						A2(
 						$elm$html$Html$div,
-						_List_Nil,
+						_List_fromArray(
+							[
+								A2($elm$html$Html$Attributes$style, 'margin', '4px')
+							]),
 						_List_fromArray(
 							[
 								$elm$html$Html$text(
@@ -14634,28 +14642,40 @@ var $author$project$Page$Front$viewBieter = F6(
 							])),
 						A2(
 						$elm$html$Html$div,
-						_List_Nil,
+						_List_fromArray(
+							[
+								A2($elm$html$Html$Attributes$style, 'margin', '4px')
+							]),
 						_List_fromArray(
 							[
 								$elm$html$Html$text('Kontoinhaber: ' + bieter.kontoinhaber)
 							])),
 						A2(
 						$elm$html$Html$div,
-						_List_Nil,
+						_List_fromArray(
+							[
+								A2($elm$html$Html$Attributes$style, 'margin', '4px')
+							]),
 						_List_fromArray(
 							[
 								$elm$html$Html$text('Mitglied: ' + bieter.mitglied)
 							])),
 						A2(
 						$elm$html$Html$div,
-						_List_Nil,
+						_List_fromArray(
+							[
+								A2($elm$html$Html$Attributes$style, 'margin', '4px')
+							]),
 						_List_fromArray(
 							[
 								$elm$html$Html$text('Adresse: ' + bieter.adresse)
 							])),
 						A2(
 						$elm$html$Html$div,
-						_List_Nil,
+						_List_fromArray(
+							[
+								A2($elm$html$Html$Attributes$style, 'margin', '4px')
+							]),
 						_List_fromArray(
 							[
 								$elm$html$Html$text(
@@ -14663,21 +14683,30 @@ var $author$project$Page$Front$viewBieter = F6(
 							])),
 						A2(
 						$elm$html$Html$div,
-						_List_Nil,
+						_List_fromArray(
+							[
+								A2($elm$html$Html$Attributes$style, 'margin', '4px')
+							]),
 						_List_fromArray(
 							[
 								$elm$html$Html$text('IBAN: ' + bieter.iban)
 							])),
 						A2(
 						$elm$html$Html$div,
-						_List_Nil,
+						_List_fromArray(
+							[
+								A2($elm$html$Html$Attributes$style, 'margin', '4px')
+							]),
 						_List_fromArray(
 							[
 								$elm$html$Html$text('Teilpartner Name: ' + bieter.teilpartner)
 							])),
 						A2(
 						$elm$html$Html$div,
-						_List_Nil,
+						_List_fromArray(
+							[
+								A2($elm$html$Html$Attributes$style, 'margin', '4px')
+							]),
 						_List_fromArray(
 							[
 								$elm$html$Html$text('Teilpartner E-Mail: ' + bieter.teilpartnerMail)
@@ -14761,14 +14790,16 @@ var $author$project$Page$Front$viewEdit = function (model) {
 								_List_Nil,
 								_List_fromArray(
 									[
-										$elm$html$Html$text('Name'),
+										$elm$html$Html$text('Name: '),
 										A2(
 										$elm$html$Html$input,
 										_List_fromArray(
 											[
 												$elm$html$Html$Attributes$type_('text'),
 												$elm$html$Html$Attributes$value(bieter.name),
-												$elm$html$Html$Events$onInput($author$project$Page$Front$SaveName)
+												$elm$html$Html$Events$onInput($author$project$Page$Front$SaveName),
+												A2($elm$html$Html$Attributes$style, 'width', '500px'),
+												A2($elm$html$Html$Attributes$style, 'margin', '5px')
 											]),
 										_List_Nil)
 									])),
@@ -14777,14 +14808,16 @@ var $author$project$Page$Front$viewEdit = function (model) {
 								_List_Nil,
 								_List_fromArray(
 									[
-										$elm$html$Html$text('E-Mail'),
+										$elm$html$Html$text('E-Mail: '),
 										A2(
 										$elm$html$Html$input,
 										_List_fromArray(
 											[
 												$elm$html$Html$Attributes$type_('text'),
 												$elm$html$Html$Attributes$value(bieter.mail),
-												$elm$html$Html$Events$onInput($author$project$Page$Front$SaveMail)
+												$elm$html$Html$Events$onInput($author$project$Page$Front$SaveMail),
+												A2($elm$html$Html$Attributes$style, 'width', '500px'),
+												A2($elm$html$Html$Attributes$style, 'margin', '5px')
 											]),
 										_List_Nil)
 									])),
@@ -14793,14 +14826,16 @@ var $author$project$Page$Front$viewEdit = function (model) {
 								_List_Nil,
 								_List_fromArray(
 									[
-										$elm$html$Html$text('Name Teilpartner'),
+										$elm$html$Html$text('Name Teilpartner: '),
 										A2(
 										$elm$html$Html$input,
 										_List_fromArray(
 											[
 												$elm$html$Html$Attributes$type_('text'),
 												$elm$html$Html$Attributes$value(bieter.teilpartner),
-												$elm$html$Html$Events$onInput($author$project$Page$Front$SaveNameTP)
+												$elm$html$Html$Events$onInput($author$project$Page$Front$SaveNameTP),
+												A2($elm$html$Html$Attributes$style, 'width', '500px'),
+												A2($elm$html$Html$Attributes$style, 'margin', '5px')
 											]),
 										_List_Nil)
 									])),
@@ -14809,14 +14844,16 @@ var $author$project$Page$Front$viewEdit = function (model) {
 								_List_Nil,
 								_List_fromArray(
 									[
-										$elm$html$Html$text('E-Mail'),
+										$elm$html$Html$text('E-Mail Teilpartner: '),
 										A2(
 										$elm$html$Html$input,
 										_List_fromArray(
 											[
 												$elm$html$Html$Attributes$type_('text'),
 												$elm$html$Html$Attributes$value(bieter.teilpartnerMail),
-												$elm$html$Html$Events$onInput($author$project$Page$Front$SaveMailTP)
+												$elm$html$Html$Events$onInput($author$project$Page$Front$SaveMailTP),
+												A2($elm$html$Html$Attributes$style, 'width', '500px'),
+												A2($elm$html$Html$Attributes$style, 'margin', '5px')
 											]),
 										_List_Nil)
 									])),
@@ -14825,7 +14862,7 @@ var $author$project$Page$Front$viewEdit = function (model) {
 								_List_Nil,
 								_List_fromArray(
 									[
-										$elm$html$Html$text('Verteilstelle'),
+										$elm$html$Html$text('Verteilstelle: '),
 										A2(
 										$elm$html$Html$select,
 										_List_fromArray(
@@ -14893,14 +14930,16 @@ var $author$project$Page$Front$viewEdit = function (model) {
 								_List_Nil,
 								_List_fromArray(
 									[
-										$elm$html$Html$text('Kontoinhaber'),
+										$elm$html$Html$text('Kontoinhaber: '),
 										A2(
 										$elm$html$Html$input,
 										_List_fromArray(
 											[
 												$elm$html$Html$Attributes$type_('text'),
 												$elm$html$Html$Attributes$value(bieter.kontoinhaber),
-												$elm$html$Html$Events$onInput($author$project$Page$Front$SaveKontoinhaber)
+												$elm$html$Html$Events$onInput($author$project$Page$Front$SaveKontoinhaber),
+												A2($elm$html$Html$Attributes$style, 'width', '500px'),
+												A2($elm$html$Html$Attributes$style, 'margin', '5px')
 											]),
 										_List_Nil)
 									])),
@@ -14909,14 +14948,16 @@ var $author$project$Page$Front$viewEdit = function (model) {
 								_List_Nil,
 								_List_fromArray(
 									[
-										$elm$html$Html$text('Mitglied'),
+										$elm$html$Html$text('Mitglied (ja/nein): '),
 										A2(
 										$elm$html$Html$input,
 										_List_fromArray(
 											[
 												$elm$html$Html$Attributes$type_('text'),
 												$elm$html$Html$Attributes$value(bieter.mitglied),
-												$elm$html$Html$Events$onInput($author$project$Page$Front$SaveMitglied)
+												$elm$html$Html$Events$onInput($author$project$Page$Front$SaveMitglied),
+												A2($elm$html$Html$Attributes$style, 'width', '50px'),
+												A2($elm$html$Html$Attributes$style, 'margin', '5px')
 											]),
 										_List_Nil)
 									])),
@@ -14925,14 +14966,16 @@ var $author$project$Page$Front$viewEdit = function (model) {
 								_List_Nil,
 								_List_fromArray(
 									[
-										$elm$html$Html$text('Adresse'),
+										$elm$html$Html$text('Adresse: '),
 										A2(
 										$elm$html$Html$input,
 										_List_fromArray(
 											[
 												$elm$html$Html$Attributes$type_('text'),
 												$elm$html$Html$Attributes$value(bieter.adresse),
-												$elm$html$Html$Events$onInput($author$project$Page$Front$SaveAdresse)
+												$elm$html$Html$Events$onInput($author$project$Page$Front$SaveAdresse),
+												A2($elm$html$Html$Attributes$style, 'width', '600px'),
+												A2($elm$html$Html$Attributes$style, 'margin', '5px')
 											]),
 										_List_Nil)
 									])),
@@ -14941,7 +14984,7 @@ var $author$project$Page$Front$viewEdit = function (model) {
 								_List_Nil,
 								_List_fromArray(
 									[
-										$elm$html$Html$text('IBAN'),
+										$elm$html$Html$text('IBAN: '),
 										A2(
 										$elm$html$Html$input,
 										_List_fromArray(
@@ -14950,7 +14993,9 @@ var $author$project$Page$Front$viewEdit = function (model) {
 												$elm$html$Html$Attributes$class(
 												model.ibanValid ? '' : 'error'),
 												$elm$html$Html$Attributes$value(bieter.iban),
-												$elm$html$Html$Events$onInput($author$project$Page$Front$SaveIBAN)
+												$elm$html$Html$Events$onInput($author$project$Page$Front$SaveIBAN),
+												A2($elm$html$Html$Attributes$style, 'width', '300px'),
+												A2($elm$html$Html$Attributes$style, 'margin', '5px')
 											]),
 										_List_Nil)
 									])),
@@ -14959,12 +15004,13 @@ var $author$project$Page$Front$viewEdit = function (model) {
 								_List_Nil,
 								_List_fromArray(
 									[
-										$elm$html$Html$text('Abbuchung'),
+										$elm$html$Html$text('Abbuchung: '),
 										A2(
 										$elm$html$Html$select,
 										_List_fromArray(
 											[
-												$elm$html$Html$Events$onInput($author$project$Page$Front$SaveAbbuchung)
+												$elm$html$Html$Events$onInput($author$project$Page$Front$SaveAbbuchung),
+												A2($elm$html$Html$Attributes$style, 'margin', '5px')
 											]),
 										_List_fromArray(
 											[
@@ -15001,7 +15047,8 @@ var $author$project$Page$Front$viewEdit = function (model) {
 										$elm$html$Html$button,
 										_List_fromArray(
 											[
-												$elm$html$Html$Attributes$type_('submit')
+												$elm$html$Html$Attributes$type_('submit'),
+												A2($elm$html$Html$Attributes$style, 'margin', '5px')
 											]),
 										_List_fromArray(
 											[
@@ -15011,7 +15058,8 @@ var $author$project$Page$Front$viewEdit = function (model) {
 										$elm$html$Html$button,
 										_List_fromArray(
 											[
-												$elm$html$Html$Events$onClick($author$project$Page$Front$GoBack)
+												$elm$html$Html$Events$onClick($author$project$Page$Front$GoBack),
+												A2($elm$html$Html$Attributes$style, 'margin', '5px')
 											]),
 										_List_fromArray(
 											[
@@ -15057,7 +15105,10 @@ var $author$project$Page$Front$viewCreateForm = function (model) {
 					[
 						A2(
 						$elm$html$Html$div,
-						_List_Nil,
+						_List_fromArray(
+							[
+								A2($elm$html$Html$Attributes$style, 'display', 'none')
+							]),
 						_List_fromArray(
 							[
 								$elm$html$Html$text('Bieternummer'),
