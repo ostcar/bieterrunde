@@ -198,7 +198,9 @@ func Bietervertrag(domain string, bieterID string, headerImage string, data pdfD
 			// } else {
 			// 	m.Text("Die Abbuchung erfolgt am ersten Werktag eines Monats von April 2022 bis März 2023")
 			// }
-			m.Text("Der Betrag lautet:   €", props.Text{
+			euro := data.offer / 100
+			cent := data.offer % 100
+			m.Text(fmt.Sprintf("Der Betrag lautet: %d,%02d €", euro, cent), props.Text{
 				Style: consts.Bold,
 			})
 		})
@@ -299,6 +301,7 @@ type pdfData struct {
 	Kontoinhaber  string        `json:"kontoinhaber"`
 	Adresse       string        `json:"adresse"`
 	IBAN          string        `json:"IBAN"`
+	offer         int
 }
 
 type verteilstelle int

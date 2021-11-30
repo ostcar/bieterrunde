@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	lowestOffer = 4000
+	lowestOffer = 0
 )
 
 func getEvent(eventType string) Event {
