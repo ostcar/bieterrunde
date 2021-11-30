@@ -389,9 +389,6 @@ view model =
                     , content = Html.map GotEditPageMsg content
                     }
 
-myClass : List (String, String)
-myClass =
-  [ ("background-color", "red") ]
 
 viewLogin : Model -> { title : String, content : Html Msg }
 viewLogin loginData =

@@ -170,6 +170,8 @@ func handleBieter(router *mux.Router, db *Database, config Config, filesystem fs
 			return
 		}
 
+		data.offer = db.Offer(bieterID)
+
 		pdfile, err := Bietervertrag(config.Domain, bieterID, headerImage, data)
 		if err != nil {
 			handleError(w, fmt.Errorf("creating pdf: %w", err))
