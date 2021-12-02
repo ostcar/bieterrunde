@@ -9,6 +9,8 @@ import Offer
 import Route
 import Session exposing (Session)
 import State exposing (State(..))
+import IBAN
+import IBAN.Types
 
 
 type alias Model =
@@ -265,11 +267,14 @@ viewStatusSelect model =
 
 viewList : List Bieter.Bieter -> Html Msg
 viewList bieter =
+    let
+        sorted = List.sortBy (\b -> b.name) bieter 
+    in
     div []
-        [ text ("Anzahl:" ++ String.fromInt (List.length bieter))
+        [ text ("Anzahl:" ++ String.fromInt (List.length sorted))
         , table []
-            (viewBieterTableHeader :: List.map viewBieterLine bieter)
-        , text ("Gesamtes Gebot: " ++ Offer.toString (fullOffer bieter))
+            (viewBieterTableHeader :: List.map viewBieterLine sorted)
+        , text ("Gesamtes Gebot: " ++ Offer.toString (fullOffer sorted))
         ]
 
 
@@ -296,9 +301,19 @@ viewBieterLine bieter =
         [ td [] [ button [ onClick (SelectBieter bieter) ] [ text (Bieter.idToString bieter.id) ] ]
         , td [] [ text bieter.name ]
         , td [] [ text bieter.mail ]
-        , td [] [ text bieter.iban ]
+        , td [] [ formattedIBAN bieter.iban ]
         , td [] [ text (Offer.toString bieter.offer) ]
         ]
+
+formattedIBAN : String -> Html msg
+formattedIBAN rawIBAN =
+    case IBAN.fromString rawIBAN of
+            Ok iban ->
+                div [] [text (IBAN.toString IBAN.Types.Textual iban)]
+
+            Err _ ->
+                div [class "error"] [ text rawIBAN ]
+
 
 
 viewLogin : Model -> Html Msg

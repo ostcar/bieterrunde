@@ -10075,6 +10075,7 @@ var $author$project$Page$Admin$fullOffer = function (bieterList) {
 			},
 			bieterList));
 };
+var $elm$core$List$sortBy = _List_sortBy;
 var $elm$html$Html$table = _VirtualDom_node('table');
 var $author$project$Offer$toString = function (maybeOffer) {
 	switch (maybeOffer.$) {
@@ -10091,6 +10092,32 @@ var $author$project$Offer$toString = function (maybeOffer) {
 };
 var $author$project$Page$Admin$SelectBieter = function (a) {
 	return {$: 'SelectBieter', a: a};
+};
+var $groteck$elm_iban$IBAN$Types$Textual = {$: 'Textual'};
+var $author$project$Page$Admin$formattedIBAN = function (rawIBAN) {
+	var _v0 = $groteck$elm_iban$IBAN$fromString(rawIBAN);
+	if (_v0.$ === 'Ok') {
+		var iban = _v0.a;
+		return A2(
+			$elm$html$Html$div,
+			_List_Nil,
+			_List_fromArray(
+				[
+					$elm$html$Html$text(
+					A2($groteck$elm_iban$IBAN$toString, $groteck$elm_iban$IBAN$Types$Textual, iban))
+				]));
+	} else {
+		return A2(
+			$elm$html$Html$div,
+			_List_fromArray(
+				[
+					$elm$html$Html$Attributes$class('error')
+				]),
+			_List_fromArray(
+				[
+					$elm$html$Html$text(rawIBAN)
+				]));
+	}
 };
 var $elm$html$Html$td = _VirtualDom_node('td');
 var $elm$html$Html$tr = _VirtualDom_node('tr');
@@ -10137,7 +10164,7 @@ var $author$project$Page$Admin$viewBieterLine = function (bieter) {
 				_List_Nil,
 				_List_fromArray(
 					[
-						$elm$html$Html$text(bieter.iban)
+						$author$project$Page$Admin$formattedIBAN(bieter.iban)
 					])),
 				A2(
 				$elm$html$Html$td,
@@ -10192,6 +10219,12 @@ var $author$project$Page$Admin$viewBieterTableHeader = A2(
 				]))
 		]));
 var $author$project$Page$Admin$viewList = function (bieter) {
+	var sorted = A2(
+		$elm$core$List$sortBy,
+		function (b) {
+			return b.name;
+		},
+		bieter);
 	return A2(
 		$elm$html$Html$div,
 		_List_Nil,
@@ -10199,17 +10232,17 @@ var $author$project$Page$Admin$viewList = function (bieter) {
 			[
 				$elm$html$Html$text(
 				'Anzahl:' + $elm$core$String$fromInt(
-					$elm$core$List$length(bieter))),
+					$elm$core$List$length(sorted))),
 				A2(
 				$elm$html$Html$table,
 				_List_Nil,
 				A2(
 					$elm$core$List$cons,
 					$author$project$Page$Admin$viewBieterTableHeader,
-					A2($elm$core$List$map, $author$project$Page$Admin$viewBieterLine, bieter))),
+					A2($elm$core$List$map, $author$project$Page$Admin$viewBieterLine, sorted))),
 				$elm$html$Html$text(
 				'Gesamtes Gebot: ' + $author$project$Offer$toString(
-					$author$project$Page$Admin$fullOffer(bieter)))
+					$author$project$Page$Admin$fullOffer(sorted)))
 			]));
 };
 var $author$project$Page$Admin$SetState = function (a) {
@@ -14262,7 +14295,6 @@ var $pablohirafuji$elm_qrcode$QRCode$GroupInfo$getGroupData = function (ecLevel)
 			return $pablohirafuji$elm_qrcode$QRCode$GroupInfo$dataH;
 	}
 };
-var $elm$core$List$sortBy = _List_sortBy;
 var $pablohirafuji$elm_qrcode$QRCode$Encode$getVersion = F3(
 	function (ecLevel, mode, dataLength) {
 		return A2(
