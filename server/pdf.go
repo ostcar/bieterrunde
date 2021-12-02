@@ -79,7 +79,7 @@ func Bietervertrag(domain string, bieterID string, headerImage string, data pdfD
 			)
 
 			m.Text(
-				`Die Gemüsevertrag gilt von April 2021 bis März 2022 (=12 Monate). 
+				`Die Gemüsevertrag gilt von April 2022 bis März 2023 (=12 Monate). 
 				Ich kann mein Gemüse wöchentlich an einer vorher festgelegten Verteilstelle abholen. 
 				Ich respektiere die in den Verteilstellen genannten Anteilsmengen und Abholfristen. 
 				Ich habe keinen Anspruch auf eine bestimmte Menge und Qualität der Produkte. 
