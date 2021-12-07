@@ -10,6 +10,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"sort"
 	"strings"
 
 	"github.com/gorilla/mux"
@@ -223,18 +224,66 @@ func handleBieterList(router *mux.Router, db *Database, config Config) {
 		}
 
 		var bieter []ViewBieter
-
 		for id, payload := range db.BieterList() {
 			bieter = append(bieter, ViewBieter{
 				ID:      id,
 				Payload: payload,
 				Offer:   db.Offer(id), // TODO: This has to be returned from db.BieterList!
 			})
-
 		}
 
 		if err := json.NewEncoder(w).Encode(bieter); err != nil {
 			handleError(w, fmt.Errorf("encoding bieter: %w", err))
+		}
+	})
+
+	router.Path(pathPrefixAPI + "/csv").Methods("GET").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		admin := isAdmin(r, config)
+		if !admin {
+			handleError(w, clientError{msg: "Passwort ist falsch", status: 401})
+			return
+		}
+
+		keys := []string{
+			"name",
+			"teilpartner",
+			"mail",
+			"teilpartnerMail",
+			"verteilstelle",
+			"kontoinhaber",
+			"mitglied",
+			"adresse",
+			"iban",
+			"abbuchung",
+			"gebot",
+		}
+		fmt.Fprintln(w, strings.Join(keys, ","))
+
+		bieter := db.BieterList()
+		sorted := make([]string, 0, len(bieter))
+		for id := range bieter {
+			sorted = append(sorted, id)
+		}
+		sort.Strings(sorted)
+
+		for _, id := range sorted {
+			var bData map[string]json.RawMessage
+			if err := json.Unmarshal(bieter[id], &bData); err != nil {
+				handleError(w, fmt.Errorf("decoding data: %w", err))
+				return
+			}
+			if bData == nil {
+				continue
+			}
+
+			gebot := db.Offer(id) // TODO: This has to be returned from db.BieterList!
+			euro := gebot / 100
+			cent := gebot % 100
+			bData["gebot"] = []byte(fmt.Sprintf("\"%d,%02d\"", euro, cent))
+			for _, key := range keys {
+				fmt.Fprintf(w, "%s,", bData[key])
+			}
+			fmt.Fprintln(w)
 		}
 	})
 }
