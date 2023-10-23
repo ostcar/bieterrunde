@@ -1,6 +1,6 @@
 # Bieterrunde
 
-Programm für eine Bieterrunde.
+Dies war das Programm für die Bieterrunde für das Gemüsejahr 2022/2023. Das aktuelle Tool findest du hier: https://github.com/ostcar/bietrunde
 
 
 ## Installieren
